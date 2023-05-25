@@ -1,8 +1,5 @@
 SHELL=/bin/bash -eo pipefail
 
-
-DOCKER_REPO ?= ghcr.io/hydradatabase/pgvector
-
 .PHONY: build
 build:
-	docker buildx build -t $(DOCKER_REPO) --output out .
+	docker buildx build --platform linux/amd64,linux/arm64 --output out .

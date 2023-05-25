@@ -29,6 +29,7 @@ RUN set -eux; \
 
 FROM base as builder
 
+ARG TARGETOS TARGETARCH
 ARG POSTGRES_BASE_VERSION=14
 
 COPY build /workspace/build
@@ -36,7 +37,10 @@ WORKDIR /workspace
 
 ENV DESTDIR /pg_ext
 RUN /workspace/build ${POSTGRES_BASE_VERSION}
-RUN tar -zcvf /pg_ext.tar.gz /pg_ext
+RUN tar -zcvf /pg_ext_${TARGETOS}_${TARGETARCH}.tar.gz /pg_ext
 
 FROM scratch AS export
-COPY --from=builder /pg_ext.tar.gz .
+
+ARG TARGETOS TARGETARCH
+
+COPY --from=builder /pg_ext_${TARGETOS}_${TARGETARCH}.tar.gz  .
