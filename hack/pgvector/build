@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "---> pgvector Buildpack"
+
+git clone https://github.com/owenthereal/pgvector
+cd pgvector
+make
+make install
+
+

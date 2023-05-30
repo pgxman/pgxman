@@ -1,0 +1,27 @@
+apiVersion: v1
+name: pgvector
+description: Open-source vector similarity search for Postgres
+keywords:
+  - "vector"
+  - "similarity search"
+homepage: https://github.com/pgvector/pgvector
+maintainer:
+  - name: Owen Ou
+    email: o@owenou.com
+    url: https://owenou.com
+
+# This is the extension buildpack version. This version number should be incremented each time you make changes
+# to the buildpack and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: "0.0.1"
+
+# This is a list of Postgres versions that the extension supports.
+pgVersion:
+  - "13"
+  - "14"
+  - "15"
+
+# This is the version number of the extension. This version number should be incremented each time you make changes
+# to the application. Versions are not expected to follow Semantic Versioning. They should reflect the version the
+# extension is using. It is recommended to use it with quotes.
+extensionVersion: "0.4.2"
