@@ -24,4 +24,4 @@ pgVersion:
 # This is the version number of the extension. This version number should be incremented each time you make changes
 # to the application. Versions are not expected to follow Semantic Versioning. They should reflect the version the
 # extension is using. It is recommended to use it with quotes.
-extensionVersion: "0.4.2"
+extVersion: "0.4.2"

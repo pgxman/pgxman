@@ -4,7 +4,7 @@ set -eo pipefail
 
 echo "---> pgvector buildkit"
 
-git clone https://github.com/pgvector/pgvector
+git clone --branch v0.4.2 https://github.com/pgvector/pgvector
 cd pgvector
-make
-make install
+DESTDIR=${DESTDIR} make
+DESTDIR=${DESTDIR} make install

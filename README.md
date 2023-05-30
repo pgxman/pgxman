@@ -1,11 +1,14 @@
 # pgxm - PostgreSQL Extension Manager
 
-Welcome to `pgxm`! This is a comprehensive tool that simplifies the management of PostgreSQL extensions, making it easier than ever to build, package, and install them.
-Whether you're an extension developer or a PostgreSQL user looking to expand your database capabilities, `pgxm` can streamline your workflow and minimize the complexity of extension management.
+Welcome to `pgxm`!
+This robust tool is designed to streamline your PostgreSQL extensions management, making the tasks of building, packaging, and installing them a breeze.
+`pgxm` is a crucial ally for both extension developers and PostgreSQL users seeking to augment their database capabilities.
+It effectively simplifies your workflow and reduces the intricacies of extension management.
 
 ## Building a PostgreSQL extension
 
-The process of building an extension involves a few key steps. Let's walk through an example where we're building the [pgvector](https://github.com/pgvector/pgvector) extension.
+The process of building an extension involves a few key steps.
+Let's walk through an example where we're building the [pgvector](https://github.com/pgvector/pgvector) extension.
 
 First, create a new `pgxm` buildkit:
 
@@ -27,7 +30,8 @@ pgvector
 * `buildkit.yaml` is a configuration file that outlines how your extension should be built.
 * `build` is a script that, when run, builds the extension.
 
-Refer to the example provided in the [examples/pgvector](examples/pgvector) directory of this repository, and adjust your build and buildkit.yaml files accordingly.
+The spec of a buildkit is avaialbe [here](spec/buildkit.md).
+You can take inspiration from the example found in [examples/pgvector](examples/pgvector) and adjust your `build` and `buildkit.yaml` files to fit your needs.
 
 Once these files are set up, you're ready to build the extension:
 
@@ -35,7 +39,7 @@ Once these files are set up, you're ready to build the extension:
 pgxm buildkit build
 ```
 
-Upon successful execution of the build command, the built and packaged extension files are placed in the out directory under `pgvector`:
+Upon a successful build, the extension files will be packaged in the `out` directory under the `pgvector` folder:
 
 ```console
 pgvector/out
@@ -45,7 +49,7 @@ pgvector/out
     └── pgvector_linux_arm64.tar.gz
 ```
 
-To build & share the extension with others, publish it to the `pgxm` hub:
+To make the built extension available for others to use, publish it to the `pgxm` hub:
 
 ```console
 pgxm publish
@@ -59,21 +63,14 @@ With `pgxm`, installing an extension is straightforward. You just need to specif
 pgxm install pgvector@0.4.2
 ```
 
-This command installs pgvector to your local PostgreSQL instance. To confirm the installation, you can check your PostgreSQL instance for the new extension:
+The above command will install the `pgvector` extension to your local PostgreSQL instance. To validate the successful installation, you can inspect your PostgreSQL instance for the newly installed extension:
 
 ```psql
 postgres=# \dx
                                             List of installed extensions
         Name        | Version |   Schema   |                              Description
---------------------+---------+------------+------------------------------------------------------------------------
- columnar           | 11.1-6  | public     | Hydra Columnar extension
- file_fdw           | 1.0     | public     | foreign-data wrapper for flat file access
- pg_auth_mon        | 1.1     | public     | monitor connection attempts per user
- pg_stat_kcache     | 2.2.1   | public     | Kernel statistics gathering
- pg_stat_statements | 1.9     | public     | track planning and execution statistics of all SQL statements executed
- plpgsql            | 1.0     | pg_catalog | PL/pgSQL procedural language
- plpython3u         | 1.0     | pg_catalog | PL/Python3U untrusted procedural language
- set_user           | 3.0     | public     | similar to SET ROLE but with added logging
+--------------------+---------+------------+----------------------------------------------------------------
  vector             | 0.4.2   | public     | vector data type and ivfflat access method
+ ...
 (9 rows)
 ```
