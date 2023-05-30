@@ -30,7 +30,7 @@ pgvector
 * `buildkit.yaml` is a configuration file that outlines how your extension should be built.
 * `build` is a script that, when run, builds the extension.
 
-The spec of a buildkit is avaialbe [here](spec/buildkit.md).
+The spec of a buildkit is available [here](spec/buildkit.md).
 You can take inspiration from the example found in [examples/pgvector](examples/pgvector) and adjust your `build` and `buildkit.yaml` files to fit your needs.
 
 Once these files are set up, you're ready to build the extension:
