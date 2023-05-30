@@ -25,7 +25,7 @@ maintainers: # Lists the maintainers of the project (optional)
 ## build
 
 The `build` script performs the actual build of the extension.
-This script is executed where the following environment variables are set:
+This script is executed with the following environment variables set:
 
 * `POSTGRES_VERSION`: The PostgreSQL version that the extension is being built.
 * `DESTDIR`: The destination directory for the built extension. Your script should ensure that the built extension is output to this directory.
