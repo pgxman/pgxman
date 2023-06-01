@@ -1,0 +1,13 @@
+Source: pgvector
+Section: database
+Priority: optional
+Maintainer: Owen Ou <o@hydra.so>
+Build-Depends: debhelper (>= 10), postgresql-server-dev-all (>= 158~)
+Standards-Version: 3.9.7
+Homepage: <insert the upstream URL, if relevant>
+
+Package: postgresql-PGVERSION-pgvector
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-PGVERSION
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
