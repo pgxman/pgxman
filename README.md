@@ -22,16 +22,20 @@ This command generates a new folder named `pgvector` in your current directory, 
 $ tree pgvector
 pgvector
 ├── build
-└── buildkit.yaml
+├── buildkit.yaml
+├── clean
+└── install
 
-1 directory, 2 files
+1 directory, 4 files
 ```
 
 * `buildkit.yaml` is a configuration file that outlines how your extension should be built.
 * `build` is a script that, when run, builds the extension.
+* `install` is a script that, when run, installs the extension.
+* `clean` is a script that, when run, cleans up the build directories.
 
 The spec of a buildkit is available [here](spec/buildkit.md).
-You can take inspiration from the example found in [examples/pgvector](examples/pgvector) and adjust your `build` and `buildkit.yaml` files to fit your needs.
+You can take inspiration from the example found in [examples/pgvector](examples/pgvector) and adjust your files to fit your needs.
 
 Once these files are set up, you're ready to build the extension:
 
@@ -42,11 +46,16 @@ pgxm buildkit build
 Upon a successful build, the extension files will be packaged in the `out` directory under the `pgvector` folder:
 
 ```console
-pgvector/out
+$ tree out
+out
 ├── linux_amd64
-│   └── pgvector_linux_amd64.tar.gz
+│   ├── postgresql-14-pgxm-pgvector_0.4.2_amd64.deb
+│   └── postgresql-15-pgxm-pgvector_0.4.2_amd64.deb
 └── linux_arm64
-    └── pgvector_linux_arm64.tar.gz
+    ├── postgresql-14-pgxm-pgvector_0.4.2_arm64.deb
+    └── postgresql-15-pgxm-pgvector_0.4.2_arm64.deb
+
+3 directories, 4 files
 ```
 
 To make the built extension available for others to use, publish it to the `pgxm` hub:
