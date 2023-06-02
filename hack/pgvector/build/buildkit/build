@@ -5,3 +5,5 @@ set -eo pipefail
 echo "---> Building pgvector"
 
 make
+env
+echo "---> Building pgvector"

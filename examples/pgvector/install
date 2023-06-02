@@ -5,5 +5,3 @@ set -eo pipefail
 echo "---> Installing pgvector"
 
 make install
-env
-echo "---> Installing pgvector"

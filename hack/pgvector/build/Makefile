@@ -6,7 +6,7 @@ build:
 
 .PHONY: install
 install:
-	test -f $(CURDIR)/buildkit/install && cd src && $(CURDIR)/buildkit/install || echo "No install script found"
+	cd src && $(CURDIR)/buildkit/install
 
 .PHONY: clean
 clean:

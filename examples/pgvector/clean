@@ -5,5 +5,3 @@ set -eo pipefail
 echo "---> Cleaning pgvector"
 
 make clean
-env
-echo "---> Cleaning pgvector"
