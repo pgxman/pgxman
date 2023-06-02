@@ -10,6 +10,7 @@ The `buildkit.yaml` is a YAML file that encapsulates configurations describing a
 ```yaml
 apiVersion: Specifies the buildkit API version. (required)
 name: Gives the name of the buildkit. This name is usually the same as the extension name. (required)
+source: Provides the URL to the extension's source code. (required)
 version: Provides the buildkit's version, following the SemVer 2 versioning scheme. (required)
 extVersion: Specifies the version of the extension that this buildkit is designed to build. This does not need to follow SemVer. Quotes are recommended to prevent interpretation as a number. (required)
 pgVersion: Lists the PostgreSQL versions that this extension supports. (required)

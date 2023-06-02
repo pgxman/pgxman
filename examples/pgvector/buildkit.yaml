@@ -5,6 +5,7 @@ keywords:
   - "vector"
   - "similarity search"
 homepage: https://github.com/pgvector/pgvector
+source: https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.2.tar.gz
 maintainer:
   - name: Owen Ou
     email: o@owenou.com
