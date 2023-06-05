@@ -1,0 +1,36 @@
+apiVersion: v1
+name: pgvector
+description: Open-source vector similarity search for Postgres
+keywords:
+  - "vector"
+  - "similarity search"
+homepage: https://github.com/pgvector/pgvector
+source: https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.2.tar.gz
+maintainer:
+  - name: Owen Ou
+    email: o@owenou.com
+    url: https://owenou.com
+
+# This is the version number of the extension buildkit. This version number should be incremented each time you make changes
+# to the buildkit and its templates, including the extVersion.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: "0.0.1"
+
+# This is a list of Postgres versions that the extension supports.
+pgVersion:
+  - "13"
+  - "14"
+  - "15"
+
+# This is the version number of the extension. This version number should be incremented each time you make changes
+# to the extension. Versions are not expected to follow Semantic Versioning. They should reflect the version the
+# extension is using. It is recommended to use it with quotes.
+extVersion: "0.4.2"
+
+# This is the apt package dependencies at runtime
+dependencies:
+  # - libxml2-dev
+
+# This is the apt package dependencies at build time
+buildDependencies:
+  # - libxml2-dev

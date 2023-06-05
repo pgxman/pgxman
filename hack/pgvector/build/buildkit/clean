@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "---> Cleaning pgvector"
+
+make clean
