@@ -31,6 +31,11 @@ func Execute() error {
 				return err
 			}
 
+			ext = ext.WithDefaults()
+			if err := ext.Validate(); err != nil {
+				return fmt.Errorf("invalid extension: %w", err)
+			}
+
 			pwd, err := os.Getwd()
 			if err != nil {
 				return err
