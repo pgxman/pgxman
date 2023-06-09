@@ -1,0 +1,3 @@
+{{- range .PGVersions }}
+{{ . }}
+{{- end }}

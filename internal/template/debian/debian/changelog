@@ -1,0 +1,5 @@
+{{ .Name }} ({{ .Version }}) stable; urgency=low
+
+  * {{ .Version }} release
+
+ -- {{ maintainers .Maintainers }}  {{ timenow }}

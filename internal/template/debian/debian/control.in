@@ -1,0 +1,12 @@
+Source: {{ .Name }}
+Section: database
+Priority: optional
+Maintainer: {{ maintainers .Maintainers }}
+Build-Depends: {{ buildDeps . }}
+Standards-Version: 3.9.7
+Homepage: {{ .Homepage }}
+
+Package: postgresql-PGVERSION-pgxm-{{ .Name }}
+Architecture: any
+Depends: {{ deps . }}, postgresql-PGVERSION
+Description: {{ .Description }}
