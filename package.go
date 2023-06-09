@@ -107,10 +107,10 @@ var debianFuncMap = template.FuncMap{
 	},
 }
 
-func NewPackager(workspaceDir string) Packager {
+func NewPackager(workDir string) Packager {
 	return &packager{
-		workspaceDir: workspaceDir,
-		logger:       log.NewTextLogger(),
+		workDir: workDir,
+		logger:  log.NewTextLogger(),
 	}
 }
 
@@ -119,8 +119,8 @@ type Packager interface {
 }
 
 type packager struct {
-	workspaceDir string
-	logger       *slog.Logger
+	workDir string
+	logger  *slog.Logger
 }
 
 // Package generates the following folder structure:
@@ -133,12 +133,14 @@ type packager struct {
 //     --- debian
 //     --- buildkit
 func (p *packager) Package(ctx context.Context, ext Extension) error {
-	extDir := filepath.Join(p.workspaceDir, "extension")
+	workDir := filepath.Join(p.workDir, "target")
+
+	extDir := filepath.Join(workDir, "extension")
 	if err := os.MkdirAll(extDir, 0755); err != nil {
 		return err
 	}
 
-	sourceFile, err := p.downloadSource(ctx, ext, p.workspaceDir)
+	sourceFile, err := p.downloadSource(ctx, ext, workDir)
 	if err != nil {
 		return fmt.Errorf("failed to download source: %w", err)
 	}
