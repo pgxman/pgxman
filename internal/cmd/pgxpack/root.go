@@ -19,7 +19,7 @@ func Execute() error {
 				return err
 			}
 
-			ext, err := pgxm.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"))
+			ext, err := pgxm.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), nil)
 			if err != nil {
 				return err
 			}

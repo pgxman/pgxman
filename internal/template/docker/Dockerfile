@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
 
+ARG BUILD_SHA
 ARG BUILD_IMAGE
 
 FROM $BUILD_IMAGE as build

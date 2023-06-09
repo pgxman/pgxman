@@ -2,17 +2,19 @@ package pgxm
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
 
 	"github.com/hydradatabase/pgxm/internal/log"
+	"github.com/imdario/mergo"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/yaml"
 )
 
-func ReadExtensionFile(path string) (Extension, error) {
+func ReadExtensionFile(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
 	if _, err := os.Stat(path); err != nil {
@@ -24,11 +26,18 @@ func ReadExtensionFile(path string) (Extension, error) {
 		return ext, err
 	}
 
+	b, err = overrideYamlFields(b, overrides)
+	if err != nil {
+		return ext, err
+	}
+
 	if err := yaml.Unmarshal(b, &ext); err != nil {
 		return ext, err
 	}
 
 	ext = ext.WithDefaults()
+	ext.ConfigSHA = fmt.Sprintf("%x", sha1.Sum(b))
+
 	if err := ext.Validate(); err != nil {
 		return ext, fmt.Errorf("invalid extension: %w", err)
 	}
@@ -64,6 +73,9 @@ type Extension struct {
 
 	// override
 	Deb Deb `json:"deb,omitempty"`
+
+	// internal
+	ConfigSHA string `json:"configSHA,omitempty"`
 }
 
 func (ext *Extension) WithDefaults() Extension {
@@ -215,12 +227,30 @@ type Packager interface {
 	Package(ctx context.Context, ext Extension) error
 }
 
-func NewBuilder() Builder {
+func NewBuilder(extDir string) Builder {
 	return &debianBuilder{
+		extDir: extDir,
 		logger: log.NewTextLogger(),
 	}
 }
 
 type Builder interface {
 	Build(ctx context.Context, ext Extension) error
+}
+
+func overrideYamlFields(b []byte, overrides map[string]any) ([]byte, error) {
+	if len(overrides) == 0 {
+		return b, nil
+	}
+
+	src := make(map[string]any)
+	if err := yaml.Unmarshal(b, &src); err != nil {
+		return nil, err
+	}
+
+	if err := mergo.Merge(&overrides, src); err != nil {
+		return nil, err
+	}
+
+	return yaml.Marshal(overrides)
 }

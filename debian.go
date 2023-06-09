@@ -16,7 +16,9 @@ import (
 	"github.com/hydradatabase/pgxm/internal/template/debian"
 	"github.com/hydradatabase/pgxm/internal/template/docker"
 	"github.com/mholt/archiver/v3"
+	cp "github.com/otiai10/copy"
 	"golang.org/x/exp/slog"
+	"sigs.k8s.io/yaml"
 )
 
 var debianPackageFuncMap = template.FuncMap{
@@ -214,22 +216,30 @@ func (d debianPackageTemplate) Apply(content []byte, out io.Writer) error {
 }
 
 type debianBuilder struct {
+	extDir string
 	logger *slog.Logger
 }
 
 func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
-	tmpDir, err := os.MkdirTemp("", "pgxm-build")
+	workDir, err := os.MkdirTemp("", "pgxm-build")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	defer os.Remove(tmpDir)
+	defer os.Remove(workDir)
 
-	if err := b.generateDockerFile(ext, tmpDir); err != nil {
+	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("failed to generate debian package: %w", err)
 	}
 
-	dockerFile := filepath.Join(tmpDir, "Dockerfile")
-	if err := b.runDockerBuild(ctx, ext, dockerFile); err != nil {
+	if err := b.generateExtensionFile(ext, workDir); err != nil {
+		return fmt.Errorf("failed to generate debian package: %w", err)
+	}
+
+	if err := b.runDockerBuild(ctx, ext, workDir); err != nil {
+		return fmt.Errorf("failed to run docker build: %w", err)
+	}
+
+	if err := b.copyBuild(ctx, workDir, b.extDir); err != nil {
 		return fmt.Errorf("failed to run docker build: %w", err)
 	}
 
@@ -243,31 +253,74 @@ func (b *debianBuilder) generateDockerFile(ext Extension, dstDir string) error {
 	return tmpl.Export(docker.FS, nil, dstDir)
 }
 
-// docker buildx build -t $(REPO) --platform $(PLATFORM) --output out .
-func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dockerFile string) error {
+func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
-	logger.Debug("Building extension")
+	logger.Debug("Generating extension.yaml")
 
+	e, err := yaml.Marshal(ext)
+	if err != nil {
+		return fmt.Errorf("failed to marshal extension: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(dstDir, "extension.yaml"), e, 0644)
+}
+
+func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {
 	dockerBuild := exec.CommandContext(
 		ctx,
 		"docker",
 		"buildx",
 		"build",
-		"--file",
-		dockerFile,
 		"--build-arg",
 		fmt.Sprintf("BUILD_IMAGE=%s", ext.BuildImage),
+		"--build-arg",
+		fmt.Sprintf("BUILD_SHA=%s", ext.ConfigSHA),
 		"--platform",
 		dockerPlatform(ext),
 		"--output",
 		"out",
 		".",
 	)
+	dockerBuild.Dir = dstDir
 	dockerBuild.Stdout = os.Stdout
 	dockerBuild.Stderr = os.Stderr
 
+	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.String("command", dockerBuild.String()))
+	logger.Debug("Running Docker build")
 	if err := dockerBuild.Run(); err != nil {
 		return fmt.Errorf("failed to run docker build: %w", err)
+	}
+
+	return nil
+}
+
+func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) error {
+	logger := b.logger.With(slog.String("src", workDir), slog.String("dst", dstDir))
+	logger.Debug("Copying build")
+
+	var (
+		src = filepath.Join(workDir, "out")
+		dst = filepath.Join(dstDir, "out")
+	)
+
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	if err := cp.Copy(
+		src,
+		dst,
+		cp.Options{
+			Skip: func(fi os.FileInfo, src, dest string) (bool, error) {
+				if fi.IsDir() {
+					return false, nil
+				}
+
+				return filepath.Ext(fi.Name()) != ".deb", nil
+			},
+		},
+	); err != nil {
+		return fmt.Errorf("failed to copy built extensions: %w", err)
 	}
 
 	return nil

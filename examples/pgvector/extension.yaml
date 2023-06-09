@@ -41,5 +41,3 @@ dependencies:
 # A list of package dependencies at build time
 buildDependencies:
   # - libxml2-dev
-
-buildImage: owenthereal/pgxm-builder
