@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
 FROM golang:latest as gobuild
-ARG TARGETOS TARGETARCH
 
+ARG TARGETOS TARGETARCH
 ARG BUILD_VERSION
 
 WORKDIR /src
@@ -48,12 +48,9 @@ RUN set -eux; \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-FROM base as build
-
-ARG TARGETOS TARGETARCH
-ARG POSTGRES_VERSION=14
-
 COPY --from=gobuild /go/bin/* /usr/local/bin/
+
+FROM base as build
 
 COPY examples/pgvector/extension.yaml /workspace/extension.yaml
 WORKDIR /workspace

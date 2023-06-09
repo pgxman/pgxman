@@ -153,7 +153,7 @@ func (p *packager) Package(ctx context.Context, ext Extension) error {
 		return fmt.Errorf("failed to generate debian package: %w", err)
 	}
 
-	if err := p.runPackaging(ctx, extDir); err != nil {
+	if err := p.buildDebian(ctx, ext, extDir); err != nil {
 		return fmt.Errorf("failed to run packaging: %w", err)
 	}
 
@@ -185,6 +185,9 @@ func (p *packager) downloadSource(ctx context.Context, ext Extension, dstDir str
 }
 
 func (p *packager) unarchiveSource(ctx context.Context, sourceFile, dstDir string) error {
+	logger := p.logger.With(slog.String("file", sourceFile))
+	logger.Info("Unarchiving source")
+
 	sourceDir := filepath.Join(dstDir, "src")
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
 		return err
@@ -210,6 +213,9 @@ func (p *packager) unarchiveSource(ctx context.Context, sourceFile, dstDir strin
 }
 
 func (p *packager) generateDebian(ext Extension, dstDir string) error {
+	logger := p.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger.Info("Generating debian package")
+
 	return fs.WalkDir(debian.FS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fs.SkipDir
@@ -266,7 +272,10 @@ func (p *packager) generateDebian(ext Extension, dstDir string) error {
 	})
 }
 
-func (p *packager) runPackaging(ctx context.Context, extDir string) error {
+func (p *packager) buildDebian(ctx context.Context, ext Extension, extDir string) error {
+	logger := p.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger.Info("Building debian package")
+
 	buildext := exec.CommandContext(ctx, "pg_buildext", "updatecontrol")
 	buildext.Dir = extDir
 	buildext.Stdout = os.Stdout
