@@ -11,10 +11,10 @@ RUN --mount=target=. \
     --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     GOOS=$TARGETOS GOARCH=$TARGETARCH go install \
-    -ldflags "-s -w -X github.com/hydradatabase/pgxm/internal/cmd.Version=$BUILD_VERSION" \
+    -ldflags "-s -w -X github.com/hydradatabase/pgxm/pgxm.Version=$BUILD_VERSION" \
     ./cmd/pgxpack/...
 
-FROM ubuntu:22.04 as base
+FROM ubuntu:22.04
 
 ARG POSTGRES_VERSION=14
 ARG DEBIAN_FRONTEND=noninteractive
@@ -49,10 +49,3 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=gobuild /go/bin/* /usr/local/bin/
-
-FROM base as build
-
-COPY examples/pgvector/extension.yaml /workspace/extension.yaml
-WORKDIR /workspace
-
-RUN pgxpack

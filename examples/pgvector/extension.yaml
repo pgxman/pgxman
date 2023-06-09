@@ -10,6 +10,10 @@ maintainers:
   - name: Owen Ou
     email: o@owenou.com
 
+arch:
+  - amd64
+  - arm64
+
 install: |
   make
   DESTDIR=${DESTDIR} make install
@@ -37,3 +41,5 @@ dependencies:
 # A list of package dependencies at build time
 buildDependencies:
   # - libxml2-dev
+
+buildImage: owenthereal/pgxm-builder

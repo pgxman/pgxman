@@ -1,42 +1,25 @@
 package pgxpack
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/hydradatabase/pgxm"
-	"github.com/hydradatabase/pgxm/internal/cmd"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 func Execute() error {
 	root := &cobra.Command{
 		Use:     "pgxpack",
 		Short:   "PostgreSQL Extension Packager",
-		Version: cmd.Version,
+		Version: pgxm.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			extFile := "extension.yaml"
-			if _, err := os.Stat(extFile); err != nil {
-				return fmt.Errorf("extension.yaml not found in current directory")
-			}
-
-			b, err := os.ReadFile(extFile)
+			pwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			var ext pgxm.Extension
-			if err := yaml.Unmarshal(b, &ext); err != nil {
-				return err
-			}
-
-			ext = ext.WithDefaults()
-			if err := ext.Validate(); err != nil {
-				return fmt.Errorf("invalid extension: %w", err)
-			}
-
-			pwd, err := os.Getwd()
+			ext, err := pgxm.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"))
 			if err != nil {
 				return err
 			}

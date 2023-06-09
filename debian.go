@@ -12,12 +12,14 @@ import (
 	"text/template"
 	"time"
 
+	tmpl "github.com/hydradatabase/pgxm/internal/template"
 	"github.com/hydradatabase/pgxm/internal/template/debian"
+	"github.com/hydradatabase/pgxm/internal/template/docker"
 	"github.com/mholt/archiver/v3"
 	"golang.org/x/exp/slog"
 )
 
-var debianFuncMap = template.FuncMap{
+var debianPackageFuncMap = template.FuncMap{
 	"maintainers": func(ms []Maintainer) string {
 		var maintainers []string
 		for _, m := range ms {
@@ -151,28 +153,11 @@ func (p *debianPackager) unarchiveSource(ctx context.Context, sourceFile, dstDir
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-type debianTemplate struct {
-	ext Extension
-}
-
-func (d debianTemplate) Apply(content []byte, out io.Writer) error {
-	t, err := template.New("").Funcs(debianFuncMap).Parse(string(content))
-	if err != nil {
-		return fmt.Errorf("cannot parse template %w", err)
-	}
-
-	if err := t.Execute(out, d.ext); err != nil {
-		return fmt.Errorf("cannot execute template %w", err)
-	}
-
-	return nil
-}
-
 func (p *debianPackager) generateDebian(ext Extension, dstDir string) error {
 	logger := p.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Info("Generating debian package")
 
-	return debian.Export(debianTemplate{ext}, dstDir)
+	return tmpl.Export(debian.FS, debianPackageTemplate{ext}, dstDir)
 }
 
 func (p *debianPackager) buildDebian(ctx context.Context, ext Extension, extDir string) error {
@@ -209,4 +194,90 @@ func (p *debianPackager) buildDebian(ctx context.Context, ext Extension, extDir 
 	}
 
 	return nil
+}
+
+type debianPackageTemplate struct {
+	ext Extension
+}
+
+func (d debianPackageTemplate) Apply(content []byte, out io.Writer) error {
+	t, err := template.New("").Funcs(debianPackageFuncMap).Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("cannot parse template %w", err)
+	}
+
+	if err := t.Execute(out, d.ext); err != nil {
+		return fmt.Errorf("cannot execute template %w", err)
+	}
+
+	return nil
+}
+
+type debianBuilder struct {
+	logger *slog.Logger
+}
+
+func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
+	tmpDir, err := os.MkdirTemp("", "pgxm-build")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	defer os.Remove(tmpDir)
+
+	if err := b.generateDockerFile(ext, tmpDir); err != nil {
+		return fmt.Errorf("failed to generate debian package: %w", err)
+	}
+
+	dockerFile := filepath.Join(tmpDir, "Dockerfile")
+	if err := b.runDockerBuild(ctx, ext, dockerFile); err != nil {
+		return fmt.Errorf("failed to run docker build: %w", err)
+	}
+
+	return nil
+}
+
+func (b *debianBuilder) generateDockerFile(ext Extension, dstDir string) error {
+	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger.Debug("Generating Dockerfile")
+
+	return tmpl.Export(docker.FS, nil, dstDir)
+}
+
+// docker buildx build -t $(REPO) --platform $(PLATFORM) --output out .
+func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dockerFile string) error {
+	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger.Debug("Building extension")
+
+	dockerBuild := exec.CommandContext(
+		ctx,
+		"docker",
+		"buildx",
+		"build",
+		"--file",
+		dockerFile,
+		"--build-arg",
+		fmt.Sprintf("BUILD_IMAGE=%s", ext.BuildImage),
+		"--platform",
+		dockerPlatform(ext),
+		"--output",
+		"out",
+		".",
+	)
+	dockerBuild.Stdout = os.Stdout
+	dockerBuild.Stderr = os.Stderr
+
+	if err := dockerBuild.Run(); err != nil {
+		return fmt.Errorf("failed to run docker build: %w", err)
+	}
+
+	return nil
+}
+
+func dockerPlatform(ext Extension) string {
+	var platform []string
+	for _, arch := range ext.Arch {
+		platform = append(platform, fmt.Sprintf("linux/%s", arch))
+	}
+
+	return strings.Join(platform, ",")
 }
