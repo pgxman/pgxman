@@ -12,13 +12,13 @@ import (
 
 type Extension struct {
 	// required
-	APIVersion     string       `json:"apiVersion"`
-	Name           string       `json:"name"`
-	Source         string       `json:"source"`
-	Version        string       `json:"version"`
-	PGVersions     []PGVersion  `json:"pgVersions"`
-	InstallCommand string       `json:"installCommand"`
-	Maintainers    []Maintainer `json:"maintainers"`
+	APIVersion  string       `json:"apiVersion"`
+	Name        string       `json:"name"`
+	Source      string       `json:"source"`
+	Version     string       `json:"version"`
+	PGVersions  []PGVersion  `json:"pgVersions"`
+	Install     string       `json:"install"`
+	Maintainers []Maintainer `json:"maintainers"`
 
 	// optional
 	Arch              []Arch     `json:"arche,omitempty"`
@@ -75,8 +75,8 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("pgVersions is required")
 	}
 
-	if ext.InstallCommand == "" {
-		return fmt.Errorf("installCommand is required")
+	if ext.Install == "" {
+		return fmt.Errorf("install is required")
 	}
 
 	if len(ext.Maintainers) == 0 {
