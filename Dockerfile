@@ -12,7 +12,7 @@ RUN --mount=target=. \
     --mount=type=cache,target=/go/pkg \
     GOOS=$TARGETOS GOARCH=$TARGETARCH go install \
     -ldflags "-s -w -X github.com/hydradatabase/pgxm/pgxm.Version=$BUILD_VERSION" \
-    ./cmd/pgxpack/...
+    ./cmd/pgxman-pack/...
 
 FROM ubuntu:22.04
 

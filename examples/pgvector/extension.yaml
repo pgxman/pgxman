@@ -14,7 +14,7 @@ arch:
   - amd64
   - arm64
 
-install: |
+build: |
   make
   DESTDIR=${DESTDIR} make install
 

@@ -57,7 +57,7 @@ The `extension.yaml` file is a configuration file in YAML format, used by `pgxm`
 The following is an example:
 
 ```yaml
-install: |
+build: |
   make
   DESTDIR=${DESTDIR} make install
 ```

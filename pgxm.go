@@ -56,7 +56,7 @@ type Extension struct {
 	Source      string       `json:"source"`
 	Version     string       `json:"version"`
 	PGVersions  []PGVersion  `json:"pgVersions"`
-	Install     string       `json:"install"`
+	Build       string       `json:"build"`
 	Maintainers []Maintainer `json:"maintainers"`
 
 	// optional
@@ -122,8 +122,8 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("pgVersions is required")
 	}
 
-	if ext.Install == "" {
-		return fmt.Errorf("install is required")
+	if ext.Build == "" {
+		return fmt.Errorf("build is required")
 	}
 
 	if len(ext.Maintainers) == 0 {

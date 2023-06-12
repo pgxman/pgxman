@@ -8,7 +8,7 @@ FROM $BUILD_IMAGE as build
 COPY extension.yaml /workspace/extension.yaml
 WORKDIR /workspace
 
-RUN pgxpack
+RUN pgxman-pack
 
 FROM scratch AS export
 

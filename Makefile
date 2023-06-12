@@ -3,7 +3,12 @@ SHELL=/bin/bash -eo pipefail
 .PHONY: build
 build:
 	go build -o build/pgxman ./cmd/pgxman
-	go build -o build/pgxpack ./cmd/pgxpack
+	go build -o build/pgxman-pack ./cmd/pgxman-pack
+
+.PHONY: install
+install:
+	go install ./cmd/pgxman
+	go install ./cmd/pgxman-pack
 
 REPO ?= ghcr.io/hydradatabase/pgxm/builder
 .PHONY: docker_build
