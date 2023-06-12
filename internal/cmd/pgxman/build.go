@@ -1,11 +1,11 @@
-package pgxm
+package pgxman
 
 import (
 	"os"
 	"path/filepath"
 
-	"github.com/hydradatabase/pgxm"
-	"github.com/hydradatabase/pgxm/internal/cmd"
+	"github.com/hydradatabase/pgxman"
+	"github.com/hydradatabase/pgxman/internal/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -33,11 +33,11 @@ func runBuild(c *cobra.Command, args []string) error {
 
 	overrides := cmd.ParseMapFlag(flagSet)
 
-	ext, err := pgxm.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), overrides)
+	ext, err := pgxman.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), overrides)
 	if err != nil {
 		return err
 	}
 
-	builder := pgxm.NewBuilder(pwd)
+	builder := pgxman.NewBuilder(pwd)
 	return builder.Build(c.Context(), ext)
 }

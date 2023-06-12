@@ -1,10 +1,10 @@
-package pgxpack
+package pgxmanpack
 
 import (
 	"os"
 	"path/filepath"
 
-	"github.com/hydradatabase/pgxm"
+	"github.com/hydradatabase/pgxman"
 	"github.com/spf13/cobra"
 )
 
@@ -12,19 +12,19 @@ func Execute() error {
 	root := &cobra.Command{
 		Use:     "pgxpack",
 		Short:   "PostgreSQL Extension Packager",
-		Version: pgxm.Version,
+		Version: pgxman.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			pwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			ext, err := pgxm.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), nil)
+			ext, err := pgxman.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), nil)
 			if err != nil {
 				return err
 			}
 
-			pack := pgxm.NewPackager(pwd)
+			pack := pgxman.NewPackager(pwd)
 			return pack.Package(cmd.Context(), ext)
 		},
 	}

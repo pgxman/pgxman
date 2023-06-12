@@ -1,4 +1,4 @@
-package pgxm
+package pgxman
 
 import (
 	"testing"

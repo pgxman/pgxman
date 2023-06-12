@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pgvector
-Source: https://github.com/hydradatabase/pgxm
+Source: https://github.com/hydradatabase/pgxman
 
 Files: *
 Copyright: 2023, Hydra Inc.

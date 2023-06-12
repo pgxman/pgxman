@@ -1,4 +1,4 @@
-package pgxm
+package pgxman
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hydradatabase/pgxm/internal/log"
+	"github.com/hydradatabase/pgxman/internal/log"
 	"github.com/imdario/mergo"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/yaml"

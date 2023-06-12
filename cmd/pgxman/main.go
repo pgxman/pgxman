@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hydradatabase/pgxm/internal/cmd/pgxm"
+	"github.com/hydradatabase/pgxman/internal/cmd/pgxman"
 )
 
 func main() {
-	if err := pgxm.Execute(); err != nil {
+	if err := pgxman.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}

@@ -1,8 +1,8 @@
-# pgxm - PostgreSQL Extension Manager
+# PGXMan - PostgreSQL Extension Manager
 
-Welcome to `pgxm`!
-This robust tool is designed to streamline your PostgreSQL extensions management, making the tasks of building, packaging, and installing them a breeze.
-`pgxm` is a crucial ally for both extension developers and PostgreSQL users seeking to augment their database capabilities.
+Welcome to PGXMan!
+This robust tool is designed to streamline your PostgreSQL Extensions management, making the tasks of building, packaging, and installing them a breeze.
+PGXman is a crucial ally for both extension developers and PostgreSQL users seeking to augment their database capabilities.
 It effectively simplifies your workflow and reduces the intricacies of extension management.
 
 ## Building a PostgreSQL extension
@@ -10,7 +10,7 @@ It effectively simplifies your workflow and reduces the intricacies of extension
 The process of building an extension involves a few key steps.
 Let's walk through an example where we're building the [pgvector](https://github.com/pgvector/pgvector) extension.
 
-First, create a new `pgxm` buildkit:
+First, create a new `pgxman` buildkit:
 
 ```console
 pgxm buildkit new pgvector
@@ -58,7 +58,7 @@ out
 3 directories, 4 files
 ```
 
-To make the built extension available for others to use, publish it to the `pgxm` hub:
+To make the built extension available for others to use, publish it to the `pgxman` hub:
 
 ```console
 pgxm publish
@@ -66,7 +66,7 @@ pgxm publish
 
 ## Installing a PostgreSQL extension
 
-With `pgxm`, installing an extension is straightforward. You just need to specify the extension name and the version number. For example, to install version 0.4.2 of `pgvector`, use this command:
+With `pgxman`, installing an extension is straightforward. You just need to specify the extension name and the version number. For example, to install version 0.4.2 of `pgvector`, use this command:
 
 ```console
 pgxm install pgvector@0.4.2

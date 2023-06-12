@@ -1,7 +1,7 @@
-package pgxm
+package pgxman
 
 import (
-	"github.com/hydradatabase/pgxm"
+	pgxm "github.com/hydradatabase/pgxman"
 	"github.com/spf13/cobra"
 )
 

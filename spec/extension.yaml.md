@@ -1,6 +1,6 @@
 # `extension.yaml` Specification
 
-The `extension.yaml` file is a configuration file in YAML format, used by `pgxm` to specify how a PostgreSQL extension should be built and installed.
+The `extension.yaml` file is a configuration file in YAML format, used by `pgxman` to specify how a PostgreSQL extension should be built and installed.
 
 ## `apiVersion`
 
@@ -112,6 +112,6 @@ build: |
 
 ## `keywords`
 
-- **Description**: Specifies a list of keywords relevant to the extension. These keywords can enhance the extension's discoverability through searches within the `pgxm` tool.
+- **Description**: Specifies a list of keywords relevant to the extension. These keywords can enhance the extension's discoverability through searches within the `pgxman` tool.
 - **Type**: List of strings
 - **Required**: No

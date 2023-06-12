@@ -1,4 +1,4 @@
-package pgxm
+package pgxman
 
 import (
 	"context"
@@ -12,9 +12,9 @@ import (
 	"text/template"
 	"time"
 
-	tmpl "github.com/hydradatabase/pgxm/internal/template"
-	"github.com/hydradatabase/pgxm/internal/template/debian"
-	"github.com/hydradatabase/pgxm/internal/template/docker"
+	tmpl "github.com/hydradatabase/pgxman/internal/template"
+	"github.com/hydradatabase/pgxman/internal/template/debian"
+	"github.com/hydradatabase/pgxman/internal/template/docker"
 	"github.com/mholt/archiver/v3"
 	cp "github.com/otiai10/copy"
 	"golang.org/x/exp/slog"
