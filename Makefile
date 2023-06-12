@@ -2,7 +2,7 @@ SHELL=/bin/bash -eo pipefail
 
 .PHONY: build
 build:
-	go build -o build/pgxm ./cmd/pgxm
+	go build -o build/pgxman ./cmd/pgxman
 	go build -o build/pgxpack ./cmd/pgxpack
 
 REPO ?= ghcr.io/hydradatabase/pgxm/builder
