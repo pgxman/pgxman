@@ -307,20 +307,18 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	if err := cp.Copy(
-		src,
-		dst,
-		cp.Options{
-			Skip: func(fi os.FileInfo, src, dest string) (bool, error) {
-				if fi.IsDir() {
-					return false, nil
-				}
+	matches, err := filepath.Glob(filepath.Join(src, "/*/*.deb"))
+	if err != nil {
+		return fmt.Errorf("failed to glob built extensions: %w", err)
+	}
 
-				return filepath.Ext(fi.Name()) != ".deb", nil
-			},
-		},
-	); err != nil {
-		return fmt.Errorf("failed to copy built extensions: %w", err)
+	for _, match := range matches {
+		if err := cp.Copy(
+			match,
+			filepath.Join(dst, filepath.Base(match)),
+		); err != nil {
+			return fmt.Errorf("failed to copy built extensions: %w", err)
+		}
 	}
 
 	return nil
