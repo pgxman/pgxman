@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 9), postgresql-server-dev-all (>= 158~)
 Standards-Version: 3.9.7
 Homepage: <insert the upstream URL, if relevant>
 
-Package: postgresql-PGVERSION-pgxm-pgvector
+Package: postgresql-PGVERSION-pgxman-pgvector
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-PGVERSION
 Description: <insert up to 60 chars description>

@@ -64,6 +64,7 @@ var debianPackageFuncMap = template.FuncMap{
 type debianPackager struct {
 	workDir string
 	logger  *slog.Logger
+	debug   bool
 }
 
 // Package generates the following folder structure:
@@ -218,14 +219,19 @@ func (d debianPackageTemplate) Apply(content []byte, out io.Writer) error {
 type debianBuilder struct {
 	extDir string
 	logger *slog.Logger
+	debug  bool
 }
 
 func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
-	workDir, err := os.MkdirTemp("", "pgxm-build")
+	workDir, err := os.MkdirTemp("", "pgxman-build")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	defer os.Remove(workDir)
+	defer func() {
+		if !b.debug {
+			os.Remove(workDir)
+		}
+	}()
 
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("failed to generate debian package: %w", err)
@@ -307,7 +313,7 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	matches, err := filepath.Glob(filepath.Join(src, "/*/*.deb"))
+	matches, err := filepathWalkMatch(src, "*.deb")
 	if err != nil {
 		return fmt.Errorf("failed to glob built extensions: %w", err)
 	}
@@ -331,4 +337,28 @@ func dockerPlatform(ext Extension) string {
 	}
 
 	return strings.Join(platform, ",")
+}
+
+func filepathWalkMatch(root, pattern string) ([]string, error) {
+	var matches []string
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if matched, err := filepath.Match(pattern, filepath.Base(path)); err != nil {
+			return err
+		} else if matched {
+			matches = append(matches, path)
+		}
+
+		return nil
+	})
+
+	return matches, err
 }

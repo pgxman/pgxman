@@ -5,14 +5,25 @@ import (
 	"path/filepath"
 
 	"github.com/hydradatabase/pgxman"
+	"github.com/hydradatabase/pgxman/internal/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
+)
+
+var (
+	flagDebug bool
 )
 
 func Execute() error {
 	root := &cobra.Command{
-		Use:     "pgxpack",
+		Use:     "pgxman-pack",
 		Short:   "PostgreSQL Extension Packager",
 		Version: pgxman.Version,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if flagDebug {
+				log.SetLevel(slog.LevelDebug)
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			pwd, err := os.Getwd()
 			if err != nil {
@@ -24,10 +35,12 @@ func Execute() error {
 				return err
 			}
 
-			pack := pgxman.NewPackager(pwd)
+			pack := pgxman.NewPackager(pwd, flagDebug)
 			return pack.Package(cmd.Context(), ext)
 		},
 	}
+
+	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 
 	return root.Execute()
 }

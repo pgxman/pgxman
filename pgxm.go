@@ -216,10 +216,11 @@ type Deb struct {
 	Dependencies      []string `json:"dependencies,omitempty"`
 }
 
-func NewPackager(workDir string) Packager {
+func NewPackager(workDir string, debug bool) Packager {
 	return &debianPackager{
 		workDir: workDir,
 		logger:  log.NewTextLogger(),
+		debug:   debug,
 	}
 }
 
@@ -227,10 +228,11 @@ type Packager interface {
 	Package(ctx context.Context, ext Extension) error
 }
 
-func NewBuilder(extDir string) Builder {
+func NewBuilder(extDir string, debug bool) Builder {
 	return &debianBuilder{
 		extDir: extDir,
 		logger: log.NewTextLogger(),
+		debug:  debug,
 	}
 }
 

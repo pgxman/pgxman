@@ -6,7 +6,7 @@ Build-Depends: {{ buildDeps . }}
 Standards-Version: 3.9.7
 Homepage: {{ .Homepage }}
 
-Package: postgresql-PGVERSION-pgxm-{{ .Name }}
+Package: postgresql-PGVERSION-pgxman-{{ .Name }}
 Architecture: any
 Depends: {{ deps . }}, postgresql-PGVERSION
 Description: {{ .Description }}
