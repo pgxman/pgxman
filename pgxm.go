@@ -14,6 +14,15 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+func WriteExtensionFile(path string, ext Extension) error {
+	b, err := yaml.Marshal(ext)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, b, 0644)
+}
+
 func ReadExtensionFile(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
@@ -72,7 +81,7 @@ type Extension struct {
 	BuildImage        string     `json:"buildImage,omitempty"`
 
 	// override
-	Deb Deb `json:"deb,omitempty"`
+	Deb *Deb `json:"deb,omitempty"`
 
 	// internal
 	ConfigSHA string `json:"configSHA,omitempty"`
