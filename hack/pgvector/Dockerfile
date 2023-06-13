@@ -40,8 +40,8 @@ ARG TARGETOS TARGETARCH
 ARG POSTGRES_VERSION=14
 
 RUN mkdir -p /workspace/build/src && \
-    curl -sL https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.2.tar.gz -o /workspace/pgvector_0.4.2.orig.tar.gz && \
-    tar xf /workspace/pgvector_0.4.2.orig.tar.gz -C /workspace/build/src --strip-components 1
+  curl -sL https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.2.tar.gz -o /workspace/pgvector_0.4.2.orig.tar.gz && \
+  tar xf /workspace/pgvector_0.4.2.orig.tar.gz -C /workspace/build/src --strip-components 1
 
 COPY build/debian /workspace/build/debian
 COPY build/Makefile /workspace/build/Makefile
@@ -49,19 +49,16 @@ COPY build/buildkit /workspace/build/buildkit
 
 WORKDIR /workspace/build
 
-ENV DESTDIR /pg_ext
-ENV POSTGRES_VERSION ${POSTGRES_VERSION}
-
 RUN pg_buildext updatecontrol
 RUN debuild \
-    --prepend-path /usr/local/bin \
-    --preserve-envvar CONF_EXTRA_VERSION \
-    --preserve-envvar UNENCRYPTED_PACKAGE \
-    --preserve-envvar PACKAGE_ENCRYPTION_KEY \
-    --preserve-envvar MSRUSTUP_PAT \
-    --preserve-envvar MSCODEHUB_USERNAME \
-    --preserve-envvar MSCODEHUB_PASSWORD \
-    -uc -us -B --lintian-opts --profile debian --allow-root
+  --prepend-path /usr/local/bin \
+  --preserve-envvar CONF_EXTRA_VERSION \
+  --preserve-envvar UNENCRYPTED_PACKAGE \
+  --preserve-envvar PACKAGE_ENCRYPTION_KEY \
+  --preserve-envvar MSRUSTUP_PAT \
+  --preserve-envvar MSCODEHUB_USERNAME \
+  --preserve-envvar MSCODEHUB_PASSWORD \
+  -uc -us -B --lintian-opts --profile debian --allow-root
 
 FROM scratch AS export
 

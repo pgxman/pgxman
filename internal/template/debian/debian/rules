@@ -24,7 +24,7 @@ override_dh_auto_test:
 	# nothing to do here
 
 override_dh_auto_install:
-	+pg_buildext loop . postgresql-%v-pgxman-pgvector
+	+pg_buildext loop . postgresql-%v-pgxman-{{ .Name }}
 
 %:
 	dh $@

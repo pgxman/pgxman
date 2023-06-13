@@ -5,7 +5,7 @@ build:
 
 .PHONY: install
 install:
-	cd src && $(CURDIR)/buildkit/install
+	cd src && bash $(CURDIR)/script/build
 
 .PHONY: clean
 clean:

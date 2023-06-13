@@ -4,4 +4,5 @@ set -eo pipefail
 
 echo "---> Installing pgvector"
 
-make install
+make
+DESTDIR=${DESTDIR} make install
