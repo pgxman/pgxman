@@ -1,7 +1,6 @@
 package pgxman
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"os"
 
@@ -9,7 +8,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func WriteExtensionFile(path string, ext Extension) error {
+func WriteExtension(path string, ext Extension) error {
 	b, err := yaml.Marshal(ext)
 	if err != nil {
 		return err
@@ -18,11 +17,11 @@ func WriteExtensionFile(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func ReadExtensionFile(path string, overrides map[string]any) (Extension, error) {
+func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
 	if _, err := os.Stat(path); err != nil {
-		return ext, fmt.Errorf("extension.yaml not found in current directory")
+		return ext, fmt.Errorf("%s not found: %w", path, err)
 	}
 
 	b, err := os.ReadFile(path)
@@ -30,9 +29,11 @@ func ReadExtensionFile(path string, overrides map[string]any) (Extension, error)
 		return ext, err
 	}
 
-	b, err = overrideYamlFields(b, overrides)
-	if err != nil {
-		return ext, err
+	if len(overrides) > 0 {
+		b, err = overrideYamlFields(b, overrides)
+		if err != nil {
+			return ext, err
+		}
 	}
 
 	if err := yaml.Unmarshal(b, &ext); err != nil {
@@ -40,8 +41,6 @@ func ReadExtensionFile(path string, overrides map[string]any) (Extension, error)
 	}
 
 	ext.WithDefaults()
-	ext.ConfigSHA = fmt.Sprintf("%x", sha1.Sum(b))
-
 	if err := ext.Validate(); err != nil {
 		return ext, fmt.Errorf("invalid extension: %w", err)
 	}
@@ -50,10 +49,6 @@ func ReadExtensionFile(path string, overrides map[string]any) (Extension, error)
 }
 
 func overrideYamlFields(b []byte, overrides map[string]any) ([]byte, error) {
-	if len(overrides) == 0 {
-		return b, nil
-	}
-
 	src := make(map[string]any)
 	if err := yaml.Unmarshal(b, &src); err != nil {
 		return nil, err

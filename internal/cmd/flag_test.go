@@ -3,11 +3,11 @@ package cmd
 import (
 	"testing"
 
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ParseMapFlag(t *testing.T) {
-	is := is.New(t)
+	assert := assert.New(t)
 
 	cases := []struct {
 		Name string
@@ -41,7 +41,7 @@ func Test_ParseMapFlag(t *testing.T) {
 			t.Parallel()
 
 			out := ParseMapFlag(c.In)
-			is.Equal(c.Out, out)
+			assert.Equal(c.Out, out)
 		})
 	}
 

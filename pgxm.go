@@ -38,9 +38,6 @@ type Extension struct {
 
 	// override
 	Deb *Deb `json:"deb,omitempty"`
-
-	// internal
-	ConfigSHA string `json:"configSHA,omitempty"`
 }
 
 func (ext *Extension) WithDefaults() *Extension {
@@ -179,18 +176,6 @@ type Maintainer struct {
 type Deb struct {
 	BuildDependencies []string `json:"buildDependencies,omitempty"`
 	Dependencies      []string `json:"dependencies,omitempty"`
-}
-
-func NewPackager(workDir string, debug bool) Packager {
-	return &debianPackager{
-		workDir: workDir,
-		logger:  log.NewTextLogger(),
-		debug:   debug,
-	}
-}
-
-type Packager interface {
-	Package(ctx context.Context, ext Extension) error
 }
 
 func NewBuilder(extDir string, debug bool) Builder {

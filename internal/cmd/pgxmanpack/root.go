@@ -30,7 +30,7 @@ func Execute() error {
 				return err
 			}
 
-			ext, err := pgxman.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), nil)
+			ext, err := pgxman.ReadExtension(filepath.Join(pwd, "extension.yaml"), nil)
 			if err != nil {
 				return err
 			}

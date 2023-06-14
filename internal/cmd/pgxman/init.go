@@ -166,7 +166,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				m.done = true
 
-				if err := pgxman.WriteExtensionFile("extension.yaml", *m.ext); err != nil {
+				if err := pgxman.WriteExtension("extension.yaml", *m.ext); err != nil {
 					m.err = err
 				}
 

@@ -10,6 +10,11 @@ install:
 	go install ./cmd/pgxman
 	go install ./cmd/pgxman-pack
 
+GO_TEST_FLAGS ?=
+.PHONY: test
+test:
+	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
+
 REPO ?= ghcr.io/hydradatabase/pgxm/builder
 .PHONY: docker_build
 docker_build:

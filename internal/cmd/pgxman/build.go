@@ -33,7 +33,7 @@ func runBuild(c *cobra.Command, args []string) error {
 
 	overrides := cmd.ParseMapFlag(flagBuildSet)
 
-	ext, err := pgxman.ReadExtensionFile(filepath.Join(pwd, "extension.yaml"), overrides)
+	ext, err := pgxman.ReadExtension(filepath.Join(pwd, "extension.yaml"), overrides)
 	if err != nil {
 		return err
 	}
