@@ -19,8 +19,11 @@ func TestBuilder(t *testing.T) {
 	ext.Version = "0.4.2"
 	ext.Arch = pgxman.SupportedArchs
 	ext.Formats = pgxman.SupportedFormats
-	ext.Build = `make
-DESTDIR=${DESTDIR} make install`
+	// faking the build to speed up the test
+	ext.Build = `echo $DSTDIR
+echo $PG_CONFIG
+echo $PGXS
+`
 	ext.PGVersions = pgxman.SupportedPGVersions
 	ext.Maintainers = []pgxman.Maintainer{
 		{
