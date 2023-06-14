@@ -85,9 +85,9 @@ func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 }
 
 func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {
-	dockerBuild := exec.CommandContext(
-		ctx,
-		"docker",
+	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+
+	commonArgs := []string{
 		"buildx",
 		"build",
 		"--build-arg",
@@ -96,18 +96,44 @@ func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
 		"--platform",
 		dockerPlatform(ext),
+	}
+	buildArgs := append(
+		commonArgs,
 		"--output",
 		"out",
 		".",
 	)
-	dockerBuild.Dir = dstDir
-	dockerBuild.Stdout = os.Stdout
-	dockerBuild.Stderr = os.Stderr
 
-	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.String("command", dockerBuild.String()))
-	logger.Debug("Running Docker build")
-	if err := dockerBuild.Run(); err != nil {
-		return err
+	toBuild := [][]string{buildArgs}
+	if b.debug {
+		tag := fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, ext.Version)
+		debugBuildArgs := append(
+			commonArgs,
+			"--tag",
+			tag,
+			"--target",
+			"build",
+			"--load",
+			".",
+		)
+		toBuild = append(toBuild, debugBuildArgs)
+		logger.Debug("Docker debug build enabled", slog.String("tag", tag))
+	}
+
+	for _, args := range toBuild {
+		dockerBuild := exec.CommandContext(
+			ctx,
+			"docker",
+			args...,
+		)
+		dockerBuild.Dir = dstDir
+		dockerBuild.Stdout = os.Stdout
+		dockerBuild.Stderr = os.Stderr
+
+		logger.Debug("Docekr build", slog.String("command", dockerBuild.String()))
+		if err := dockerBuild.Run(); err != nil {
+			return err
+		}
 	}
 
 	return nil
