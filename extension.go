@@ -8,9 +8,20 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
-	defaultBuildImage = "ghcr.io/hydradatabase/pgxm/builder"
+var (
+	DefaultBuildImage = fmt.Sprintf("ghcr.io/hydradatabase/pgxm/builder:%s", Version)
 )
+
+func NewDefaultExtension() Extension {
+	return Extension{
+		APIVersion: DefaultAPIVersion,
+		PGVersions: SupportedPGVersions,
+		Platform:   []Platform{PlatformLinux},
+		Arch:       []Arch{Arch(runtime.GOARCH)},
+		Formats:    []Format{FormatDeb},
+		BuildImage: DefaultBuildImage,
+	}
+}
 
 type Extension struct {
 	// required
@@ -38,28 +49,8 @@ type Extension struct {
 	Deb *Deb `json:"deb,omitempty"`
 }
 
-func (ext *Extension) WithDefaults() *Extension {
-	if len(ext.PGVersions) == 0 {
-		ext.PGVersions = SupportedPGVersions
-	}
-
-	if len(ext.Platform) == 0 {
-		ext.Platform = []Platform{PlatformLinux}
-	}
-
-	if len(ext.Arch) == 0 {
-		ext.Arch = []Arch{Arch(runtime.GOARCH)}
-	}
-
-	if ext.BuildImage == "" {
-		ext.BuildImage = fmt.Sprintf("%s:%s", defaultBuildImage, Version)
-	}
-
-	return ext
-}
-
 func (ext Extension) Validate() error {
-	if ext.APIVersion != APIVersion {
+	if ext.APIVersion != DefaultAPIVersion {
 		return fmt.Errorf("invalid api version: %s", ext.APIVersion)
 	}
 
@@ -121,7 +112,7 @@ func (ext Extension) Validate() error {
 	return nil
 }
 
-const APIVersion = "v1"
+const DefaultAPIVersion = "v1"
 
 type Arch string
 

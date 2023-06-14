@@ -40,7 +40,10 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 		return ext, err
 	}
 
-	ext.WithDefaults()
+	if err := mergo.Merge(&ext, NewDefaultExtension()); err != nil {
+		return ext, err
+	}
+
 	if err := ext.Validate(); err != nil {
 		return ext, fmt.Errorf("invalid extension: %w", err)
 	}

@@ -36,7 +36,7 @@ func runInit(c *cobra.Command, args []string) error {
 	}
 
 	ext := &pgxman.Extension{
-		APIVersion: pgxman.APIVersion,
+		APIVersion: pgxman.DefaultAPIVersion,
 		Name:       filepath.Base(pwd),
 		Build: `# Uncomment to write the build script for the extension.
 # The built extension must be installed in the $DESTDIR directory.
