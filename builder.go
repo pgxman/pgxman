@@ -9,12 +9,25 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hydradatabase/pgxman/internal/log"
 	tmpl "github.com/hydradatabase/pgxman/internal/template"
 	"github.com/hydradatabase/pgxman/internal/template/docker"
 	cp "github.com/otiai10/copy"
 	"golang.org/x/exp/slog"
 	"sigs.k8s.io/yaml"
 )
+
+func NewBuilder(extDir string, debug bool) Builder {
+	return &debianBuilder{
+		extDir: extDir,
+		logger: log.NewTextLogger(),
+		debug:  debug,
+	}
+}
+
+type Builder interface {
+	Build(ctx context.Context, ext Extension) error
+}
 
 type debianBuilder struct {
 	extDir string
@@ -25,7 +38,7 @@ type debianBuilder struct {
 func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 	workDir, err := os.MkdirTemp("", "pgxman-build")
 	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
+		return fmt.Errorf("create work directory: %w", err)
 	}
 	defer func() {
 		if !b.debug {
@@ -34,19 +47,19 @@ func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 	}()
 
 	if err := b.generateDockerFile(ext, workDir); err != nil {
-		return fmt.Errorf("failed to generate debian package: %w", err)
+		return fmt.Errorf("generate Dockerfile: %w", err)
 	}
 
 	if err := b.generateExtensionFile(ext, workDir); err != nil {
-		return fmt.Errorf("failed to generate debian package: %w", err)
+		return fmt.Errorf("generate extension file: %w", err)
 	}
 
 	if err := b.runDockerBuild(ctx, ext, workDir); err != nil {
-		return fmt.Errorf("failed to run docker build: %w", err)
+		return fmt.Errorf("docker build: %w", err)
 	}
 
 	if err := b.copyBuild(ctx, workDir, b.extDir); err != nil {
-		return fmt.Errorf("failed to run docker build: %w", err)
+		return fmt.Errorf("copy build: %w", err)
 	}
 
 	return nil
@@ -65,7 +78,7 @@ func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 
 	e, err := yaml.Marshal(ext)
 	if err != nil {
-		return fmt.Errorf("failed to marshal extension: %w", err)
+		return fmt.Errorf("marshal extension: %w", err)
 	}
 
 	return os.WriteFile(filepath.Join(dstDir, "extension.yaml"), e, 0644)
@@ -94,7 +107,7 @@ func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.String("command", dockerBuild.String()))
 	logger.Debug("Running Docker build")
 	if err := dockerBuild.Run(); err != nil {
-		return fmt.Errorf("failed to run docker build: %w", err)
+		return err
 	}
 
 	return nil
@@ -110,12 +123,12 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	)
 
 	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return fmt.Errorf("create output directory: %w", err)
 	}
 
 	matches, err := filepathWalkMatch(src, "*.deb")
 	if err != nil {
-		return fmt.Errorf("failed to glob built extensions: %w", err)
+		return fmt.Errorf("glob built extensions: %w", err)
 	}
 
 	for _, match := range matches {
@@ -123,7 +136,7 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 			match,
 			filepath.Join(dst, filepath.Base(match)),
 		); err != nil {
-			return fmt.Errorf("failed to copy built extensions: %w", err)
+			return fmt.Errorf("copy built extension %s: %w", match, err)
 		}
 	}
 

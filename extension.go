@@ -1,12 +1,10 @@
 package pgxman
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"strings"
 
-	"github.com/hydradatabase/pgxman/internal/log"
 	"golang.org/x/exp/slices"
 )
 
@@ -176,16 +174,4 @@ type Maintainer struct {
 type Deb struct {
 	BuildDependencies []string `json:"buildDependencies,omitempty"`
 	Dependencies      []string `json:"dependencies,omitempty"`
-}
-
-func NewBuilder(extDir string, debug bool) Builder {
-	return &debianBuilder{
-		extDir: extDir,
-		logger: log.NewTextLogger(),
-		debug:  debug,
-	}
-}
-
-type Builder interface {
-	Build(ctx context.Context, ext Extension) error
 }

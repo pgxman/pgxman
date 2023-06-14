@@ -52,7 +52,7 @@ func Test_debianPackageTemplater(t *testing.T) {
 
 			buf := bytes.NewBuffer(nil)
 
-			err := debianPackageTemplater{ext}.Apply([]byte(c.Content), buf)
+			err := debianPackageTemplater{ext}.Render([]byte(c.Content), buf)
 			assert.NoError(err)
 			assert.Equal(c.WantContent, buf.String())
 		})

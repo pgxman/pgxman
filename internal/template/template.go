@@ -10,7 +10,7 @@ import (
 )
 
 type Templater interface {
-	Apply(content []byte, out io.Writer) error
+	Render(content []byte, out io.Writer) error
 }
 
 func Export(f fs.ReadFileFS, t Templater, dstDir string) error {
@@ -29,32 +29,33 @@ func Export(f fs.ReadFileFS, t Templater, dstDir string) error {
 			return nil
 		}
 
+		// ignore embed.go
 		if filepath.Base(path) == "embed.go" {
 			return nil
 		}
 
 		b, err := f.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("cannot read file %w", err)
+			return fmt.Errorf("read file %w", err)
 		}
 
 		out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
-			return fmt.Errorf("cannot create dst file %w", err)
+			return fmt.Errorf("create destination file %w", err)
 		}
 
 		if t == nil {
 			if _, err := io.Copy(out, bytes.NewReader(b)); err != nil {
-				return fmt.Errorf("cannot copy file %w", err)
+				return fmt.Errorf("copy file %w", err)
 			}
 		} else {
-			if err := t.Apply(b, out); err != nil {
-				return fmt.Errorf("cannot apply template: %w", err)
+			if err := t.Render(b, out); err != nil {
+				return fmt.Errorf("render template: %w", err)
 			}
 		}
 
 		if err = out.Close(); err != nil {
-			return fmt.Errorf("cannot close dst file %w", err)
+			return fmt.Errorf("close destination file %w", err)
 		}
 
 		return nil

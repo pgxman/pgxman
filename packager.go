@@ -56,19 +56,19 @@ func (p *debianPackager) Package(ctx context.Context, ext Extension) error {
 
 	sourceFile, err := p.downloadSource(ctx, ext, workDir)
 	if err != nil {
-		return fmt.Errorf("failed to download source: %w", err)
+		return fmt.Errorf("download source %s: %w", ext.Source, err)
 	}
 
 	if err := p.unarchiveSource(ctx, sourceFile, extDir); err != nil {
-		return fmt.Errorf("failed to unarchive source: %w", err)
+		return fmt.Errorf("unarchive source: %w", err)
 	}
 
-	if err := p.generateDebian(ext, extDir); err != nil {
-		return fmt.Errorf("failed to generate debian package: %w", err)
+	if err := p.generateDebianTemplate(ext, extDir); err != nil {
+		return fmt.Errorf("generate debian template: %w", err)
 	}
 
 	if err := p.buildDebian(ctx, ext, extDir); err != nil {
-		return fmt.Errorf("failed to run packaging: %w", err)
+		return fmt.Errorf("debian build: %w", err)
 	}
 
 	return nil
@@ -114,7 +114,7 @@ func (p *debianPackager) unarchiveSource(ctx context.Context, sourceFile, dstDir
 
 	c, ok := ar.(archiver.Unarchiver)
 	if !ok {
-		return fmt.Errorf("format specified by source filename is not an archive format: %s", sourceFile)
+		return fmt.Errorf("source is not an archive format: %s", sourceFile)
 	}
 
 	// TODO: support more archive types
@@ -126,7 +126,7 @@ func (p *debianPackager) unarchiveSource(ctx context.Context, sourceFile, dstDir
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-func (p *debianPackager) generateDebian(ext Extension, dstDir string) error {
+func (p *debianPackager) generateDebianTemplate(ext Extension, dstDir string) error {
 	logger := p.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Info("Generating debian package")
 
@@ -143,7 +143,7 @@ func (p *debianPackager) buildDebian(ctx context.Context, ext Extension, extDir 
 	buildext.Stderr = os.Stderr
 
 	if err := buildext.Run(); err != nil {
-		return fmt.Errorf("failed to run pg_buildext updatecontrol: %w", err)
+		return fmt.Errorf("pg_buildext updatecontrol: %w", err)
 	}
 
 	debuild := exec.CommandContext(
@@ -163,7 +163,7 @@ func (p *debianPackager) buildDebian(ctx context.Context, ext Extension, extDir 
 	debuild.Stderr = os.Stderr
 
 	if err := debuild.Run(); err != nil {
-		return fmt.Errorf("failed to run debuild: %w", err)
+		return fmt.Errorf("debuild: %w", err)
 	}
 
 	return nil
@@ -219,14 +219,14 @@ type debianPackageTemplater struct {
 	ext Extension
 }
 
-func (d debianPackageTemplater) Apply(content []byte, out io.Writer) error {
+func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	t, err := template.New("").Parse(string(content))
 	if err != nil {
-		return fmt.Errorf("cannot parse template: %w", err)
+		return fmt.Errorf("parse template: %w", err)
 	}
 
 	if err := t.Execute(out, extensionData{d.ext}); err != nil {
-		return fmt.Errorf("cannot execute template: %w", err)
+		return fmt.Errorf("execute template: %w", err)
 	}
 
 	return nil
