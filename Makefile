@@ -15,6 +15,10 @@ GO_TEST_FLAGS ?=
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
 
+.PHONY: e2etest
+e2etest:
+	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image owenthereal/pgxman-builder
+
 REPO ?= ghcr.io/hydradatabase/pgxm/builder
 .PHONY: docker_build
 docker_build:

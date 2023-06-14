@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hydradatabase/pgxman/internal/filepathx"
 	"github.com/hydradatabase/pgxman/internal/log"
 	tmpl "github.com/hydradatabase/pgxman/internal/template"
 	"github.com/hydradatabase/pgxman/internal/template/docker"
@@ -62,6 +63,12 @@ func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 		return fmt.Errorf("copy build: %w", err)
 	}
 
+	if b.debug {
+		if err := b.runDockerDebugBuild(ctx, ext, workDir); err != nil {
+			return fmt.Errorf("docker debug build: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -85,58 +92,49 @@ func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 }
 
 func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {
-	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
-
-	commonArgs := []string{
-		"buildx",
-		"build",
-		"--build-arg",
-		fmt.Sprintf("BUILD_IMAGE=%s", ext.BuildImage),
-		"--build-arg",
-		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
-		"--platform",
-		dockerPlatform(ext),
-	}
-	buildArgs := append(
-		commonArgs,
-		"--output",
-		"out",
-		".",
+	return b.runDockerCmd(
+		ctx,
+		dstDir,
+		append(
+			dockerBuildCommonArgs(ext),
+			//"--no-cache",
+			"--output",
+			"out",
+			"--platform",
+			dockerPlatforms(ext),
+			".",
+		)...,
 	)
+}
 
-	toBuild := [][]string{buildArgs}
-	if b.debug {
-		tag := fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, ext.Version)
-		debugBuildArgs := append(
-			commonArgs,
+func (b *debianBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, dstDir string) error {
+	return b.runDockerCmd(
+		ctx,
+		dstDir,
+		append(
+			dockerBuildCommonArgs(ext),
 			"--tag",
-			tag,
+			fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, ext.Version),
 			"--target",
 			"build",
 			"--load",
 			".",
-		)
-		toBuild = append(toBuild, debugBuildArgs)
-		logger.Debug("Docker debug build enabled", slog.String("tag", tag))
-	}
+		)...,
+	)
+}
 
-	for _, args := range toBuild {
-		dockerBuild := exec.CommandContext(
-			ctx,
-			"docker",
-			args...,
-		)
-		dockerBuild.Dir = dstDir
-		dockerBuild.Stdout = os.Stdout
-		dockerBuild.Stderr = os.Stderr
+func (b *debianBuilder) runDockerCmd(ctx context.Context, dstDir string, args ...string) error {
+	dockerBuild := exec.CommandContext(
+		ctx,
+		"docker",
+		args...,
+	)
+	dockerBuild.Dir = dstDir
+	dockerBuild.Stdout = os.Stdout
+	dockerBuild.Stderr = os.Stderr
 
-		logger.Debug("Docekr build", slog.String("command", dockerBuild.String()))
-		if err := dockerBuild.Run(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	b.logger.Debug("Running Docker", slog.String("command", dockerBuild.String()))
+	return dockerBuild.Run()
 }
 
 func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) error {
@@ -152,7 +150,7 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	matches, err := filepathWalkMatch(src, "*.deb")
+	matches, err := filepathx.WalkMatch(src, "*.deb")
 	if err != nil {
 		return fmt.Errorf("glob built extensions: %w", err)
 	}
@@ -169,37 +167,28 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	return nil
 }
 
-func dockerPlatform(ext Extension) string {
+func dockerBuildCommonArgs(ext Extension) []string {
+	return []string{
+		"buildx",
+		"build",
+		"--build-arg",
+		fmt.Sprintf("BUILD_IMAGE=%s", ext.BuildImage),
+		"--build-arg",
+		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
+	}
+}
+
+func dockerPlatforms(ext Extension) string {
 	var platform []string
 	for _, arch := range ext.Arch {
-		platform = append(platform, fmt.Sprintf("linux/%s", arch))
+		platform = append(platform, dockerPlatform(arch))
 	}
 
 	return strings.Join(platform, ",")
 }
 
-func filepathWalkMatch(root, pattern string) ([]string, error) {
-	var matches []string
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if matched, err := filepath.Match(pattern, filepath.Base(path)); err != nil {
-			return err
-		} else if matched {
-			matches = append(matches, path)
-		}
-
-		return nil
-	})
-
-	return matches, err
+func dockerPlatform(arch Arch) string {
+	return fmt.Sprintf("linux/%s", arch)
 }
 
 func buildSHA(ext Extension) string {

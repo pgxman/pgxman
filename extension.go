@@ -117,12 +117,12 @@ const DefaultAPIVersion = "v1"
 type Arch string
 
 const (
-	ArchAmd64  Arch = "amd64"
-	ArchAarm64 Arch = "arm64"
+	ArchAmd64 Arch = "amd64"
+	ArchArm64 Arch = "arm64"
 )
 
 var (
-	SupportedArchs = []Arch{ArchAmd64, ArchAarm64}
+	SupportedArchs = []Arch{ArchAmd64, ArchArm64}
 )
 
 type Format string
