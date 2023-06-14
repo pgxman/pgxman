@@ -1,62 +1,27 @@
 package pgxman
 
 import (
-	"context"
-	"crypto/sha1"
 	"fmt"
-	"os"
 	"runtime"
 	"strings"
 
-	"github.com/hydradatabase/pgxman/internal/log"
-	"github.com/imdario/mergo"
 	"golang.org/x/exp/slices"
-	"sigs.k8s.io/yaml"
 )
 
-func WriteExtensionFile(path string, ext Extension) error {
-	b, err := yaml.Marshal(ext)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(path, b, 0644)
-}
-
-func ReadExtensionFile(path string, overrides map[string]any) (Extension, error) {
-	var ext Extension
-
-	if _, err := os.Stat(path); err != nil {
-		return ext, fmt.Errorf("extension.yaml not found in current directory")
-	}
-
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return ext, err
-	}
-
-	b, err = overrideYamlFields(b, overrides)
-	if err != nil {
-		return ext, err
-	}
-
-	if err := yaml.Unmarshal(b, &ext); err != nil {
-		return ext, err
-	}
-
-	ext = ext.WithDefaults()
-	ext.ConfigSHA = fmt.Sprintf("%x", sha1.Sum(b))
-
-	if err := ext.Validate(); err != nil {
-		return ext, fmt.Errorf("invalid extension: %w", err)
-	}
-
-	return ext, nil
-}
-
-const (
-	defaultBuildImage = "ghcr.io/hydradatabase/pgxm/builder"
+var (
+	DefaultBuildImage = fmt.Sprintf("ghcr.io/pgxman/builder:%s", Version)
 )
+
+func NewDefaultExtension() Extension {
+	return Extension{
+		APIVersion: DefaultAPIVersion,
+		PGVersions: SupportedPGVersions,
+		Platform:   []Platform{PlatformLinux},
+		Arch:       []Arch{Arch(runtime.GOARCH)},
+		Formats:    []Format{FormatDeb},
+		BuildImage: DefaultBuildImage,
+	}
+}
 
 type Extension struct {
 	// required
@@ -82,33 +47,10 @@ type Extension struct {
 
 	// override
 	Deb *Deb `json:"deb,omitempty"`
-
-	// internal
-	ConfigSHA string `json:"configSHA,omitempty"`
-}
-
-func (ext *Extension) WithDefaults() Extension {
-	if len(ext.PGVersions) == 0 {
-		ext.PGVersions = SupportedPGVersions
-	}
-
-	if len(ext.Platform) == 0 {
-		ext.Platform = []Platform{PlatformLinux}
-	}
-
-	if len(ext.Arch) == 0 {
-		ext.Arch = []Arch{Arch(runtime.GOARCH)}
-	}
-
-	if ext.BuildImage == "" {
-		ext.BuildImage = fmt.Sprintf("%s:%s", defaultBuildImage, Version)
-	}
-
-	return *ext
 }
 
 func (ext Extension) Validate() error {
-	if ext.APIVersion != APIVersion {
+	if ext.APIVersion != DefaultAPIVersion {
 		return fmt.Errorf("invalid api version: %s", ext.APIVersion)
 	}
 
@@ -170,17 +112,17 @@ func (ext Extension) Validate() error {
 	return nil
 }
 
-const APIVersion = "v1"
+const DefaultAPIVersion = "v1"
 
 type Arch string
 
 const (
-	ArchAmd64  Arch = "amd64"
-	ArchAarm64 Arch = "arm64"
+	ArchAmd64 Arch = "amd64"
+	ArchArm64 Arch = "arm64"
 )
 
 var (
-	SupportedArchs = []Arch{ArchAmd64, ArchAarm64}
+	SupportedArchs = []Arch{ArchAmd64, ArchArm64}
 )
 
 type Format string
@@ -223,45 +165,4 @@ type Maintainer struct {
 type Deb struct {
 	BuildDependencies []string `json:"buildDependencies,omitempty"`
 	Dependencies      []string `json:"dependencies,omitempty"`
-}
-
-func NewPackager(workDir string, debug bool) Packager {
-	return &debianPackager{
-		workDir: workDir,
-		logger:  log.NewTextLogger(),
-		debug:   debug,
-	}
-}
-
-type Packager interface {
-	Package(ctx context.Context, ext Extension) error
-}
-
-func NewBuilder(extDir string, debug bool) Builder {
-	return &debianBuilder{
-		extDir: extDir,
-		logger: log.NewTextLogger(),
-		debug:  debug,
-	}
-}
-
-type Builder interface {
-	Build(ctx context.Context, ext Extension) error
-}
-
-func overrideYamlFields(b []byte, overrides map[string]any) ([]byte, error) {
-	if len(overrides) == 0 {
-		return b, nil
-	}
-
-	src := make(map[string]any)
-	if err := yaml.Unmarshal(b, &src); err != nil {
-		return nil, err
-	}
-
-	if err := mergo.Merge(&overrides, src); err != nil {
-		return nil, err
-	}
-
-	return yaml.Marshal(overrides)
 }

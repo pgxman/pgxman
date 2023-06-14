@@ -3,11 +3,11 @@ package pgxman
 import (
 	"testing"
 
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_overrideYamlFields(t *testing.T) {
-	is := is.New(t)
+	assert := assert.New(t)
 
 	b, err := overrideYamlFields([]byte(`apiVersion: v1
 buildImage: foo
@@ -26,8 +26,8 @@ pgVersions:
 		},
 		"pgVersions": []string{"11", "12"},
 	})
-	is.NoErr(err)
-	is.Equal(`apiVersion: v1
+	assert.NoError(err)
+	assert.Equal(`apiVersion: v1
 buildImage: bar
 maintainers:
 - name: Owen

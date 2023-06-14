@@ -36,7 +36,7 @@ func runInit(c *cobra.Command, args []string) error {
 	}
 
 	ext := &pgxman.Extension{
-		APIVersion: pgxman.APIVersion,
+		APIVersion: pgxman.DefaultAPIVersion,
 		Name:       filepath.Base(pwd),
 		Build: `# Uncomment to write the build script for the extension.
 # The built extension must be installed in the $DESTDIR directory.
@@ -166,7 +166,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				m.done = true
 
-				if err := pgxman.WriteExtensionFile("extension.yaml", *m.ext); err != nil {
+				if err := pgxman.WriteExtension("extension.yaml", *m.ext); err != nil {
 					m.err = err
 				}
 

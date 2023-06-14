@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if err := pgxman.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 		os.Exit(1)
 	}
 }

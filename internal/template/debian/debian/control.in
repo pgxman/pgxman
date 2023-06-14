@@ -1,12 +1,12 @@
 Source: {{ .Name }}
 Section: database
 Priority: optional
-Maintainer: {{ maintainers .Maintainers }}
-Build-Depends: {{ buildDeps . }}
+Maintainer: {{ .Maintainers }}
+Build-Depends: {{ .BuildDeps }}
 Standards-Version: 3.9.7
 Homepage: {{ .Homepage }}
 
 Package: postgresql-PGVERSION-pgxman-{{ .Name }}
 Architecture: any
-Depends: {{ deps . }}, postgresql-PGVERSION
+Depends: {{ .Deps }}, postgresql-PGVERSION
 Description: {{ .Description }}
