@@ -36,7 +36,7 @@ func Execute() error {
 			}
 
 			pack := pgxman.NewPackager(pwd, flagDebug)
-			if pack.Package(cmd.Context(), ext); err != nil {
+			if err := pack.Package(cmd.Context(), ext); err != nil {
 				return err
 			}
 

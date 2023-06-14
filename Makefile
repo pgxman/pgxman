@@ -19,6 +19,16 @@ test:
 e2etest:
 	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image owenthereal/pgxman-builder
 
+.PHONY: vet
+vet:
+	docker \
+		run \
+		--rm \
+		-v $(CURDIR):/app \
+		-w /app \
+		golangci/golangci-lint:latest \
+		golangci-lint run --timeout 5m -v
+
 REPO ?= ghcr.io/hydradatabase/pgxm/builder
 .PHONY: docker_build
 docker_build:
