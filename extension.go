@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	DefaultBuildImage = fmt.Sprintf("ghcr.io/hydradatabase/pgxm/builder:%s", Version)
+	DefaultBuildImage = fmt.Sprintf("ghcr.io/pgxman/builder:%s", Version)
 )
 
 func NewDefaultExtension() Extension {
