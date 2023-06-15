@@ -46,6 +46,7 @@ brews:
   - tap:
       owner: pgxman
       name: homebrew-pgxman
+      token: "{{ .Env.CI_GITHUB_TOKEN }}"
     commit_author:
       name: Owen Ou
       email: o@hydra.so
@@ -53,8 +54,6 @@ brews:
     description: PostgreSQL Extensions Manager
     folder: Formula
     license: "Apache 2.0"
-    repository:
-      token: "{{ .Env.CI_GITHUB_TOKEN }}"
     custom_block: |
       head "https://github.com/pgxman/pgxman.git"
     install: |
