@@ -27,8 +27,6 @@ checksum:
   name_template: "checksums.txt"
 snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
-changelog:
-  skip: true
 release:
   prerelease: auto
   draft: true
@@ -55,6 +53,8 @@ brews:
     description: PostgreSQL Extensions Manager
     folder: Formula
     license: "Apache 2.0"
+    repository:
+      token: "{{ .Env.CI_GITHUB_TOKEN }}"
     custom_block: |
       head "https://github.com/pgxman/pgxman.git"
     install: |
