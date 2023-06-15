@@ -44,3 +44,20 @@ nfpms: #build:linux
     formats:
       - deb
       - rpm
+brews:
+  - tap:
+      owner: pgxman
+      name: homebrew-pgxman
+    commit_author:
+      name: Owen Ou
+      email: o@hydra.so
+    homepage: https://github.com/pgxman/pgxman
+    description: PostgreSQL Extensions Manager
+    folder: Formula
+    license: "Apache 2.0"
+    custom_block: |
+      head "https://github.com/pgxman/pgxman.git"
+    install: |
+      bin.install "bin/pgxman"
+    test: |
+      assert_match(/pgxman version/, shell_output("#{bin}/pgxman --version"))
