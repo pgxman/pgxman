@@ -1,0 +1,46 @@
+project_name: pgxman
+builds:
+  - <<: &build_defaults
+      ldflags:
+        - -s -w -X github.com/hydradatabase/pgxman/pgxm.Version={{.Version}}
+      goos: [darwin, linux]
+      goarch: ["386", "amd64", "arm", "arm64"]
+      env:
+        - CGO_ENABLED=0
+    id: pgxman
+    binary: bin/pgxman
+    main: ./cmd/pgxman
+archives:
+  - id: archive
+    builds: [pgxman]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+    rlcp: true
+    format: tar.gz
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+      - etc/*
+      - docs/pgxman/*
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+changelog:
+  skip: true
+release:
+  prerelease: auto
+  draft: true
+  name_template: "PGXMan {{.Version}}"
+nfpms: #build:linux
+  - license: Apache-2.0
+    maintainer: Owen Ou <o@hydra.so>
+    homepage: https://github.com/pgxman/pgxman
+    bindir: /usr
+    dependencies:
+      - docker.io
+    description: PostgreSQL Extensions Manager
+    formats:
+      - deb
+      - rpm
