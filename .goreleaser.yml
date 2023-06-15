@@ -47,6 +47,8 @@ brews:
       owner: pgxman
       name: homebrew-pgxman
       token: "{{ .Env.CI_GITHUB_TOKEN }}"
+    # TODO: remove after pgxman is public
+    download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
     commit_author:
       name: Owen Ou
       email: o@hydra.so
