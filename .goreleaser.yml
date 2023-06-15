@@ -1,5 +1,4 @@
 project_name: pgxman
-
 builds:
   - <<: &build_defaults
       ldflags:
@@ -11,7 +10,6 @@ builds:
     id: pgxman
     binary: bin/pgxman
     main: ./cmd/pgxman
-
 archives:
   - id: archive
     builds: [pgxman]
@@ -25,21 +23,16 @@ archives:
       - CHANGELOG*
       - etc/*
       - docs/pgxman/*
-
 checksum:
   name_template: "checksums.txt"
-
 snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
-
 changelog:
   skip: true
-
 release:
   prerelease: auto
   draft: true
   name_template: "PGXMan {{.Version}}"
-
 nfpms: #build:linux
   - license: Apache-2.0
     maintainer: Owen Ou <o@hydra.so>
