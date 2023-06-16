@@ -63,7 +63,7 @@ var (
 	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	helpStyle    = blurredStyle.Copy()
 
-	focusedButton = focusedStyle.Copy().Render("[ Done ]")
+	focusedButton = focusedStyle.Copy().Render("> [ Done ]")
 	blurredButton = blurredStyle.Copy().Render("[ Done ]")
 )
 
@@ -141,7 +141,12 @@ func initialModel(ext *pgxman.Extension) model {
 			}
 		}
 
-		t.Prompt = fmt.Sprintf("%s: ", t.Label)
+		if i == 0 {
+			t.Prompt = focusedPrompt(t.Label)
+		} else {
+			t.Prompt = blurredPrompt(t.Label)
+		}
+
 		m.inputs[i] = t
 	}
 
@@ -191,6 +196,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i == m.focusIndex {
 					// Set focused state
 					cmds[i] = m.inputs[i].Focus()
+					m.inputs[i].Prompt = focusedPrompt(m.inputs[i].Label)
 					m.inputs[i].TextStyle = focusedStyle
 					m.inputs[i].PromptStyle = focusedStyle
 					continue
@@ -198,6 +204,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				// Remove focused state
 				m.inputs[i].Blur()
+				m.inputs[i].Prompt = blurredPrompt(m.inputs[i].Label)
 				m.inputs[i].TextStyle = blurredStyle
 				m.inputs[i].PromptStyle = blurredStyle
 			}
@@ -256,7 +263,7 @@ See https://github.com/pgxman/pgxman/blob/main/spec/extension.yaml.md for docume
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 
-	b.WriteString(helpStyle.Render("(ctrl+c to quit, enter to submit)"))
+	b.WriteString(helpStyle.Render("(ctrl+c to quit, enter to submit, up/down to navigate)"))
 
 	return b.String()
 }
@@ -268,4 +275,12 @@ func splitString(s string) []string {
 	}
 
 	return result
+}
+
+func focusedPrompt(s string) string {
+	return fmt.Sprintf("> %s: ", s)
+}
+
+func blurredPrompt(s string) string {
+	return fmt.Sprintf("%s: ", s)
 }
