@@ -8,8 +8,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var (
-	DefaultBuildImage = fmt.Sprintf("ghcr.io/pgxman/builder:%s", Version)
+const (
+	DefaultBuildImage = "ghcr.io/pgxman/builder"
 )
 
 func NewDefaultExtension() Extension {

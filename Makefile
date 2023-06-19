@@ -24,7 +24,7 @@ test:
 
 .PHONY: e2etest
 e2etest:
-	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image owenthereal/pgxman-builder
+	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image ghcr.io/pgxman/builder
 
 .PHONY: vet
 vet:
