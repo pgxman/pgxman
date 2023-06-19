@@ -9,17 +9,24 @@ import (
 )
 
 const (
-	DefaultBuildImage = "ghcr.io/pgxman/builder"
+	defaultBuildImage = "ghcr.io/pgxman/builder"
 )
 
 func NewDefaultExtension() Extension {
+	var buildImageVersion string
+	if Version == "dev" {
+		buildImageVersion = "latest"
+	} else {
+		buildImageVersion = fmt.Sprintf("v%s", Version)
+	}
+
 	return Extension{
 		APIVersion: DefaultAPIVersion,
 		PGVersions: SupportedPGVersions,
 		Platform:   []Platform{PlatformLinux},
 		Arch:       []Arch{Arch(runtime.GOARCH)},
 		Formats:    []Format{FormatDeb},
-		BuildImage: DefaultBuildImage,
+		BuildImage: fmt.Sprintf("%s:%s", defaultBuildImage, buildImageVersion),
 	}
 }
 
