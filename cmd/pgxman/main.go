@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hydradatabase/pgxman/internal/cmd/pgxman"
+	"github.com/pgxman/pgxman/internal/cmd/pgxman"
 )
 
 func main() {

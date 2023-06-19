@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hydradatabase/pgxman"
-	"github.com/hydradatabase/pgxman/internal/cmd"
+	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/cmd"
 	"github.com/spf13/cobra"
 )
 

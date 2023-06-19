@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hydradatabase/pgxman/internal/filepathx"
-	"github.com/hydradatabase/pgxman/internal/log"
-	tmpl "github.com/hydradatabase/pgxman/internal/template"
-	"github.com/hydradatabase/pgxman/internal/template/docker"
 	cp "github.com/otiai10/copy"
+	"github.com/pgxman/pgxman/internal/filepathx"
+	"github.com/pgxman/pgxman/internal/log"
+	tmpl "github.com/pgxman/pgxman/internal/template"
+	"github.com/pgxman/pgxman/internal/template/docker"
 	"golang.org/x/exp/slog"
 	"sigs.k8s.io/yaml"
 )
