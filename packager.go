@@ -12,10 +12,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/hydradatabase/pgxman/internal/log"
-	tmpl "github.com/hydradatabase/pgxman/internal/template"
-	"github.com/hydradatabase/pgxman/internal/template/debian"
 	"github.com/mholt/archiver/v3"
+	"github.com/pgxman/pgxman/internal/log"
+	tmpl "github.com/pgxman/pgxman/internal/template"
+	"github.com/pgxman/pgxman/internal/template/debian"
 	"golang.org/x/exp/slog"
 )
 

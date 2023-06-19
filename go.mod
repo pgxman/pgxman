@@ -1,4 +1,4 @@
-module github.com/hydradatabase/pgxman
+module github.com/pgxman/pgxman
 
 go 1.20
 

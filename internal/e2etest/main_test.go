@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hydradatabase/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/log"
 	"golang.org/x/exp/slog"
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hydradatabase/pgxman"
-	"github.com/hydradatabase/pgxman/internal/filepathx"
+	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/filepathx"
 	"github.com/stretchr/testify/assert"
 )
 
