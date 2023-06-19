@@ -36,8 +36,6 @@ nfpms: #build:linux
     maintainer: Owen Ou <o@hydra.so>
     homepage: https://github.com/pgxman/pgxman
     bindir: /usr
-    dependencies:
-      - docker.io
     description: PostgreSQL Extensions Manager
     formats:
       - deb
