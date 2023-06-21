@@ -38,6 +38,10 @@ echo $PGXS
 		pgxman.BuilderOptions{
 			ExtDir: extdir,
 			Debug:  true,
+			// Caching for CI.
+			// They are ignored when not running in GitHub Actions.
+			CacheFrom: []string{"type=gha"},
+			CacheTo:   []string{"type=gha,mode=max"},
 		},
 	)
 
