@@ -34,7 +34,16 @@ echo $PGXS
 	ext.BuildImage = flagBuildImage
 
 	extdir := t.TempDir()
-	builder := pgxman.NewBuilder(extdir, true)
+	builder := pgxman.NewBuilder(
+		pgxman.BuilderOptions{
+			ExtDir: extdir,
+			Debug:  true,
+			// Caching for CI.
+			// They are ignored when not running in GitHub Actions.
+			CacheFrom: []string{"type=gha"},
+			CacheTo:   []string{"type=gha,mode=max"},
+		},
+	)
 
 	err := builder.Build(context.TODO(), ext)
 	assert.NoError(err)
