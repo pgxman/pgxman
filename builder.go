@@ -18,11 +18,17 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func NewBuilder(extDir string, debug bool) Builder {
+type BuilderOptions struct {
+	ExtDir    string
+	Debug     bool
+	CacheFrom []string
+	CacheTo   []string
+}
+
+func NewBuilder(opts BuilderOptions) Builder {
 	return &debianBuilder{
-		extDir: extDir,
-		logger: log.NewTextLogger(),
-		debug:  debug,
+		BuilderOptions: opts,
+		logger:         log.NewTextLogger(),
 	}
 }
 
@@ -31,9 +37,8 @@ type Builder interface {
 }
 
 type debianBuilder struct {
-	extDir string
+	BuilderOptions
 	logger *slog.Logger
-	debug  bool
 }
 
 func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
@@ -42,7 +47,7 @@ func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 		return fmt.Errorf("create work directory: %w", err)
 	}
 	defer func() {
-		if !b.debug {
+		if !b.Debug {
 			os.Remove(workDir)
 		}
 	}()
@@ -59,11 +64,11 @@ func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 		return fmt.Errorf("docker build: %w", err)
 	}
 
-	if err := b.copyBuild(ctx, workDir, b.extDir); err != nil {
+	if err := b.copyBuild(ctx, workDir, b.ExtDir); err != nil {
 		return fmt.Errorf("copy build: %w", err)
 	}
 
-	if b.debug {
+	if b.Debug {
 		if err := b.runDockerDebugBuild(ctx, ext, workDir); err != nil {
 			return fmt.Errorf("docker debug build: %w", err)
 		}
@@ -96,7 +101,7 @@ func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 		ctx,
 		dstDir,
 		append(
-			dockerBuildCommonArgs(ext),
+			b.dockerBuildCommonArgs(ext),
 			//"--no-cache",
 			"--output",
 			"out",
@@ -112,7 +117,7 @@ func (b *debianBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, 
 		ctx,
 		dstDir,
 		append(
-			dockerBuildCommonArgs(ext),
+			b.dockerBuildCommonArgs(ext),
 			"--tag",
 			fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, ext.Version),
 			"--target",
@@ -167,8 +172,8 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	return nil
 }
 
-func dockerBuildCommonArgs(ext Extension) []string {
-	return []string{
+func (b *debianBuilder) dockerBuildCommonArgs(ext Extension) []string {
+	args := []string{
 		"buildx",
 		"build",
 		"--build-arg",
@@ -176,6 +181,16 @@ func dockerBuildCommonArgs(ext Extension) []string {
 		"--build-arg",
 		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
 	}
+
+	for _, cacheFrom := range b.CacheFrom {
+		args = append(args, "--cache-from", cacheFrom)
+	}
+
+	for _, cacheTo := range b.CacheTo {
+		args = append(args, "--cache-to", cacheTo)
+	}
+
+	return args
 }
 
 func dockerPlatforms(ext Extension) string {

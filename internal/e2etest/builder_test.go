@@ -34,7 +34,12 @@ echo $PGXS
 	ext.BuildImage = flagBuildImage
 
 	extdir := t.TempDir()
-	builder := pgxman.NewBuilder(extdir, true)
+	builder := pgxman.NewBuilder(
+		pgxman.BuilderOptions{
+			ExtDir: extdir,
+			Debug:  true,
+		},
+	)
 
 	err := builder.Build(context.TODO(), ext)
 	assert.NoError(err)
