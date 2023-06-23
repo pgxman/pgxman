@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pgxman install pgvector=0.4.4@14
-
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
