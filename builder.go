@@ -26,7 +26,7 @@ type BuilderOptions struct {
 }
 
 func NewBuilder(opts BuilderOptions) Builder {
-	return &debianBuilder{
+	return &dockerBuilder{
 		BuilderOptions: opts,
 		logger:         log.NewTextLogger(),
 	}
@@ -36,12 +36,12 @@ type Builder interface {
 	Build(ctx context.Context, ext Extension) error
 }
 
-type debianBuilder struct {
+type dockerBuilder struct {
 	BuilderOptions
 	logger *slog.Logger
 }
 
-func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
+func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 	workDir, err := os.MkdirTemp("", "pgxman-build")
 	if err != nil {
 		return fmt.Errorf("create work directory: %w", err)
@@ -77,14 +77,14 @@ func (b *debianBuilder) Build(ctx context.Context, ext Extension) error {
 	return nil
 }
 
-func (b *debianBuilder) generateDockerFile(ext Extension, dstDir string) error {
+func (b *dockerBuilder) generateDockerFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Debug("Generating Dockerfile")
 
 	return tmpl.Export(docker.FS, nil, dstDir)
 }
 
-func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) error {
+func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Debug("Generating extension.yaml")
 
@@ -96,7 +96,7 @@ func (b *debianBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 	return os.WriteFile(filepath.Join(dstDir, "extension.yaml"), e, 0644)
 }
 
-func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {
+func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {
 	return b.runDockerCmd(
 		ctx,
 		dstDir,
@@ -112,7 +112,7 @@ func (b *debianBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 	)
 }
 
-func (b *debianBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, dstDir string) error {
+func (b *dockerBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, dstDir string) error {
 	return b.runDockerCmd(
 		ctx,
 		dstDir,
@@ -128,7 +128,7 @@ func (b *debianBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, 
 	)
 }
 
-func (b *debianBuilder) runDockerCmd(ctx context.Context, dstDir string, args ...string) error {
+func (b *dockerBuilder) runDockerCmd(ctx context.Context, dstDir string, args ...string) error {
 	dockerBuild := exec.CommandContext(
 		ctx,
 		"docker",
@@ -142,7 +142,7 @@ func (b *debianBuilder) runDockerCmd(ctx context.Context, dstDir string, args ..
 	return dockerBuild.Run()
 }
 
-func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) error {
+func (b *dockerBuilder) copyBuild(ctx context.Context, workDir, dstDir string) error {
 	logger := b.logger.With(slog.String("src", workDir), slog.String("dst", dstDir))
 	logger.Debug("Copying build")
 
@@ -172,7 +172,7 @@ func (b *debianBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	return nil
 }
 
-func (b *debianBuilder) dockerBuildCommonArgs(ext Extension) []string {
+func (b *dockerBuilder) dockerBuildCommonArgs(ext Extension) []string {
 	args := []string{
 		"buildx",
 		"build",
