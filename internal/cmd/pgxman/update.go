@@ -1,7 +1,7 @@
 package pgxman
 
 import (
-	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 )
 
@@ -15,5 +15,10 @@ func newUpdateCmd() *cobra.Command {
 }
 
 func runUpdate(c *cobra.Command, args []string) error {
-	return pgxman.NewUpdater().Update(c.Context())
+	u, err := plugin.GetUpdater()
+	if err != nil {
+		return err
+	}
+
+	return u.Update(c.Context())
 }

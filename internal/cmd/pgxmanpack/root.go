@@ -6,6 +6,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )
@@ -35,8 +36,19 @@ func Execute() error {
 				return err
 			}
 
-			pack := pgxman.NewPackager(pwd, flagDebug)
-			if err := pack.Package(cmd.Context(), ext); err != nil {
+			pkg, err := plugin.GetPackager()
+			if err != nil {
+				return err
+			}
+
+			if err := pkg.Package(
+				cmd.Context(),
+				ext,
+				pgxman.PackagerOptions{
+					WorkDir: pwd,
+					Debug:   flagDebug,
+				},
+			); err != nil {
 				return err
 			}
 

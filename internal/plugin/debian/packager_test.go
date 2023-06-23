@@ -1,18 +1,19 @@
-package pgxman
+package debian
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/pgxman/pgxman"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_debianPackageTemplater(t *testing.T) {
 	assert := assert.New(t)
 
-	ext := Extension{
+	ext := pgxman.Extension{
 		Name:              "pgvector",
-		Maintainers:       []Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
+		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
 		BuildDependencies: []string{"libxml2"},
 		Dependencies:      []string{"libxml2"},
 	}
