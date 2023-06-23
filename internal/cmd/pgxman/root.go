@@ -27,6 +27,7 @@ func Execute() error {
 
 	root.AddCommand(newInitCmd())
 	root.AddCommand(newBuildCmd())
+	root.AddCommand(newUpdateCmd())
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 
