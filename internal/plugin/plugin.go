@@ -22,11 +22,18 @@ func init() {
 	}
 	RegisterUpdater("debian", updater)
 	RegisterUpdater("ubuntu", updater)
+
+	installer := &debian.DebianInstaller{
+		Logger: log.NewTextLogger(),
+	}
+	RegisterInstaller("debian", installer)
+	RegisterInstaller("ubuntu", installer)
 }
 
 var (
-	packagers = make(map[string]pgxman.Packager)
-	updaters  = make(map[string]pgxman.Updater)
+	packagers  = make(map[string]pgxman.Packager)
+	updaters   = make(map[string]pgxman.Updater)
+	installers = make(map[string]pgxman.Installer)
 )
 
 func RegisterPackager(os string, packager pgxman.Packager) {
@@ -55,6 +62,20 @@ func GetUpdater() (pgxman.Updater, error) {
 	}
 
 	return u, nil
+}
+
+func RegisterInstaller(os string, installer pgxman.Installer) {
+	installers[os] = installer
+}
+
+func GetInstaller() (pgxman.Installer, error) {
+	os := osx.Vendor()
+	i := installers[os]
+	if i == nil {
+		return nil, ErrUnsupportedOS{os: os}
+	}
+
+	return i, nil
 }
 
 type ErrUnsupportedOS struct {
