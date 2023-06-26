@@ -55,7 +55,7 @@ pgxman publish
 
 ## Installing a PostgreSQL extension
 
-Installing an extension with `pgxman` is as straightforward as specifying the extension name and version. For instance, to install version `pgvector` version `0.4.2`:
+Installing an extension with `pgxman` is as straightforward as specifying the extension name and version. For instance, to install version `pgvector` version `0.4.2` for PostgreSQL 14:
 
 ```console
 pgxman install pgvector=0.4.2@14
