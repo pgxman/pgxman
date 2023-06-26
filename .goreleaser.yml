@@ -28,8 +28,12 @@ snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
 release:
   prerelease: auto
-  draft: true
   name_template: "PGXMan {{.Version}}"
+  github:
+    owner: pgxman
+    name: release
+changelog:
+  skip: true
 nfpms: #build:linux
   - license: Apache-2.0
     maintainer: Owen Ou <o@hydra.so>
