@@ -46,7 +46,7 @@ nfpms: #build:linux
 brews:
   - tap:
       owner: pgxman
-      name: homebrew-pgxman
+      name: homebrew-tap
       token: "{{ .Env.CI_GITHUB_TOKEN }}"
     commit_author:
       name: Owen Ou
