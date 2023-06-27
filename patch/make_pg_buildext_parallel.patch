@@ -1,0 +1,16 @@
+--- /usr/bin/pg_buildext	2020-11-27 12:41:34.000000000 +0300
++++ /usr/bin/pg_buildext	2023-03-01 12:51:34.000000000 +0300
+@@ -107,11 +107,13 @@ substvars() {
+ install() {
+     prepare_env $1
+     package=`echo $opt | sed -e "s:%v:$1:g"`
++    procs="$(nproc)"
++    mjobs="$(expr $procs + 1)"
+
+     mkdir -p $vtarget
+     # if a Makefile was created by configure, use it, else the top level Makefile
+     [ -f $vtarget/Makefile ] || makefile="-f $srcdir/Makefile"
+-    make -C $vtarget ${makefile:-} install DESTDIR="$PWD/debian/$package" PG_CONFIG="$pgc" VPATH="$srcdir" USE_PGXS=1 $MAKEVARS || return $?
++    make -j${mjobs} -C $vtarget ${makefile:-} install DESTDIR="$PWD/debian/$package" PG_CONFIG="$pgc" VPATH="$srcdir" USE_PGXS=1 $MAKEVARS || return $?
+     substvars "$1" "$package"
+ }
