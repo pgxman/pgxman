@@ -12,7 +12,7 @@ builds:
 archives:
   - id: archive
     builds: [pgxman]
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     wrap_in_directory: false
     rlcp: true
     format: tar.gz
@@ -40,6 +40,7 @@ nfpms: #build:linux
     homepage: https://github.com/pgxman/pgxman
     bindir: /usr
     description: PostgreSQL Extensions Manager
+    file_name_template: '{{ .PackageName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     formats:
       - deb
       - rpm
