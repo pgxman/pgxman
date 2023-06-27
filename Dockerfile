@@ -24,13 +24,13 @@ RUN --mount=target=. \
 
 FROM ubuntu:22.04
 
-ARG POSTGRES_VERSION=14
+ARG POSTGRES_VERSION=15
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gnupg \
+    gnupg2 \
     postgresql-common \
     ; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
@@ -50,10 +50,13 @@ RUN set -eux; \
     libssl-dev \
     autoconf \
     pkg-config \
-    postgresql-${POSTGRES_VERSION} \
     postgresql-server-dev-all \
     postgresql-server-dev-${POSTGRES_VERSION} \
     ; \
     rm -rf /var/lib/apt/lists/*
+
+# patch pg_buildext to use multiple processors
+COPY patch/make_pg_buildext_parallel.patch /
+RUN patch `which pg_buildext` < /make_pg_buildext_parallel.patch
 
 COPY --from=gobuild /go/bin/* /usr/local/bin/
