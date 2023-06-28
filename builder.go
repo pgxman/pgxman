@@ -21,6 +21,7 @@ import (
 type BuilderOptions struct {
 	ExtDir    string
 	Debug     bool
+	NoCache   bool
 	CacheFrom []string
 	CacheTo   []string
 }
@@ -102,7 +103,6 @@ func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 		dstDir,
 		append(
 			b.dockerBuildCommonArgs(ext),
-			//"--no-cache",
 			"--output",
 			"out",
 			"--platform",
@@ -182,12 +182,16 @@ func (b *dockerBuilder) dockerBuildCommonArgs(ext Extension) []string {
 		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
 	}
 
-	for _, cacheFrom := range b.CacheFrom {
-		args = append(args, "--cache-from", cacheFrom)
-	}
+	if b.NoCache {
+		args = append(args, "--no-cache")
+	} else {
+		for _, cacheFrom := range b.CacheFrom {
+			args = append(args, "--cache-from", cacheFrom)
+		}
 
-	for _, cacheTo := range b.CacheTo {
-		args = append(args, "--cache-to", cacheTo)
+		for _, cacheTo := range b.CacheTo {
+			args = append(args, "--cache-to", cacheTo)
+		}
 	}
 
 	return args

@@ -11,9 +11,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/filepathx"
-	"github.com/pgxman/pgxman/internal/log"
 	tassert "github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slog"
 )
 
 func TestBuilder(t *testing.T) {
@@ -69,43 +67,50 @@ echo $PGXS
 			continue
 		}
 
-		t.Run(debFile, func(t *testing.T) {
-			t.Parallel()
+		for _, image := range []string{"ubuntu:jammy", "postgres:14-bookworm"} {
+			image := image
+			name := fmt.Sprintf("%s-%s", image, debFile)
+			name = strings.ReplaceAll(name, ":", "-")
+			name = strings.ReplaceAll(name, ".", "-")
 
-			assert := tassert.New(t)
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
 
-			logger := log.NewTextLogger()
-			logger = logger.With(slog.String("debfile", debFile))
-			w := logger.Writer()
+				assert := tassert.New(t)
 
-			cmd := exec.Command(
-				"docker",
-				"run",
-				"--rm",
-				"-v",
-				filepath.Join(extdir, "out")+":/out",
-				"ubuntu:22.04",
-				"bash",
-				"--noprofile",
-				"--norc",
-				"-eo",
-				"pipefail",
-				"-c",
-				fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
+				EnsureCleanup(t, func() {
+					cmd := exec.Command("docker", "rm", "-f", name)
+					_ = cmd.Run()
+				})
+
+				cmd := exec.Command(
+					"docker",
+					"run",
+					"--rm",
+					"--name",
+					name,
+					"-v",
+					filepath.Join(extdir, "out")+":/out",
+					image,
+					"bash",
+					"--noprofile",
+					"--norc",
+					"-eo",
+					"pipefail",
+					"-c",
+					fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
 apt update
-apt install gnupg2 postgresql-common -y
+apt install ca-certificates gnupg2 postgresql-common -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 apt update
 apt install /out/%s -y
 `, debFile),
-			)
-			cmd.Stdout = w
-			cmd.Stderr = w
+				)
 
-			err := cmd.Run()
-			assert.NoError(err)
-		})
+				b, err := cmd.Output()
+				assert.NoError(err, string(b))
+			})
+		}
 	}
-
 }

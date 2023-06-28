@@ -3,6 +3,8 @@ package e2etest
 import (
 	"flag"
 	"os"
+	"os/signal"
+	"sync"
 	"testing"
 
 	"github.com/pgxman/pgxman/internal/log"
@@ -12,6 +14,40 @@ import (
 var (
 	flagBuildImage string
 )
+
+var cf struct {
+	o sync.Once
+	m sync.RWMutex
+	f []func()
+}
+
+// cleanupOnInterrupt registers a signal handler and will execute a stack of functions if an interrupt signal is caught
+func cleanupOnInterrupt(c chan os.Signal) {
+	for range c {
+		cf.o.Do(func() {
+			cf.m.RLock()
+			defer cf.m.RUnlock()
+			for i := len(cf.f) - 1; i >= 0; i-- {
+				cf.f[i]()
+			}
+			os.Exit(1)
+		})
+	}
+}
+
+// addCleanupOnInterrupt stores cleanup functions to execute if an interrupt signal is caught
+func addCleanupOnInterrupt(cleanup func()) {
+	cf.m.Lock()
+	defer cf.m.Unlock()
+	cf.f = append(cf.f, cleanup)
+}
+
+// EnsureCleanup will run the provided cleanup function when the test ends,
+// either via t.Cleanup or on interrupt via CleanupOnInterrupt.
+func EnsureCleanup(t *testing.T, cleanup func()) {
+	t.Cleanup(cleanup)
+	addCleanupOnInterrupt(cleanup)
+}
 
 func TestMain(m *testing.M) {
 	var e2etest bool
@@ -31,6 +67,10 @@ func TestMain(m *testing.M) {
 		logger.Info("-build-image is required")
 		os.Exit(0)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go cleanupOnInterrupt(c)
 
 	os.Exit(m.Run())
 }
