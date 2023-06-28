@@ -38,7 +38,7 @@ type Builder interface {
 
 type dockerBuilder struct {
 	BuilderOptions
-	logger *slog.Logger
+	logger *log.Logger
 }
 
 func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {

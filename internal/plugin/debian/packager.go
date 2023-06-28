@@ -15,13 +15,14 @@ import (
 
 	"github.com/mholt/archiver/v3"
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
 	"golang.org/x/exp/slog"
 )
 
 type DebianPackager struct {
-	Logger *slog.Logger
+	Logger *log.Logger
 }
 
 // Package generates the following folder structure:

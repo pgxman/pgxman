@@ -7,11 +7,11 @@ import (
 	"os/exec"
 
 	"github.com/pgxman/pgxman"
-	"golang.org/x/exp/slog"
+	"github.com/pgxman/pgxman/internal/log"
 )
 
 type DebianInstaller struct {
-	Logger *slog.Logger
+	Logger *log.Logger
 }
 
 func (i *DebianInstaller) Install(ctx context.Context, ext []pgxman.InstallExtension) error {
