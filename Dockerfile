@@ -22,21 +22,15 @@ RUN --mount=target=. \
     -ldflags "-s -w -X github.com/pgxman/pgxman/pgxm.Version=$BUILD_VERSION" \
     ./cmd/pgxman/...
 
-FROM ubuntu:22.04
-
+FROM postgres:15-bookworm
 ARG POSTGRES_VERSION=15
+
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
     gnupg2 \
-    postgresql-common \
-    ; \
-    sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install -y  \
     build-essential \
     ca-certificates \
     debhelper \
@@ -56,7 +50,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # patch pg_buildext to use multiple processors
-COPY patch/make_pg_buildext_parallel.patch /
-RUN patch `which pg_buildext` < /make_pg_buildext_parallel.patch
+COPY patch/make_pg_buildext_parallel.patch /tmp
+RUN patch `which pg_buildext` < /tmp/make_pg_buildext_parallel.patch
 
 COPY --from=gobuild /go/bin/* /usr/local/bin/

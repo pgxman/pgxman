@@ -8,19 +8,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/mholt/archiver/v3"
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
 	"golang.org/x/exp/slog"
 )
 
 type DebianPackager struct {
-	Logger *slog.Logger
+	Logger *log.Logger
 }
 
 // Package generates the following folder structure:
@@ -143,6 +145,10 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 		"--preserve-envvar", "MSCODEHUB_USERNAME",
 		"--preserve-envvar", "MSCODEHUB_PASSWORD",
 		"-uc", "-us", "-B", "--lintian-opts", "--profile", "debian", "--allow-root",
+	)
+	debuild.Env = append(
+		os.Environ(),
+		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
 	)
 	debuild.Dir = extDir
 	debuild.Stdout = os.Stdout

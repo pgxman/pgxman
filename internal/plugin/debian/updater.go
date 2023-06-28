@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/pgxman/pgxman/internal/log"
 	"golang.org/x/exp/slog"
 )
 
 type DebianUpdater struct {
-	Logger *slog.Logger
+	Logger *log.Logger
 }
 
 func (u *DebianUpdater) Update(ctx context.Context) error {
