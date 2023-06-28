@@ -2,12 +2,15 @@ Source: pgvector
 Section: database
 Priority: optional
 Maintainer: Owen Ou <o@hydra.so>
+Uploaders: Owen Ou <o@hydra.so>
 Build-Depends: debhelper (>= 9), postgresql-server-dev-all (>= 158~)
-Standards-Version: 3.9.7
+Standards-Version: 4.2.1
 Homepage: <insert the upstream URL, if relevant>
 
 Package: postgresql-PGVERSION-pgxman-pgvector
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-PGVERSION
+Provides: postgresql-PGVERSION-pgxman-pgvector
+Conflicts: postgresql-PGVERSION-pgxman-pgvector
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>

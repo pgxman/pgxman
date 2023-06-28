@@ -5,7 +5,7 @@ keywords:
   - "vector"
   - "similarity search"
 homepage: https://github.com/pgvector/pgvector
-source: https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.2.tar.gz
+source: https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz
 maintainers:
   - name: Owen Ou
     email: o@owenou.com
@@ -22,7 +22,7 @@ build: |
 # This version number should be incremented each time you make changes to the extension.
 # Versions are not expected to follow Semantic Versioning. They should reflect the version the
 # extension is using. It is recommended to use it with quotes.
-version: "0.4.2"
+version: "0.4.4"
 
 # A list of Postgres versions that the extension supports.
 #

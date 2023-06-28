@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -143,6 +144,10 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 		"--preserve-envvar", "MSCODEHUB_USERNAME",
 		"--preserve-envvar", "MSCODEHUB_PASSWORD",
 		"-uc", "-us", "-B", "--lintian-opts", "--profile", "debian", "--allow-root",
+	)
+	debuild.Env = append(
+		os.Environ(),
+		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
 	)
 	debuild.Dir = extDir
 	debuild.Stdout = os.Stdout
