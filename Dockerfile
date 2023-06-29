@@ -23,7 +23,6 @@ RUN --mount=target=. \
     ./cmd/pgxman/...
 
 FROM postgres:15-bookworm
-ARG POSTGRES_VERSION=15
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -45,7 +44,6 @@ RUN set -eux; \
     autoconf \
     pkg-config \
     postgresql-server-dev-all \
-    postgresql-server-dev-${POSTGRES_VERSION} \
     ; \
     rm -rf /var/lib/apt/lists/*
 
