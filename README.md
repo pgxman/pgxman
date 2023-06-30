@@ -1,14 +1,14 @@
 # PGXMan - PostgreSQL Extension Manager
 
-Welcome to PGXMan, the ultimate PostgreSQL Extension Manager!
+Welcome to PGXMan, your one-stop solution for managing PostgreSQL extensions!
 
-In PostgreSQL, extensions play a pivotal role by introducing new features, data types, functions, or performance optimizations. These modules amplify PostgreSQL's power without changing its core code. Whether you need to meet unique requirements, enhance performance, or integrate with different systems, extensions are your key. PGXMan is here to make the process of dealing with extensions a breeze by streamlining the tasks of building, packaging, and installing them.
+In PostgreSQL, extensions amplify the database's capabilities by introducing new features, data types, functions, and performance optimizations, all without modifying the core code. They're your go-to when it comes to tailoring PostgreSQL to meet unique requirements, enhancing performance, or integrating with various systems. PGXMan is designed to streamline the process of dealing with these extensions by simplifying the tasks of building, packaging, and installing them.
 
 ## Building a PostgreSQL extension
 
-As an example, let's demonstrate how to build an extension using [pgvector](https://github.com/pgvector/pgvector).
+For instance, let's learn how to build the [pgvector](https://github.com/pgvector/pgvector) extension.
 
-Start by creating a directory named `pgvector` and initialize it using `pgxman init`:
+Create a directory named `pgvector` and initialize it using `pgxman init`:
 
 ```console
 mkdir pgvector
@@ -16,7 +16,7 @@ cd pgvector
 pgxman init
 ```
 
-This command yields an `extension.yaml` file:
+This command generates an `extension.yaml` file:
 
 ```console
 $ tree pgvector
@@ -26,51 +26,51 @@ pgvector
 1 directory, 1 files
 ```
 
-The `extension.yaml` file is your blueprint for building the extension. The full specification of the file can be found [here](spec/extension.yaml.md).
-Feel free to adapt the example from [examples/pgvector](examples/pgvector) according to your needs.
+The `extension.yaml` file is your blueprint for building the extension.
+You can find its full specification [here](spec/extension.yaml.md)
+Feel free to adapt the example from [examples/pgvector](examples/pgvector) to meet your needs.
 
 Once your extension.yaml is all set, kick-start the build process:
 
 ```console
-pgxm build
+pgxman build
 ```
 
-Successful execution will package the built extension files neatly in the `out` directory of the `pgvector` folder:
+Successful completion of the build process will result in the newly built extension files, neatly packaged in the `out` directory within the `pgvector` folder:
 
 ```console
 $ out
-├── postgresql-14-pgxman-pgvector_0.4.2_amd64.deb
-├── postgresql-14-pgxman-pgvector_0.4.2_arm64.deb
-├── postgresql-15-pgxman-pgvector_0.4.2_amd64.deb
-└── postgresql-15-pgxman-pgvector_0.4.2_arm64.deb
+├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
+├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
+├── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+└── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
 
 1 directory, 4 files
 ```
 
-To make your extension available to the wider PostgreSQL community, publish it to the `pgxman` hub:
-
-```console
-pgxman publish
-```
+Currently, `pgxman build` supports packaging extensions into Debian packages.
+In future releases, we plan to extend this support to other packaging formats like RPM, APK, etc..
 
 ## Installing a PostgreSQL extension
 
-Installing an extension with `pgxman` is as straightforward as specifying the extension name and version. For instance, to install version `pgvector` version `0.4.2` for PostgreSQL 14:
+Installing an extension with `pgxman` is as straightforward as specifying the extension name and version.
+For instance, to install version `pgvector` version `0.4.2` for PostgreSQL 14:
 
 ```console
-pgxman install pgvector=0.4.2@14
+pgxman install pgvector=0.4.4@14
 ```
 
-This command installs the `pgvector` extension onto your local PostgreSQL instance. To verify a successful installation, inspect your PostgreSQL instance:
+This command will install the `pgvector` extension onto your local PostgreSQL instance. To confirm a successful installation, you can inspect your PostgreSQL instance:
 
 ```psql
 postgres=# \dx
                                             List of installed extensions
         Name        | Version |   Schema   |                              Description
 --------------------+---------+------------+----------------------------------------------------------------
- vector             | 0.4.2   | public     | vector data type and ivfflat access method
+ vector             | 0.4.4   | public     | vector data type and ivfflat access method
  ...
 (9 rows)
 ```
 
-Here, you'll see the newly installed `pgvector` extension and other pre-existing extensions.
+Please note `pgxman install` currently supports Linux systems with the APT package manager only.
+In future releases, we plan to extend this support more package managers.
