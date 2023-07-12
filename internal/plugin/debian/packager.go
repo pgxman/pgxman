@@ -51,6 +51,10 @@ func (p *DebianPackager) Package(ctx context.Context, ext pgxman.Extension, opts
 		return fmt.Errorf("unarchive source: %w", err)
 	}
 
+	if err := p.installBuildDependencies(ctx, ext); err != nil {
+		return fmt.Errorf("install build dependencies: %w", err)
+	}
+
 	if err := p.generateDebianTemplate(ext, extDir); err != nil {
 		return fmt.Errorf("generate debian template: %w", err)
 	}
@@ -119,6 +123,29 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, dstDir str
 	logger.Info("Generating debian package")
 
 	return tmpl.Export(debian.FS, debianPackageTemplater{ext}, dstDir)
+}
+
+func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
+	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("dependencies", ext.BuildDependencies))
+	logger.Info("Installing build deps")
+
+	aptUpdate := exec.CommandContext(ctx, "apt", "update")
+	aptUpdate.Stdout = os.Stdout
+	aptUpdate.Stderr = os.Stderr
+
+	if err := aptUpdate.Run(); err != nil {
+		return fmt.Errorf("apt update: %w", err)
+	}
+
+	aptInstall := exec.CommandContext(ctx, "apt", "install", "-y", strings.Join(ext.BuildDependencies, " "))
+	aptInstall.Stdout = os.Stdout
+	aptInstall.Stderr = os.Stderr
+
+	if err := aptInstall.Run(); err != nil {
+		return fmt.Errorf("apt install: %w", err)
+	}
+
+	return nil
 }
 
 func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, extDir string) error {
