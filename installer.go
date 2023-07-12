@@ -10,20 +10,23 @@ import (
 type InstallExtension struct {
 	Name      string
 	Version   string
+	Path      string
 	PGVersion PGVersion
 }
 
 func (e InstallExtension) Validate() error {
-	if e.Name == "" {
-		return fmt.Errorf("name is required")
+	if e.Name == "" && e.Path == "" {
+		return fmt.Errorf("name or path is required")
 	}
 
-	if e.Version == "" {
-		return fmt.Errorf("version is required")
-	}
+	if e.Name != "" {
+		if e.Version == "" {
+			return fmt.Errorf("version is required")
+		}
 
-	if !slices.Contains(SupportedPGVersions, e.PGVersion) {
-		return fmt.Errorf("unsupported pg version: %s", e.PGVersion)
+		if !slices.Contains(SupportedPGVersions, e.PGVersion) {
+			return fmt.Errorf("unsupported pg version: %s", e.PGVersion)
+		}
 	}
 
 	return nil

@@ -137,7 +137,7 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		return fmt.Errorf("apt update: %w", err)
 	}
 
-	aptInstall := exec.CommandContext(ctx, "apt", "install", strings.Join(ext.BuildDependencies, " "))
+	aptInstall := exec.CommandContext(ctx, "apt", "install", "-y", strings.Join(ext.BuildDependencies, " "))
 	aptInstall.Stdout = os.Stdout
 	aptInstall.Stderr = os.Stderr
 

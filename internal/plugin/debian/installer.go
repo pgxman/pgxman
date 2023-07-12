@@ -23,21 +23,28 @@ func (i *DebianInstaller) Install(ctx context.Context, ext []pgxman.InstallExten
 			return err
 		}
 
-		exts = append(exts, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", e.PGVersion, e.Name, e.Version))
+		if e.Path != "" {
+			exts = append(exts, e.Path)
+		} else {
+			exts = append(exts, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", e.PGVersion, e.Name, e.Version))
+		}
 	}
 
 	return i.runAptInstall(ctx, exts...)
 }
 
 func (i *DebianInstaller) runAptInstall(ctx context.Context, exts ...string) error {
-	i.Logger.Debug("Running apt install", "extensions", exts)
+	for _, ext := range exts {
+		i.Logger.Debug("Running apt install", "extension", ext)
 
-	args := []string{"install", "-y"}
-	args = append(args, exts...)
+		cmd := exec.CommandContext(ctx, "apt", "install", "-y", ext)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
-	cmd := exec.CommandContext(ctx, "apt", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
 
-	return cmd.Run()
+	return nil
 }
