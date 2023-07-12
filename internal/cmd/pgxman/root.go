@@ -3,7 +3,7 @@ package pgxman
 import (
 	"os"
 
-	pgxm "github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
@@ -17,7 +17,7 @@ func Execute() error {
 	root := &cobra.Command{
 		Use:     "pgxman",
 		Short:   "PostgreSQL Extension Manager",
-		Version: pgxm.Version,
+		Version: pgxman.Version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if flagDebug {
 				log.SetLevel(slog.LevelDebug)
