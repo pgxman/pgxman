@@ -22,9 +22,10 @@ GO_TEST_FLAGS ?=
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
 
+E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder:main
 .PHONY: e2etest
 e2etest:
-	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image ghcr.io/pgxman/builder
+	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image $(E2ETEST_BUILD_IMAGE)
 
 .PHONY: vet
 vet:
