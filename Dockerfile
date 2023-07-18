@@ -29,21 +29,31 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gnupg2 \
-    build-essential \
     ca-certificates \
+    git \
+    gnupg2 \
+    postgresql-common \
+    ; \
+    sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    autoconf \
+    ca-certificates \
+    cmake \
+    curl \
     debhelper \
     devscripts \
     dh-make \
-    lsb-release \
-    git \
-    curl \
     gcc \
-    make \
+    libcurl4-openssl-dev \
     libssl-dev \
-    autoconf \
+    lsb-release \
+    make \
+    ninja-build \
     pkg-config \
     postgresql-server-dev-all \
+    wget \
     ; \
     rm -rf /var/lib/apt/lists/*
 

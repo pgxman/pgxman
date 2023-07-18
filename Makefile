@@ -44,7 +44,7 @@ docker_build:
 
 .PHONY: docker_push
 docker_push:
-	docker buildx build -t $(REPO) --platform linux/amd64,linux/arm64 --push .
+	docker buildx build -t $(REPO) --platform linux/amd64,linux/arm64 --push --pull .
 
 .PHONY: goreleaser
 goreleaser:

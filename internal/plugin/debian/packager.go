@@ -133,14 +133,16 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 	aptUpdate.Stdout = os.Stdout
 	aptUpdate.Stderr = os.Stderr
 
+	logger.Debug("apt update", slog.Any("command", aptUpdate.String()))
 	if err := aptUpdate.Run(); err != nil {
 		return fmt.Errorf("apt update: %w", err)
 	}
 
-	aptInstall := exec.CommandContext(ctx, "apt", "install", "-y", strings.Join(ext.BuildDependencies, " "))
+	aptInstall := exec.CommandContext(ctx, "apt", append([]string{"install", "-y"}, ext.BuildDependencies...)...)
 	aptInstall.Stdout = os.Stdout
 	aptInstall.Stderr = os.Stderr
 
+	logger.Debug("apt install", slog.Any("command", aptInstall.String()))
 	if err := aptInstall.Run(); err != nil {
 		return fmt.Errorf("apt install: %w", err)
 	}
@@ -243,6 +245,11 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)
 	}
+
+	// Debian package name can consist of only lower case letters (a-z), digits (0-9), plus (+) and minus (-) signs, and periods (.)
+	// ref: https://www.debian.org/doc/debian-policy/ch-controlfields.html#:~:text=Package%20names%20(both%20source%20and,start%20with%20an%20alphanumeric%20character.
+	d.ext.Name = strings.ToLower(d.ext.Name)
+	d.ext.Name = strings.ReplaceAll(d.ext.Name, "_", "-")
 
 	if err := t.Execute(out, extensionData{d.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
