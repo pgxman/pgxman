@@ -41,10 +41,10 @@ func RegisterPackager(os string, packager pgxman.Packager) {
 }
 
 func GetPackager() (pgxman.Packager, error) {
-	os := osx.Vendor()
-	pkg := packagers[os]
+	si := osx.Sysinfo()
+	pkg := packagers[si.OS.Vendor]
 	if pkg == nil {
-		return nil, ErrUnsupportedOS{os: os}
+		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
 	}
 
 	return pkg, nil
@@ -55,10 +55,10 @@ func RegisterUpdater(os string, updater pgxman.Updater) {
 }
 
 func GetUpdater() (pgxman.Updater, error) {
-	os := osx.Vendor()
-	u := updaters[os]
+	si := osx.Sysinfo()
+	u := updaters[si.OS.Vendor]
 	if u == nil {
-		return nil, ErrUnsupportedOS{os: os}
+		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
 	}
 
 	return u, nil
@@ -69,10 +69,10 @@ func RegisterInstaller(os string, installer pgxman.Installer) {
 }
 
 func GetInstaller() (pgxman.Installer, error) {
-	os := osx.Vendor()
-	i := installers[os]
+	si := osx.Sysinfo()
+	i := installers[si.OS.Vendor]
 	if i == nil {
-		return nil, ErrUnsupportedOS{os: os}
+		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
 	}
 
 	return i, nil

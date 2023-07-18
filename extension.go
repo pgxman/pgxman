@@ -176,10 +176,15 @@ type Deb struct {
 }
 
 type AptRepository struct {
-	ID         string `json:"id"`
-	Types      string `json:"types"`
-	URIs       string `json:"uris"`
-	Suites     string `json:"suites"`
-	Components string `json:"components"`
-	SignedKey  string `json:"signedKey"`
+	ID         string               `json:"id"`
+	Types      []string             `json:"types"`
+	URIs       []string             `json:"uris"`
+	Suites     []AptRepositorySuite `json:"suites"`
+	Components []string             `json:"components"`
+	SignedKey  string               `json:"signedKey"`
+}
+
+type AptRepositorySuite struct {
+	Suite  string `json:"suite"`
+	Target string `json:"target"`
 }
