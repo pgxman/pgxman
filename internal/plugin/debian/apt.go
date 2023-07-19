@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/osx"
 )
 
@@ -34,14 +35,18 @@ type aptSourcesTmplData struct {
 	SignedBy   string
 }
 
-func addAptRepos(ctx context.Context, repos []pgxman.AptRepository) error {
+func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.Logger) error {
 	for _, repo := range repos {
+		logger := logger.WithGroup(repo.ID)
+		logger.Debug("Adding apt repo")
+
 		ext := filepath.Ext(repo.SignedKey)
 		if ext == "" {
-			ext = ".gpg"
+			ext = ".asc"
 		}
 
 		gpgKeyPath := filepath.Join(keyringsDir, repo.ID+ext)
+		logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", gpgKeyPath)
 		if err := downloadFile(repo.SignedKey, gpgKeyPath); err != nil {
 			return err
 		}
@@ -70,6 +75,7 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository) error {
 		}
 
 		sourcesPath := filepath.Join(sourceListdDir, repo.ID+".sources")
+		logger.Debug("Writing source", "path", sourcesPath, "content", b.String())
 		if err := writeFile(sourcesPath, b.Bytes()); err != nil {
 			return err
 		}

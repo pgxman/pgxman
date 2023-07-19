@@ -17,18 +17,22 @@ type DebianUpdater struct {
 }
 
 func (u *DebianUpdater) Update(ctx context.Context) error {
-	return addAptRepos(ctx, []pgxman.AptRepository{
-		{
-			ID:    "pgxman",
-			Types: []string{"deb"},
-			URIs:  []string{sourcesURL},
-			Suites: []pgxman.AptRepositorySuite{
-				{
-					Suite: "stable",
+	return addAptRepos(
+		ctx,
+		[]pgxman.AptRepository{
+			{
+				ID:    "pgxman",
+				Types: []string{"deb"},
+				URIs:  []string{sourcesURL},
+				Suites: []pgxman.AptRepositorySuite{
+					{
+						Suite: "stable",
+					},
 				},
+				Components: []string{"main"},
+				SignedKey:  gpgkeyURL,
 			},
-			Components: []string{"main"},
-			SignedKey:  gpgkeyURL,
 		},
-	})
+		u.Logger,
+	)
 }

@@ -126,23 +126,21 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, dstDir str
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
-	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("dependencies", ext.BuildDependencies))
+	deps := append(ext.BuildDependencies, ext.Deb.BuildDependencies...)
+
+	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", deps))
 	logger.Info("Installing build deps")
 
-	aptUpdate := exec.CommandContext(ctx, "apt", "update")
-	aptUpdate.Stdout = os.Stdout
-	aptUpdate.Stderr = os.Stderr
-
-	logger.Debug("apt update", slog.Any("command", aptUpdate.String()))
-	if err := aptUpdate.Run(); err != nil {
-		return fmt.Errorf("apt update: %w", err)
+	logger.Debug("add apt repo", slog.Any("repos", ext.Deb.AptRepositories))
+	if err := addAptRepos(ctx, ext.Deb.AptRepositories, p.Logger); err != nil {
+		return fmt.Errorf("add apt repo: %w", err)
 	}
 
-	aptInstall := exec.CommandContext(ctx, "apt", append([]string{"install", "-y"}, ext.BuildDependencies...)...)
+	aptInstall := exec.CommandContext(ctx, "apt", append([]string{"install", "-y", "--no-install-recommends"}, deps...)...)
 	aptInstall.Stdout = os.Stdout
 	aptInstall.Stderr = os.Stderr
 
-	logger.Debug("apt install", slog.Any("command", aptInstall.String()))
+	logger.Debug("apt install", slog.Any("cmd", aptInstall.String()))
 	if err := aptInstall.Run(); err != nil {
 		return fmt.Errorf("apt install: %w", err)
 	}
