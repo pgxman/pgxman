@@ -22,7 +22,7 @@ func (u *DebianUpdater) Update(ctx context.Context) error {
 		[]pgxman.AptRepository{
 			{
 				ID:    "pgxman",
-				Types: []string{"deb"},
+				Types: []pgxman.AptRepositoryType{"deb"},
 				URIs:  []string{sourcesURL},
 				Suites: []pgxman.AptRepositorySuite{
 					{
@@ -30,7 +30,10 @@ func (u *DebianUpdater) Update(ctx context.Context) error {
 					},
 				},
 				Components: []string{"main"},
-				SignedKey:  gpgkeyURL,
+				SignedKey: pgxman.AptRepositorySignedKey{
+					URL:    gpgkeyURL,
+					Format: pgxman.AptRepositorySignedKeyFormatGpg,
+				},
 			},
 		},
 		u.Logger,

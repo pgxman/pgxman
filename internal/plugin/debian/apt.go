@@ -40,14 +40,9 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.
 		logger := logger.WithGroup(repo.ID)
 		logger.Debug("Adding apt repo")
 
-		ext := filepath.Ext(repo.SignedKey)
-		if ext == "" {
-			ext = ".asc"
-		}
-
-		gpgKeyPath := filepath.Join(keyringsDir, repo.ID+ext)
+		gpgKeyPath := filepath.Join(keyringsDir, repo.ID+"."+string(repo.SignedKey.Format))
 		logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", gpgKeyPath)
-		if err := downloadFile(repo.SignedKey, gpgKeyPath); err != nil {
+		if err := downloadFile(repo.SignedKey.URL, gpgKeyPath); err != nil {
 			return err
 		}
 
@@ -63,9 +58,14 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.
 			}
 		}
 
+		var types []string
+		for _, t := range repo.Types {
+			types = append(types, string(t))
+		}
+
 		b := bytes.NewBuffer(nil)
 		if err := aptSourcesTmpl.Execute(b, aptSourcesTmplData{
-			Types:      strings.Join(repo.Types, " "),
+			Types:      strings.Join(types, " "),
 			URIs:       strings.Join(repo.URIs, " "),
 			Suites:     strings.Join(suites, " "),
 			Components: strings.Join(repo.Components, " "),

@@ -116,6 +116,44 @@ func (ext Extension) Validate() error {
 		}
 	}
 
+	if deb := ext.Deb; deb != nil {
+		for _, repo := range deb.AptRepositories {
+			if repo.ID == "" {
+				return fmt.Errorf("apt repository id is required")
+			}
+
+			if len(repo.Types) == 0 {
+				return fmt.Errorf("apt repository types is required")
+			}
+			for _, t := range repo.Types {
+				if err := t.Validate(); err != nil {
+					return fmt.Errorf("apt repository types: %w", err)
+				}
+			}
+
+			if len(repo.URIs) == 0 {
+				return fmt.Errorf("apt repository uris is required")
+			}
+
+			if len(repo.Suites) == 0 {
+				return fmt.Errorf("apt repository suites is required")
+			}
+			for _, s := range repo.Suites {
+				if err := s.Validate(); err != nil {
+					return fmt.Errorf("apt repository suites: %w", err)
+				}
+			}
+
+			if len(repo.Components) == 0 {
+				return fmt.Errorf("apt repository components is required")
+			}
+
+			if err := repo.SignedKey.Validate(); err != nil {
+				return fmt.Errorf("apt repository signed key: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -175,16 +213,72 @@ type Deb struct {
 	AptRepositories   []AptRepository `json:"aptRepositories,omitempty"`
 }
 
+// Ref: https://manpages.ubuntu.com/manpages/lunar/en/man5/sources.list.5.html
 type AptRepository struct {
-	ID         string               `json:"id"`
-	Types      []string             `json:"types"`
-	URIs       []string             `json:"uris"`
-	Suites     []AptRepositorySuite `json:"suites"`
-	Components []string             `json:"components"`
-	SignedKey  string               `json:"signedKey"`
+	ID         string                 `json:"id"`
+	Types      []AptRepositoryType    `json:"types"`
+	URIs       []string               `json:"uris"`
+	Suites     []AptRepositorySuite   `json:"suites"`
+	Components []string               `json:"components"`
+	SignedKey  AptRepositorySignedKey `json:"signedKey"`
 }
 
 type AptRepositorySuite struct {
 	Suite  string `json:"suite"`
 	Target string `json:"target"`
 }
+
+func (s AptRepositorySuite) Validate() error {
+	if s.Suite == "" {
+		return fmt.Errorf("suite is required")
+	}
+
+	return nil
+}
+
+type AptRepositorySignedKey struct {
+	URL    string                       `json:"url"`
+	Format AptRepositorySignedKeyFormat `json:"format"`
+}
+
+func (k AptRepositorySignedKey) Validate() error {
+	if k.URL == "" {
+		return fmt.Errorf("url is required")
+	}
+
+	if !slices.Contains(SupportedAptRepositorySignedKeyFormats, k.Format) {
+		return fmt.Errorf("unsupported format: %s", k.Format)
+	}
+
+	return nil
+}
+
+var (
+	SupportedAptRepositoryTypes = []AptRepositoryType{AptRepositoryTypeDeb, AptRepositoryTypeDebSrc}
+)
+
+type AptRepositoryType string
+
+func (t AptRepositoryType) Validate() error {
+	if !slices.Contains(SupportedAptRepositoryTypes, t) {
+		return fmt.Errorf("unsupported type: %s", t)
+	}
+
+	return nil
+}
+
+const (
+	AptRepositoryTypeDeb    AptRepositoryType = "deb"
+	AptRepositoryTypeDebSrc AptRepositoryType = "deb-src"
+)
+
+var (
+	SupportedAptRepositorySignedKeyFormats = []AptRepositorySignedKeyFormat{AptRepositorySignedKeyFormatAsc, AptRepositorySignedKeyFormatGpg}
+)
+
+type AptRepositorySignedKeyFormat string
+
+const (
+	AptRepositorySignedKeyFormatAsc AptRepositorySignedKeyFormat = "asc"
+	AptRepositorySignedKeyFormatGpg AptRepositorySignedKeyFormat = "gpg"
+)
