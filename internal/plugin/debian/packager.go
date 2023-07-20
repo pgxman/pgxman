@@ -126,13 +126,21 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, dstDir str
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
-	deps := append(ext.BuildDependencies, ext.Deb.BuildDependencies...)
+	var (
+		deps     = ext.BuildDependencies
+		aptRepos = []pgxman.AptRepository{}
+	)
+
+	if deb := ext.Deb; deb != nil {
+		deps = append(deps, deb.BuildDependencies...)
+		aptRepos = deb.AptRepositories
+	}
 
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", deps))
 	logger.Info("Installing build deps")
 
-	logger.Debug("add apt repo", slog.Any("repos", ext.Deb.AptRepositories))
-	if err := addAptRepos(ctx, ext.Deb.AptRepositories, p.Logger); err != nil {
+	logger.Debug("add apt repo", slog.Any("repos", aptRepos))
+	if err := addAptRepos(ctx, aptRepos, p.Logger); err != nil {
 		return fmt.Errorf("add apt repo: %w", err)
 	}
 
