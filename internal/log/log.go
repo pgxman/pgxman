@@ -28,6 +28,12 @@ func (l *Logger) With(v ...any) *Logger {
 	}
 }
 
+func (l *Logger) WithGroup(name string) *Logger {
+	return &Logger{
+		Logger: l.Logger.WithGroup(name),
+	}
+}
+
 func NewTextLogger() *Logger {
 	return &Logger{
 		Logger: slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})),

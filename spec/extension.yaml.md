@@ -1,44 +1,44 @@
 # `extension.yaml` Specification
 
-The `extension.yaml` file is a configuration file in YAML format, used by `pgxman` to specify how a PostgreSQL extension should be built and installed.
+The `extension.yaml` file is a configuration file in YAML format that `pgxman` uses to specify how a PostgreSQL extension should be built and installed.
 
 ## `apiVersion`
 
-- **Description**: Specifies the API version that the buildkit adheres to. This is to ensure compatibility with the buildkit.
+- **Description**: Defines the API version to which the buildkit conforms, ensuring its compatibility.
 - **Type**: String
 - **Required**: Yes
 - **Supported Values**: Currently, only `v1` is supported.
 
 ## `name`
 
-- **Description**: The name of the extension.
+- **Description**: Identifies the name of the extension.
 - **Type**: String
 - **Required**: Yes
 
 ## `maintainers`
 
-- **Description**: Contains information about the individuals or organizations responsible for the maintenance of the extension.
+- **Description**: Lists the individuals or organizations responsible for maintaining the extension.
 - **Type**: List of objects
 - **Required**: Yes
 - **Object Fields**:
-  - `name`: The full name of the maintainer. (String, Required)
-  - `email`: Email address to contact the maintainer. (String, Required)
+  - `name`: The maintainer's full name. (String, Required)
+  - `email`: The maintainer's contact email. (String, Required)
 
 ## `source`
 
-- **Description**: The URL where the extension's source code can be downloaded. The source code must be in `tar.gz` format.
+- **Description**: Specifies the URL for downloading the extension's source code, which must be in in `tar.gz` format.
 - **Type**: String
 - **Required**: Yes
 
 ## `version`
 
-- **Description**: Specifies the version of the extension. It is not required to follow Semantic Versioning, but it is recommended to use quotes to prevent the YAML parser from interpreting it as a number.
+- **Description**: Defines the extension's version. Although not mandatory, it is advised to use quotes to avoid YAML parser interpretation as a number.
 - **Type**: String
 - **Required**: Yes
 
 ## `pgVersions`
 
-- **Description**: A list specifying the versions of PostgreSQL that the extension is compatible with. If this field is not specified, it is assumed that the extension is compatible with all versions.
+- **Description**: Lists the PostgreSQL versions compatible with the extension. If unspecified, the extension is assumed to be compatible with all versions.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `"13"`, `"14"`, `"15"`
@@ -46,13 +46,15 @@ The `extension.yaml` file is a configuration file in YAML format, used by `pgxma
 
 ## `build`
 
-- **Description**: A Bash script that automates the build process of the extension. Certain environment variables are set during the execution of this script. The built extension must be placed in the directory specified by `$DESTDIR`.
+- **Description**: Contains a Bash script that automates the extension's build process. Some environment variables are set during this script's execution. The built extension must be positioned in the `$DESTDIR` directory.
 - **Type**: String (Bash script)
 - **Required**: Yes
 - **Environment Variables**:
-  - `DESTDIR`: Specifies the directory where the built extension should be placed.
-  - `PG_CONFIG`: Specifies the path to the `pg_config` executable.
+  - `DESTDIR`: Indicates the directory where the built extension should be placed.
+  - `WORKDIR`: The working directory that contains the source code and the script.
+  - `PG_CONFIG`: Identifies the path to the `pg_config` executable.
   - `USE_PGXS`: Always set to `1`.
+  - `PG_VERSION`: The PostgreSQL version that the script is building against.
 
 The following is an example:
 
@@ -64,19 +66,19 @@ build: |
 
 ## `dependencies`
 
-- **Description**: Specifies a list of packages that must be present for the extension to run.
+- **Description**:  Lists the rpackages needed for the extension to function properly at runtime.
 - **Type**: List of strings
 - **Required**: No
 
 ## `buildDependencies`
 
-- **Description**: Specifies a list of packages that must be present for building the extension.
+- **Description**: Lists the packages necessary for building the extension.
 - **Type**: List of strings
 - **Required**: No
 
 ## `arch`
 
-- **Description**: Specifies the architectures that the extension supports. If not specified, it is assumed that the extension supports all architectures.
+- **Description**: Lists the architectures that the extension supports. If unspecified, all architectures are assumed to be supported.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `amd64`, `arm64`
@@ -84,7 +86,7 @@ build: |
 
 ## `platform`
 
-- **Description**: Specifies the platforms that the extension supports. Currently, only Linux is supported.
+- **Description**: Lists the platforms that the extension supports. Currently, only Linux is supported.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `linux`
@@ -92,7 +94,7 @@ build: |
 
 ## `formats`
 
-- **Description**: Specifies the formats in which the built extension can be exported. Currently, only Debian packages (`deb`) are supported.
+- **Description**: Lists the formats in which the built extension can be packaged. Currently, only Debian packages (`deb`) are supported.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `deb`
@@ -100,7 +102,7 @@ build: |
 
 ## `description`
 
-- **Description**: Provides a brief and concise description of the extension.
+- **Description**: Provides a succinct overview of the extension.
 - **Type**: String
 - **Required**: No
 
@@ -112,6 +114,26 @@ build: |
 
 ## `keywords`
 
-- **Description**: Specifies a list of keywords relevant to the extension. These keywords can enhance the extension's discoverability through searches within the `pgxman` tool.
+- **Description**: Lists keywords relevant to the extension, aiding its discovery in `pgxman` tool searches.
 - **Type**: List of strings
 - **Required**: No
+
+## `deb`
+
+- **Description**: Configures settings specific to Debian.
+- **Type**: Object
+- **Required**: No
+- **Object Fields**:
+  - `buildDepdencies`: Additional list of Debian packages required for building the extension. (List of strings, Optional)
+  - `Dependencies`: Additional list of Debian packages required for running the extension. (List of strings, Optional)
+  - `AptRepositories`: Lists the APT repositories containing the above Debian packages. (List of objects, Optional)
+    - `id`: The repository's id. (String, Required)
+    - `types`: The repository's types. (String, Required, Supported Values: `deb`, `deb-src`)
+    - `uris`: The repository's URIs. (List of strings, Required)
+    - `suites`: The repository's suites. (List of objects, Required)
+      - `suite`: The suite within the APT repository. (String, Required)
+      - `target`: The suite's target platform. This can be a Linux codename (e.g., `bookworm`) or a Linux distribution (e.g., `debian`). If unspecified, the suite supports any Linux distribution. (String, Optional)
+    - `components`: The components of the APT repository. (List of strings, Required)
+    - `signedKey`: The GPG signed key of the APT repository. (List of objects, Required)
+      - `uri`: The HTTP URL to download the GPG key. (String, Required)
+      - `format`: The format of the GPG key. (String, Required, Supported Values: `gpg`, `asc`)

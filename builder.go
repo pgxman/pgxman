@@ -182,6 +182,14 @@ func (b *dockerBuilder) dockerBuildCommonArgs(ext Extension) []string {
 		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
 	}
 
+	if b.BuilderOptions.Debug {
+		args = append(
+			args,
+			"--build-arg",
+			"PGXMAN_PACK_ARGS=--debug",
+		)
+	}
+
 	if b.NoCache {
 		args = append(args, "--no-cache")
 	} else {

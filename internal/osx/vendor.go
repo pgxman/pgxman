@@ -1,19 +1,12 @@
 package osx
 
 import (
-	"runtime"
-
 	"github.com/zcalusic/sysinfo"
 )
 
-func Vendor() string {
+func Sysinfo() sysinfo.SysInfo {
 	var si sysinfo.SysInfo
 	si.GetSysInfo()
 
-	os := si.OS.Vendor
-	if os == "" {
-		os = runtime.GOOS
-	}
-
-	return os
+	return si
 }

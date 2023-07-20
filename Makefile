@@ -40,11 +40,11 @@ vet:
 REPO ?= ghcr.io/pgxman/builder
 .PHONY: docker_build
 docker_build:
-	docker buildx build -t $(REPO) --load .
+	docker buildx build -t $(REPO) --load --pull .
 
 .PHONY: docker_push
 docker_push:
-	docker buildx build -t $(REPO) --platform linux/amd64,linux/arm64 --push .
+	docker buildx build -t $(REPO) --platform linux/amd64,linux/arm64 --push --pull .
 
 .PHONY: goreleaser
 goreleaser:
