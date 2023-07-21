@@ -13,6 +13,10 @@ import (
 
 var (
 	flagDebug bool
+
+	extension    pgxman.Extension
+	packager     pgxman.Packager
+	packagerOpts pgxman.PackagerOptions
 )
 
 func Execute() error {
@@ -20,35 +24,47 @@ func Execute() error {
 		Use:     "pgxman-pack",
 		Short:   "PostgreSQL Extension Packager",
 		Version: pgxman.Version,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagDebug {
 				log.SetLevel(slog.LevelDebug)
 			}
+
+			workDir, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+
+			extension, err = pgxman.ReadExtension(filepath.Join(workDir, "extension.yaml"), nil)
+			if err != nil {
+				return err
+			}
+
+			packager, err = plugin.GetPackager()
+			if err != nil {
+				return err
+			}
+
+			packagerOpts = pgxman.PackagerOptions{
+				WorkDir: workDir,
+				Debug:   flagDebug,
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pwd, err := os.Getwd()
-			if err != nil {
+			if err := runInit(cmd, args); err != nil {
 				return err
 			}
 
-			ext, err := pgxman.ReadExtension(filepath.Join(pwd, "extension.yaml"), nil)
-			if err != nil {
+			if err := runPre(cmd, args); err != nil {
 				return err
 			}
 
-			pkg, err := plugin.GetPackager()
-			if err != nil {
+			if err := runMain(cmd, args); err != nil {
 				return err
 			}
 
-			if err := pkg.Package(
-				cmd.Context(),
-				ext,
-				pgxman.PackagerOptions{
-					WorkDir: pwd,
-					Debug:   flagDebug,
-				},
-			); err != nil {
+			if err := runPost(cmd, args); err != nil {
 				return err
 			}
 
@@ -57,6 +73,11 @@ func Execute() error {
 	}
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
+
+	root.AddCommand(newInitCmd())
+	root.AddCommand(newPreCmd())
+	root.AddCommand(newMainCmd())
+	root.AddCommand(newPostCmd())
 
 	return root.Execute()
 }

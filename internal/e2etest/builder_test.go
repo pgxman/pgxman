@@ -25,11 +25,19 @@ func TestBuilder(t *testing.T) {
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev"}
 	ext.Arch = pgxman.SupportedArchs
 	ext.Formats = pgxman.SupportedFormats
-	// faking the build to speed up the test
-	ext.Build = `echo $DSTDIR
+	ext.Build = pgxman.Build{
+		Main: []pgxman.BuildScript{
+			{
+				Name: "fake build",
+				// faking the build to speed up the test
+				Run: `echo $DSTDIR
 echo $PG_CONFIG
 echo $PGXS
-`
+`,
+			},
+		},
+	}
+
 	ext.PGVersions = pgxman.SupportedPGVersions
 	ext.Maintainers = []pgxman.Maintainer{
 		{

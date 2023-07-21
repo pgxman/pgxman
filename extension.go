@@ -37,7 +37,7 @@ type Extension struct {
 	Source      string       `json:"source"`
 	Version     string       `json:"version"`
 	PGVersions  []PGVersion  `json:"pgVersions"`
-	Build       string       `json:"build"`
+	Build       Build        `json:"build"`
 	Maintainers []Maintainer `json:"maintainers"`
 
 	// optional
@@ -80,8 +80,8 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("pgVersions is required")
 	}
 
-	if ext.Build == "" {
-		return fmt.Errorf("build is required")
+	if err := ext.Build.Validate(); err != nil {
+		return err
 	}
 
 	if len(ext.Maintainers) == 0 {
@@ -205,6 +205,55 @@ var (
 type Maintainer struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type Build struct {
+	Pre  []BuildScript `json:"pre,omitempty"`
+	Main []BuildScript `json:"main"`
+	Post []BuildScript `json:"post,omitempty"`
+}
+
+func (b Build) Validate() error {
+	if len(b.Main) == 0 {
+		return fmt.Errorf("main build script is required")
+	}
+
+	for _, s := range b.Pre {
+		if err := s.Validate(); err != nil {
+			return fmt.Errorf("pre-build script: %w", err)
+		}
+	}
+
+	for _, s := range b.Main {
+		if err := s.Validate(); err != nil {
+			return fmt.Errorf("main build script: %w", err)
+		}
+	}
+
+	for _, s := range b.Post {
+		if err := s.Validate(); err != nil {
+			return fmt.Errorf("post-build script: %w", err)
+		}
+	}
+
+	return nil
+}
+
+type BuildScript struct {
+	Name string `json:"name"`
+	Run  string `json:"run"`
+}
+
+func (s BuildScript) Validate() error {
+	if s.Name == "" {
+		return fmt.Errorf("build script name is required")
+	}
+
+	if s.Run == "" {
+		return fmt.Errorf("build script run is required")
+	}
+
+	return nil
 }
 
 type Deb struct {

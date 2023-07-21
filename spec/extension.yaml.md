@@ -46,15 +46,25 @@ The `extension.yaml` file is a configuration file in YAML format that `pgxman` u
 
 ## `build`
 
-- **Description**: Contains a Bash script that automates the extension's build process. Some environment variables are set during this script's execution. The built extension must be positioned in the `$DESTDIR` directory.
-- **Type**: String (Bash script)
+- **Description**: Contains Bash scripts that automates the extension's build process. Some environment variables are set during the execution of these scripts. The built extension must be placed in the `$DESTDIR` directory.
+- **Type**: Object
 - **Required**: Yes
-- **Environment Variables**:
-  - `DESTDIR`: Indicates the directory where the built extension should be placed.
-  - `WORKDIR`: The working directory that contains the source code and the script.
-  - `PG_CONFIG`: Identifies the path to the `pg_config` executable.
-  - `USE_PGXS`: Always set to `1`.
-  - `PG_VERSION`: The PostgreSQL version that the script is building against.
+- **Object fields**:
+  - `pre`: A list of steps before the main build process. (List of objects, Optional)
+    - `name`: Name of the build step. (String, Required)
+    - `run`: Bash command for the build step. (String, Required)
+  - `main`: A list of steps to be executed during main build process. (List of objects, Required)
+    - `name`: Name of the build step. (String, Required)
+    - `run`: Bash command for the build step. (String, Required)
+    - **Environment Variables**:
+      - `DESTDIR`: Indicates the directory where the built extension should be placed.
+      - `WORKDIR`: The working directory that contains the source code and the script.
+      - `PG_CONFIG`: Identifies the path to the `pg_config` executable.
+      - `USE_PGXS`: Always set to `1`.
+      - `PG_VERSION`: The PostgreSQL version that the script is building against.
+  - `post`: A list of steps after the main build process. (List of objects, Optional)
+    - `name`: Name of the build step. (String, Required)
+    - `run`: Bash command for the build step. (String, Required)
 
 The following is an example:
 

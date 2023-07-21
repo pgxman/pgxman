@@ -25,50 +25,92 @@ type DebianPackager struct {
 	Logger *log.Logger
 }
 
-// Package generates the following folder structure:
-//   - workspace
-//     -- pgvector.orig.tar.gz
-//     -- extension.yaml
-//     -- extension
-//     --- Makefile
-//     --- src
-//     --- debian
-//     --- buildkit
-func (p *DebianPackager) Package(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	workDir := filepath.Join(opts.WorkDir, "target")
-
-	extDir := filepath.Join(workDir, "debian_build")
-	if err := os.MkdirAll(extDir, 0755); err != nil {
-		return err
-	}
-
-	sourceFile, err := p.downloadSource(ctx, ext, workDir)
+func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	workDir, buildDir, err := p.mkdir(opts)
 	if err != nil {
-		return fmt.Errorf("download source %s: %w", ext.Source, err)
+		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	if err := p.unarchiveSource(ctx, sourceFile, extDir); err != nil {
-		return fmt.Errorf("unarchive source: %w", err)
+	if err := p.downloadAndUnarchiveSource(ctx, ext, workDir, buildDir); err != nil {
+		return fmt.Errorf("download and unarchive source: %w", err)
 	}
 
 	if err := p.installBuildDependencies(ctx, ext); err != nil {
 		return fmt.Errorf("install build dependencies: %w", err)
 	}
 
-	if err := p.generateDebianTemplate(ext, extDir); err != nil {
+	if err := p.generateDebianTemplate(ext, buildDir); err != nil {
 		return fmt.Errorf("generate debian template: %w", err)
 	}
 
-	if err := p.buildDebian(ctx, ext, extDir); err != nil {
+	return nil
+}
+
+func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	_, buildDir, err := p.mkdir(opts)
+	if err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	return p.runScript(ctx, filepath.Join(buildDir, "script", "pre"), filepath.Join(buildDir, "src"))
+}
+
+func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	_, buildDir, err := p.mkdir(opts)
+	if err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	return p.runScript(ctx, filepath.Join(buildDir, "script", "post"), filepath.Join(buildDir, "src"))
+}
+
+// Package generates the following folder structure:
+//
+//   - workspace
+//     -- extension.yaml
+//     -- target
+//     --- pgvector.orig.tar.gz
+//     --- debian_build
+//     ---- Makefile
+//     ---- src
+//     ---- debian
+//     ---- script
+func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	_, buildDir, err := p.mkdir(opts)
+	if err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	if err := p.buildDebian(ctx, ext, buildDir); err != nil {
 		return fmt.Errorf("debian build: %w", err)
 	}
 
 	return nil
 }
 
-func (p *DebianPackager) downloadSource(ctx context.Context, ext pgxman.Extension, dstDir string) (string, error) {
+func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, targetDir, buildDir string) error {
+	sourceFile, err := p.downloadSource(ctx, ext, targetDir)
+	if err != nil {
+		return fmt.Errorf("download source %s: %w", ext.Source, err)
+	}
+
+	if err := p.unarchiveSource(ctx, sourceFile, buildDir); err != nil {
+		return fmt.Errorf("unarchive source: %w", err)
+	}
+
+	return nil
+}
+
+func (p *DebianPackager) downloadSource(ctx context.Context, ext pgxman.Extension, targetDir string) (string, error) {
 	logger := p.Logger.With(slog.String("source", ext.Source))
 	logger.Info("Downloading source")
+
+	sourceFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
+
+	// file is already downloaded
+	if _, err := os.Stat(sourceFile); err == nil {
+		return sourceFile, nil
+	}
 
 	resp, err := http.Get(ext.Source)
 	if err != nil {
@@ -76,7 +118,6 @@ func (p *DebianPackager) downloadSource(ctx context.Context, ext pgxman.Extensio
 	}
 	defer resp.Body.Close()
 
-	sourceFile := filepath.Join(dstDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
 	f, err := os.Create(sourceFile)
 	if err != nil {
 		return "", err
@@ -90,11 +131,16 @@ func (p *DebianPackager) downloadSource(ctx context.Context, ext pgxman.Extensio
 	return sourceFile, nil
 }
 
-func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, dstDir string) error {
+func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildDir string) error {
 	logger := p.Logger.With(slog.String("file", sourceFile))
 	logger.Info("Unarchiving source")
 
-	sourceDir := filepath.Join(dstDir, "src")
+	sourceDir := filepath.Join(buildDir, "src")
+	// file is already unarchived
+	if _, err := os.Stat(sourceDir); err == nil {
+		return nil
+	}
+
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
 		return err
 	}
@@ -118,11 +164,11 @@ func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, dstDir
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, dstDir string) error {
+func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, buildDir string) error {
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Info("Generating debian package")
 
-	return tmpl.Export(debian.FS, debianPackageTemplater{ext}, dstDir)
+	return tmpl.Export(debian.FS, debianPackageTemplater{ext}, buildDir)
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
@@ -156,12 +202,28 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 	return nil
 }
 
-func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, extDir string) error {
+func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {
+	logger := p.Logger.With(slog.String("script", script))
+	logger.Info("Running script")
+
+	runScript := exec.CommandContext(ctx, "bash", script)
+	runScript.Dir = sourceDir
+	runScript.Stdout = os.Stdout
+	runScript.Stderr = os.Stderr
+
+	if err := runScript.Run(); err != nil {
+		return fmt.Errorf("running script: %w", err)
+	}
+
+	return nil
+}
+
+func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, buildDir string) error {
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Info("Building debian package")
 
 	buildext := exec.CommandContext(ctx, "pg_buildext", "updatecontrol")
-	buildext.Dir = extDir
+	buildext.Dir = buildDir
 	buildext.Stdout = os.Stdout
 	buildext.Stderr = os.Stderr
 
@@ -185,7 +247,7 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 		os.Environ(),
 		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
 	)
-	debuild.Dir = extDir
+	debuild.Dir = buildDir
 	debuild.Stdout = os.Stdout
 	debuild.Stderr = os.Stderr
 
@@ -194,6 +256,18 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	}
 
 	return nil
+}
+
+func (p *DebianPackager) mkdir(opts pgxman.PackagerOptions) (workDir string, buildDir string, err error) {
+	workDir = filepath.Join(opts.WorkDir, "target")
+	buildDir = filepath.Join(workDir, "debian_build")
+
+	err = os.MkdirAll(buildDir, 0755)
+	if err != nil {
+		return "", "", err
+	}
+
+	return workDir, buildDir, nil
 }
 
 type extensionData struct {
@@ -224,6 +298,18 @@ func (e extensionData) Deps() string {
 
 }
 
+func (e extensionData) MainBuildScript() string {
+	return e.concatBuildScript(e.Build.Main)
+}
+
+func (e extensionData) PreBuildScript() string {
+	return e.concatBuildScript(e.Build.Pre)
+}
+
+func (e extensionData) PostBuildScript() string {
+	return e.concatBuildScript(e.Build.Post)
+}
+
 func (e extensionData) BuildDeps() string {
 	required := []string{
 		"debhelper (>= 9)",
@@ -240,6 +326,18 @@ func (e extensionData) BuildDeps() string {
 
 func (e extensionData) TimeNow() string {
 	return time.Now().Format(time.RFC1123Z)
+}
+
+func (e extensionData) concatBuildScript(scripts []pgxman.BuildScript) string {
+	var steps []string
+	for _, s := range scripts {
+		step := fmt.Sprintf("echo %q\n", s.Name)
+		step += s.Run
+
+		steps = append(steps, step)
+	}
+
+	return strings.Join(steps, "\n\n")
 }
 
 type debianPackageTemplater struct {
