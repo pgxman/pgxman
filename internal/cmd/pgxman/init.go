@@ -41,7 +41,7 @@ func runInit(c *cobra.Command, args []string) error {
 		Build: pgxman.Build{
 			Main: []pgxman.BuildScript{
 				{
-					Name: "build",
+					Name: "build step",
 					Run: `# Uncomment to write the build script for the extension.
 # The built extension must be installed in the $DESTDIR directory.
 # See https://github.com/pgxman/pgxman/blob/main/spec/extension.yaml.md#build for details.
