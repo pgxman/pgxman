@@ -10,5 +10,8 @@ type PackagerOptions struct {
 }
 
 type Packager interface {
-	Package(ctx context.Context, ext Extension, opts PackagerOptions) error
+	Init(ctx context.Context, ext Extension, opts PackagerOptions) error
+	Pre(ctx context.Context, ext Extension, opts PackagerOptions) error
+	Main(ctx context.Context, ext Extension, opts PackagerOptions) error
+	Post(ctx context.Context, ext Extension, opts PackagerOptions) error
 }

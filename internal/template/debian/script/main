@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "---> Running main build script {{ .Name }} ({{ .Version }})"
+
+{{ .MainBuildScript }}
