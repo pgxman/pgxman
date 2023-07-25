@@ -350,11 +350,7 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 		return fmt.Errorf("parse template: %w", err)
 	}
 
-	// Debian package name can consist of only lower case letters (a-z), digits (0-9), plus (+) and minus (-) signs, and periods (.)
-	// ref: https://www.debian.org/doc/debian-policy/ch-controlfields.html#:~:text=Package%20names%20(both%20source%20and,start%20with%20an%20alphanumeric%20character.
-	d.ext.Name = strings.ToLower(d.ext.Name)
-	d.ext.Name = strings.ReplaceAll(d.ext.Name, "_", "-")
-
+	d.ext.Name = debNormalizedName(d.ext.Name)
 	if err := t.Execute(out, extensionData{d.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}

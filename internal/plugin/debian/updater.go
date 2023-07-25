@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
@@ -17,28 +16,14 @@ const (
 	sourcesURL = "https://pgxman-buildkit-debian.s3.amazonaws.com"
 )
 
-var (
-	ConfigDir   string
-	BuildkitDir string
-)
-
-func init() {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	ConfigDir = filepath.Join(configDir, "pgxman")
-	BuildkitDir = filepath.Join(ConfigDir, "buildkit")
-}
-
 type DebianUpdater struct {
 	Logger *log.Logger
 }
 
 func (u *DebianUpdater) Update(ctx context.Context) error {
-	if err := u.fetchBuildkit(ctx); err != nil {
-		return fmt.Errorf("download buildkit: %w", err)
+	u.Logger.Debug("Downloading buildkit source", slog.String("dir", BuildkitDir))
+	if err := downloadBuildkitSource(ctx); err != nil {
+		return errBuildkitSource{Err: err}
 	}
 
 	u.Logger.Debug("Adding apt repositories")
@@ -69,9 +54,7 @@ func (u *DebianUpdater) Update(ctx context.Context) error {
 	return nil
 }
 
-func (u *DebianUpdater) fetchBuildkit(ctx context.Context) error {
-	u.Logger.Debug("Fetching buildkit", slog.String("dir", BuildkitDir))
-
+func downloadBuildkitSource(ctx context.Context) error {
 	if err := os.MkdirAll(ConfigDir, 0755); err != nil {
 		return err
 	}

@@ -28,6 +28,17 @@ func Test_parseInstallExtension(t *testing.T) {
 			},
 		},
 		{
+			Name: "valid with sha as version",
+			Arg:  "parquet_s3_fdw=5298b7f0254923f52d15e554ec8a5fdc0474f059@14",
+			GotExt: []pgxman.InstallExtension{
+				{
+					Name:      "parquet_s3_fdw",
+					Version:   "5298b7f0254923f52d15e554ec8a5fdc0474f059",
+					PGVersion: pgxman.PGVersion14,
+				},
+			},
+		},
+		{
 			Name: "valid with multiple pgversions",
 			Arg:  "pgvector=0.4.4@14,15",
 			GotExt: []pgxman.InstallExtension{
