@@ -3,6 +3,7 @@ module github.com/pgxman/pgxman
 go 1.20
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.7.1

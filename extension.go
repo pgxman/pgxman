@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"golang.org/x/exp/slices"
 )
 
@@ -74,6 +75,11 @@ func (ext Extension) Validate() error {
 
 	if ext.Version == "" {
 		return fmt.Errorf("version is required")
+	}
+
+	_, err := semver.NewVersion(ext.Version)
+	if err != nil {
+		return fmt.Errorf("invalid semantic version: %w", err)
 	}
 
 	if len(ext.PGVersions) == 0 {

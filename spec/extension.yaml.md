@@ -32,7 +32,7 @@ The `extension.yaml` file is a configuration file in YAML format that `pgxman` u
 
 ## `version`
 
-- **Description**: Defines the extension's version. Although not mandatory, it is advised to use quotes to avoid YAML parser interpretation as a number.
+- **Description**: Specifies the version of the extension buildkit. The versioning must adhere to the [Semantic Versioning 2.0.0](https://semver.org) format.
 - **Type**: String
 - **Required**: Yes
 
