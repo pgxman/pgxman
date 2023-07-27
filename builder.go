@@ -113,13 +113,16 @@ func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 }
 
 func (b *dockerBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, dstDir string) error {
+	///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
+	tag := strings.ReplaceAll(ext.Version, "+", "-")
+
 	return b.runDockerCmd(
 		ctx,
 		dstDir,
 		append(
 			b.dockerBuildCommonArgs(ext),
 			"--tag",
-			fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, ext.Version),
+			fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, tag),
 			"--target",
 			"build",
 			"--load",
