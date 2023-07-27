@@ -30,8 +30,8 @@ RUN set -eux; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    build-essential \
     autoconf \
+    build-essential \
     ca-certificates \
     cmake \
     curl \
@@ -46,6 +46,9 @@ RUN set -eux; \
     ninja-build \
     pkg-config \
     postgresql-server-dev-all \
+    python3.11 \
+    python3.11-dev \
+    python3.11-venv \
     wget \
     ; \
     rm -rf /var/lib/apt/lists/*
