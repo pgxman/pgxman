@@ -11,6 +11,10 @@
 
 include /usr/share/postgresql-common/pgxs_debian_control.mk
 
+override_dh_usrlocal:
+	# nothing to do here
+	# https://stackoverflow.com/questions/7459644/why-is-dh-usrlocal-throwing-a-build-error
+
 override_dh_auto_configure:
 	# nothing to do here
 
