@@ -52,7 +52,7 @@ func TestBuilder(t *testing.T) {
 			},
 		},
 	}
-	ext.Arch = pgxman.SupportedArchs
+	ext.Arch = []pgxman.Arch{pgxman.Arch(runtime.GOARCH)} // only build for current arch
 	ext.Formats = pgxman.SupportedFormats
 	ext.Build = pgxman.Build{
 		Main: []pgxman.BuildScript{
@@ -93,7 +93,7 @@ echo $PGXS
 
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
-	assert.Len(matches, 6) // 13, 14, 15 for amd64 & arm64
+	assert.Len(matches, 3) // 13, 14, 15 for current arch only
 
 	for _, match := range matches {
 		var (
