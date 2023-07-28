@@ -22,7 +22,7 @@ func TestBuilder(t *testing.T) {
 	ext.Description = "pgvector is a PostgreSQL extension for vector similarity search."
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
 	ext.Version = "0.4.4"
-	ext.BuildDependencies = []string{"libcurl4-openssl-dev"}
+	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
 	ext.Deb = &pgxman.Deb{
 		BuildDependencies: []string{"libarrow-dev"},
 		AptRepositories: []pgxman.AptRepository{

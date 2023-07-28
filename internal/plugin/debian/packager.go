@@ -186,9 +186,23 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		aptRepos = deb.AptRepositories
 	}
 
-	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", deps))
+	var depsToInstall []string
+	for _, dep := range deps {
+		if strings.Contains(dep, extensionDepPrefix) {
+			dep = strings.TrimPrefix(dep, extensionDepPrefix)
+			for _, ver := range ext.PGVersions {
+				depsToInstall = append(depsToInstall, extensionDebPkg(string(ver), dep))
+			}
+		} else {
+			depsToInstall = append(depsToInstall, dep)
+		}
+	}
+
+	fmt.Println(depsToInstall)
+
+	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", depsToInstall))
 	logger.Info("Installing build deps")
-	return runAptInstall(ctx, deps, aptRepos, logger)
+	return runAptInstall(ctx, depsToInstall, aptRepos, logger)
 }
 
 func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {
@@ -321,7 +335,7 @@ func (e extensionData) expandDeps(deps []string) []string {
 	for _, dep := range deps {
 		if strings.HasPrefix(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
-			expandedDeps = append(expandedDeps, fmt.Sprintf("postgresql-PGVERSION-pgxman-%s", dep))
+			expandedDeps = append(expandedDeps, extensionDebPkg("PGVERSION", dep))
 		} else {
 			expandedDeps = append(expandedDeps, dep)
 		}
@@ -358,4 +372,8 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	}
 
 	return nil
+}
+
+func extensionDebPkg(pgversion, extName string) string {
+	return fmt.Sprintf("postgresql-%s-pgxman-%s", pgversion, debNormalizedName(extName))
 }

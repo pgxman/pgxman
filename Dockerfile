@@ -58,3 +58,6 @@ COPY patch/make_pg_buildext_parallel.patch /tmp
 RUN patch `which pg_buildext` < /tmp/make_pg_buildext_parallel.patch
 
 COPY --from=gobuild /go/bin/* /usr/local/bin/
+
+# add pgxman repo
+RUN pgxman update
