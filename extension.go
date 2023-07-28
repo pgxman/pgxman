@@ -144,11 +144,6 @@ func (ext Extension) Validate() error {
 			if len(repo.Suites) == 0 {
 				return fmt.Errorf("apt repository suites is required")
 			}
-			for _, s := range repo.Suites {
-				if err := s.Validate(); err != nil {
-					return fmt.Errorf("apt repository suites: %w", err)
-				}
-			}
 
 			if len(repo.Components) == 0 {
 				return fmt.Errorf("apt repository components is required")
@@ -273,22 +268,10 @@ type AptRepository struct {
 	ID         string                 `json:"id"`
 	Types      []AptRepositoryType    `json:"types"`
 	URIs       []string               `json:"uris"`
-	Suites     []AptRepositorySuite   `json:"suites"`
+	Suites     []string               `json:"suites"`
 	Components []string               `json:"components"`
 	SignedKey  AptRepositorySignedKey `json:"signedKey"`
-}
-
-type AptRepositorySuite struct {
-	Suite  string `json:"suite"`
-	Target string `json:"target"`
-}
-
-func (s AptRepositorySuite) Validate() error {
-	if s.Suite == "" {
-		return fmt.Errorf("suite is required")
-	}
-
-	return nil
+	Target     string                 `json:"target"`
 }
 
 type AptRepositorySignedKey struct {

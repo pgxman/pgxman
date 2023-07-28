@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
+	"golang.org/x/exp/slog"
 	"sigs.k8s.io/yaml"
 )
 
@@ -56,27 +57,7 @@ func (i *DebianInstaller) Install(ctx context.Context, extsToInstall []pgxman.In
 	}
 
 	i.Logger.Debug("Installing debian packages", "packages", debPkgs)
-	return i.runAptInstall(ctx, debPkgs, aptRepos)
-}
-
-func (i *DebianInstaller) runAptInstall(ctx context.Context, exts []string, aptRepos []pgxman.AptRepository) error {
-	if err := addAptRepos(ctx, aptRepos, i.Logger); err != nil {
-		return fmt.Errorf("add apt repos: %w", err)
-	}
-
-	for _, ext := range exts {
-		i.Logger.Debug("Running apt install", "extension", ext)
-
-		cmd := exec.CommandContext(ctx, "apt", "install", "-y", "--no-install-recommends", ext)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("apt install: %w", err)
-		}
-	}
-
-	return nil
+	return runAptInstall(ctx, debPkgs, aptRepos, i.Logger)
 }
 
 func installableExtensions(ctx context.Context, buildkitDir string) (map[string]pgxman.Extension, error) {
@@ -101,4 +82,25 @@ func installableExtensions(ctx context.Context, buildkitDir string) (map[string]
 	}
 
 	return exts, nil
+}
+
+func runAptInstall(ctx context.Context, debPkgs []string, aptRepos []pgxman.AptRepository, logger *log.Logger) error {
+	logger.Debug("add apt repo", slog.Any("repos", aptRepos))
+	if err := addAptRepos(ctx, aptRepos, logger); err != nil {
+		return fmt.Errorf("add apt repos: %w", err)
+	}
+
+	for _, pkg := range debPkgs {
+		logger.Debug("Running apt install", "package", pkg)
+
+		cmd := exec.CommandContext(ctx, "apt", "install", "-y", "--no-install-recommends", pkg)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("apt install: %w", err)
+		}
+	}
+
+	return nil
 }

@@ -184,22 +184,7 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", deps))
 	logger.Info("Installing build deps")
-
-	logger.Debug("add apt repo", slog.Any("repos", aptRepos))
-	if err := addAptRepos(ctx, aptRepos, p.Logger); err != nil {
-		return fmt.Errorf("add apt repo: %w", err)
-	}
-
-	aptInstall := exec.CommandContext(ctx, "apt", append([]string{"install", "-y", "--no-install-recommends"}, deps...)...)
-	aptInstall.Stdout = os.Stdout
-	aptInstall.Stderr = os.Stderr
-
-	logger.Debug("apt install", slog.Any("cmd", aptInstall.String()))
-	if err := aptInstall.Run(); err != nil {
-		return fmt.Errorf("apt install: %w", err)
-	}
-
-	return nil
+	return runAptInstall(ctx, deps, aptRepos, logger)
 }
 
 func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {

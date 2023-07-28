@@ -23,6 +23,35 @@ func TestBuilder(t *testing.T) {
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
 	ext.Version = "0.4.4"
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev"}
+	ext.Deb = &pgxman.Deb{
+		BuildDependencies: []string{"libarrow-dev"},
+		AptRepositories: []pgxman.AptRepository{
+			{
+				ID:         "apache-arrow-debian-bookworm",
+				Types:      pgxman.SupportedAptRepositoryTypes,
+				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/debian"},
+				Components: []string{"main"},
+				Suites:     []string{"bookworm"},
+				SignedKey: pgxman.AptRepositorySignedKey{
+					URL:    "https://downloads.apache.org/arrow/KEYS",
+					Format: pgxman.AptRepositorySignedKeyFormatAsc,
+				},
+				Target: "bookworm",
+			},
+			{
+				ID:         "apache-arrow-ubuntu-jammy",
+				Types:      pgxman.SupportedAptRepositoryTypes,
+				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/ubuntu"},
+				Components: []string{"main"},
+				Suites:     []string{"jammy"},
+				SignedKey: pgxman.AptRepositorySignedKey{
+					URL:    "https://downloads.apache.org/arrow/KEYS",
+					Format: pgxman.AptRepositorySignedKeyFormatAsc,
+				},
+				Target: "ubuntu",
+			},
+		},
+	}
 	ext.Arch = pgxman.SupportedArchs
 	ext.Formats = pgxman.SupportedFormats
 	ext.Build = pgxman.Build{

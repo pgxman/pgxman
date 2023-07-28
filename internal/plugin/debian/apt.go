@@ -40,22 +40,19 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.
 		logger := logger.WithGroup(repo.ID)
 		logger.Debug("Adding apt repo")
 
+		var (
+			osn = osx.Sysinfo().OS.Name
+		)
+		// if specified target does not match the current OS, skip
+		if repo.Target != "" && !strings.Contains(osn, repo.Target) {
+			logger.Debug("Skipping apt repo", "target", repo.Target, "os", osn)
+			continue
+		}
+
 		gpgKeyPath := filepath.Join(keyringsDir, repo.ID+"."+string(repo.SignedKey.Format))
 		logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", gpgKeyPath)
 		if err := downloadFile(repo.SignedKey.URL, gpgKeyPath); err != nil {
 			return err
-		}
-
-		var (
-			suites []string
-			osn    = osx.Sysinfo().OS.Name
-		)
-		for _, suite := range repo.Suites {
-			// if no target is specified, the suite is valid for all OSs
-			// otherwise, the suite is only valid for the specified OS
-			if suite.Target == "" || strings.Contains(osn, suite.Target) {
-				suites = append(suites, suite.Suite)
-			}
 		}
 
 		var types []string
@@ -67,7 +64,7 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.
 		if err := aptSourcesTmpl.Execute(b, aptSourcesTmplData{
 			Types:      strings.Join(types, " "),
 			URIs:       strings.Join(repo.URIs, " "),
-			Suites:     strings.Join(suites, " "),
+			Suites:     strings.Join(repo.Suites, " "),
 			Components: strings.Join(repo.Components, " "),
 			SignedBy:   gpgKeyPath,
 		}); err != nil {
