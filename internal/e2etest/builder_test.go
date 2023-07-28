@@ -22,8 +22,38 @@ func TestBuilder(t *testing.T) {
 	ext.Description = "pgvector is a PostgreSQL extension for vector similarity search."
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
 	ext.Version = "0.4.4"
-	ext.BuildDependencies = []string{"libcurl4-openssl-dev"}
-	ext.Arch = pgxman.SupportedArchs
+	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
+	ext.Dependencies = []string{"libcurl4-openssl-dev"}
+	ext.Deb = &pgxman.Deb{
+		BuildDependencies: []string{"libarrow-dev"},
+		AptRepositories: []pgxman.AptRepository{
+			{
+				ID:         "apache-arrow-debian-bookworm",
+				Types:      pgxman.SupportedAptRepositoryTypes,
+				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/debian"},
+				Components: []string{"main"},
+				Suites:     []string{"bookworm"},
+				SignedKey: pgxman.AptRepositorySignedKey{
+					URL:    "https://downloads.apache.org/arrow/KEYS",
+					Format: pgxman.AptRepositorySignedKeyFormatAsc,
+				},
+				Target: "bookworm",
+			},
+			{
+				ID:         "apache-arrow-ubuntu-jammy",
+				Types:      pgxman.SupportedAptRepositoryTypes,
+				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/ubuntu"},
+				Components: []string{"main"},
+				Suites:     []string{"jammy"},
+				SignedKey: pgxman.AptRepositorySignedKey{
+					URL:    "https://downloads.apache.org/arrow/KEYS",
+					Format: pgxman.AptRepositorySignedKeyFormatAsc,
+				},
+				Target: "ubuntu",
+			},
+		},
+	}
+	ext.Arch = []pgxman.Arch{pgxman.Arch(runtime.GOARCH)} // only build for current arch
 	ext.Formats = pgxman.SupportedFormats
 	ext.Build = pgxman.Build{
 		Main: []pgxman.BuildScript{
@@ -64,7 +94,7 @@ echo $PGXS
 
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
-	assert.Len(matches, 6) // 13, 14, 15 for amd64 & arm64
+	assert.Len(matches, 3) // 13, 14, 15 for current arch only
 
 	for _, match := range matches {
 		var (

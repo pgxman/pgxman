@@ -20,7 +20,7 @@ jobs:
       - name: Generate tag name
         run: |
           # tag > commit
-          echo "build_version=$(git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "build_version=$(git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:

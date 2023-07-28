@@ -31,14 +31,10 @@ func (u *DebianUpdater) Update(ctx context.Context) error {
 		ctx,
 		[]pgxman.AptRepository{
 			{
-				ID:    "pgxman",
-				Types: []pgxman.AptRepositoryType{"deb"},
-				URIs:  []string{sourcesURL},
-				Suites: []pgxman.AptRepositorySuite{
-					{
-						Suite: "stable",
-					},
-				},
+				ID:         "pgxman",
+				Types:      []pgxman.AptRepositoryType{"deb"},
+				URIs:       []string{sourcesURL},
+				Suites:     []string{"stable"},
 				Components: []string{"main"},
 				SignedKey: pgxman.AptRepositorySignedKey{
 					URL:    gpgkeyURL,
