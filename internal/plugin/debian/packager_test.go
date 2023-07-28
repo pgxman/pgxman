@@ -14,8 +14,8 @@ func Test_debianPackageTemplater(t *testing.T) {
 	ext := pgxman.Extension{
 		Name:              "pgvector",
 		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
-		BuildDependencies: []string{"libxml2"},
-		Dependencies:      []string{"libxml2"},
+		BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
+		Dependencies:      []string{"libxml2", "pgxman/multicorn"},
 	}
 
 	cases := []struct {
@@ -31,12 +31,12 @@ func Test_debianPackageTemplater(t *testing.T) {
 		{
 			Name:        "build deps",
 			Content:     `{{ .BuildDeps }}`,
-			WantContent: "debhelper (>= 9), postgresql-server-dev-all (>= 158~), libxml2",
+			WantContent: "debhelper (>= 9), postgresql-server-dev-all (>= 158~), libxml2, postgresql-PGVERSION-pgxman-multicorn",
 		},
 		{
 			Name:        "deps",
 			Content:     `{{ .Deps }}`,
-			WantContent: "${shlibs:Depends}, ${misc:Depends}, libxml2",
+			WantContent: "${shlibs:Depends}, ${misc:Depends}, libxml2, postgresql-PGVERSION-pgxman-multicorn",
 		},
 		{
 			Name:        "maintainers",
