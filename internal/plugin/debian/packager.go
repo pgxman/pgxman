@@ -21,6 +21,10 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+const (
+	extensionDepPrefix = "pgxman/"
+)
+
 type DebianPackager struct {
 	Logger *log.Logger
 }
@@ -268,6 +272,20 @@ func (e extensionData) Maintainers() string {
 	return strings.Join(maintainers, ", ")
 }
 
+func (e extensionData) BuildDeps() string {
+	required := []string{
+		"debhelper (>= 9)",
+		"postgresql-server-dev-all (>= 158~)",
+	}
+
+	bdeps := e.BuildDependencies
+	if deb := e.Deb; deb != nil && len(deb.BuildDependencies) != 0 {
+		bdeps = deb.BuildDependencies
+	}
+
+	return strings.Join(append(required, e.expandDeps(bdeps)...), ", ")
+}
+
 func (e extensionData) Deps() string {
 	required := []string{
 		"${shlibs:Depends}",
@@ -279,8 +297,7 @@ func (e extensionData) Deps() string {
 		deps = deb.Dependencies
 	}
 
-	return strings.Join(append(required, deps...), ", ")
-
+	return strings.Join(append(required, e.expandDeps(deps)...), ", ")
 }
 
 func (e extensionData) MainBuildScript() string {
@@ -295,22 +312,22 @@ func (e extensionData) PostBuildScript() string {
 	return e.concatBuildScript(e.Build.Post)
 }
 
-func (e extensionData) BuildDeps() string {
-	required := []string{
-		"debhelper (>= 9)",
-		"postgresql-server-dev-all (>= 158~)",
-	}
-
-	bdeps := e.BuildDependencies
-	if deb := e.Deb; deb != nil && len(deb.BuildDependencies) != 0 {
-		bdeps = deb.BuildDependencies
-	}
-
-	return strings.Join(append(required, bdeps...), ", ")
-}
-
 func (e extensionData) TimeNow() string {
 	return time.Now().Format(time.RFC1123Z)
+}
+
+func (e extensionData) expandDeps(deps []string) []string {
+	var expandedDeps []string
+	for _, dep := range deps {
+		if strings.HasPrefix(dep, extensionDepPrefix) {
+			dep = strings.TrimPrefix(dep, extensionDepPrefix)
+			expandedDeps = append(expandedDeps, fmt.Sprintf("postgresql-PGVERSION-pgxman-%s", dep))
+		} else {
+			expandedDeps = append(expandedDeps, dep)
+		}
+	}
+
+	return expandedDeps
 }
 
 func (e extensionData) concatBuildScript(scripts []pgxman.BuildScript) string {
