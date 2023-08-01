@@ -2,9 +2,7 @@ package pgxman
 
 import (
 	"fmt"
-	"os"
 	"os/user"
-	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -25,11 +23,6 @@ func newInitCmd() *cobra.Command {
 }
 
 func runInit(c *cobra.Command, args []string) error {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
 	user, err := user.Current()
 	if err != nil {
 		return err
@@ -37,7 +30,7 @@ func runInit(c *cobra.Command, args []string) error {
 
 	ext := &pgxman.Extension{
 		APIVersion: pgxman.DefaultAPIVersion,
-		Name:       filepath.Base(pwd),
+		Name:       "my-pg-extension",
 		Build: pgxman.Build{
 			Main: []pgxman.BuildScript{
 				{
@@ -178,7 +171,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				m.done = true
 
-				if err := pgxman.WriteExtension("extension.yaml", *m.ext); err != nil {
+				if err := pgxman.WriteExtension(fmt.Sprintf("%s.yaml", m.ext.Name), *m.ext); err != nil {
 					m.err = err
 				}
 
