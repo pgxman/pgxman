@@ -2,6 +2,7 @@ package pgxman
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/imdario/mergo"
@@ -18,9 +19,17 @@ func WriteExtension(path string, ext Extension) error {
 }
 
 func ReadPGXManFile(path string) (*PGXManFile, error) {
-	var pgxmanf PGXManFile
+	var (
+		pgxmanf PGXManFile
+		b       []byte
+		err     error
+	)
 
-	b, err := os.ReadFile(path)
+	if path == "-" {
+		b, err = io.ReadAll(os.Stdin)
+	} else {
+		b, err = os.ReadFile(path)
+	}
 	if err != nil {
 		return nil, err
 	}

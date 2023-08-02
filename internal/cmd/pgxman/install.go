@@ -28,6 +28,18 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
   # Install extensions from the PGXManFile in a specific directory
   pgxman install -f /PATH_TO/PGXManFile
 
+  # Install extensions from STDIN with the PGXManFile format
+  cat <<EOF | pgxman install -f -
+	apiVersion: v1
+	extensions:
+	- name: "pgvector"
+		version: "0.4.4"
+	- path: "/local/path/to/extension"
+	pgVersions:
+	- "14"
+	- "15"
+  EOF
+
   # Install pgvector 0.4.4 for PostgreSQL 14
   pgxman install pgvector=0.4.4@14
 
