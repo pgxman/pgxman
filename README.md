@@ -46,6 +46,8 @@ apiVersion: v1
 extensions:
   - name: "pgvector"
     version: "0.4.4"
+  - name: "pg_ivm"
+    version: "1.5.1"
 pgVersions:
   - "15"
 EOS
@@ -80,7 +82,7 @@ pgxman init # follow the instruction
 
 This command generates a manifest file named after your extension (`pgvector.yaml` in this example).
 The file serves as your blueprint for building the extension.
-The full specification is available [here](spec/extension.yaml.md).
+The full specification is available [here](spec/buildkit.md).
 Feel free to adapt the [official build manifest file](https://github.com/pgxman/buildkit/blob/main/buildkit/pgvector.yaml) for your requirements.
 
 2. **Build the extension**:
