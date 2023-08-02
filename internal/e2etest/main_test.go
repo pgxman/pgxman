@@ -13,6 +13,7 @@ import (
 
 var (
 	flagBuildImage string
+	flagPGXManBin  string
 )
 
 var cf struct {
@@ -53,6 +54,7 @@ func TestMain(m *testing.M) {
 	var e2etest bool
 	flag.BoolVar(&e2etest, "e2e", false, "Run e2e tests")
 	flag.StringVar(&flagBuildImage, "build-image", "", "Build image")
+	flag.StringVar(&flagPGXManBin, "pgxman-bin", "", "THe Linux binary of pgxman")
 	flag.Parse()
 
 	log.SetLevel(slog.LevelDebug)
@@ -65,6 +67,11 @@ func TestMain(m *testing.M) {
 
 	if flagBuildImage == "" {
 		logger.Info("-build-image is required")
+		os.Exit(0)
+	}
+
+	if flagPGXManBin == "" {
+		logger.Info("-pgxman-bin is required")
 		os.Exit(0)
 	}
 

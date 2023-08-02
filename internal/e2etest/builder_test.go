@@ -130,6 +130,8 @@ echo $PGXS
 					name,
 					"-v",
 					filepath.Join(extdir, "out")+":/out",
+					"-v",
+					flagPGXManBin+":/usr/local/bin/pgxman",
 					image,
 					"bash",
 					"--noprofile",
@@ -139,15 +141,23 @@ echo $PGXS
 					"-c",
 					fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
 apt update
-apt install ca-certificates gnupg2 postgresql-common -y
+apt install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-apt update
-apt install /out/%s -y
+pgxman update
+cat <<EOS | pgxman install -f -
+apiVersion: v1
+extensions:
+- name: "pg_ivm"
+  version: "1.5.1"
+- path: "/out/%s"
+pgVersions:
+- "14"
+EOS
 `, debFile),
 				)
 
-				b, err := cmd.Output()
+				b, err := cmd.CombinedOutput()
 				assert.NoError(err, string(b))
 			})
 		}
