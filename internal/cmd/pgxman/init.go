@@ -29,7 +29,7 @@ func runInit(c *cobra.Command, args []string) error {
 	}
 
 	ext := &pgxman.Extension{
-		APIVersion: pgxman.DefaultAPIVersion,
+		APIVersion: pgxman.DefaultExtensionAPIVersion,
 		Name:       "my-pg-extension",
 		Build: pgxman.Build{
 			Main: []pgxman.BuildScript{

@@ -22,7 +22,7 @@ func NewDefaultExtension() Extension {
 	}
 
 	return Extension{
-		APIVersion: DefaultAPIVersion,
+		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
 		Platform:   []Platform{PlatformLinux},
 		Arch:       []Arch{Arch(runtime.GOARCH)},
@@ -58,7 +58,7 @@ type Extension struct {
 }
 
 func (ext Extension) Validate() error {
-	if ext.APIVersion != DefaultAPIVersion {
+	if ext.APIVersion != DefaultExtensionAPIVersion {
 		return fmt.Errorf("invalid api version: %s", ext.APIVersion)
 	}
 
@@ -158,7 +158,7 @@ func (ext Extension) Validate() error {
 	return nil
 }
 
-const DefaultAPIVersion = "v1"
+const DefaultExtensionAPIVersion = "v1"
 
 type Arch string
 

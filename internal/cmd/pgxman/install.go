@@ -15,10 +15,16 @@ import (
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install a PostgreSQL extension",
-		Long: `Install a PostgreSQL extension from registry or from local paths. To install from the registry, the
+		Short: "Install PostgreSQL extensions",
+		Long: `Install PostgreSQL extensions from a PGXManFile or from commandline arguments. To install from arguments, the
 format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of PostgreSQL versions.`,
-		Example: `  # Install pgvector 0.4.4 for PostgreSQL 14
+		Example: `  # Install extensions from the PGXManFile in the current directory
+  pgxman install
+
+  # Install extensions from the PGXManFile in a specific directory
+  pgxman install -f /PATH_TO/PGXManFile
+
+  # Install pgvector 0.4.4 for PostgreSQL 14
   pgxman install pgvector=0.4.4@14
 
   # Install pgvector 0.4.4 for PostgreSQL 14 & 15
@@ -36,14 +42,14 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 }
 
 func runInstall(c *cobra.Command, args []string) error {
-	var result []pgxman.InstallExtension
+	var result []pgxman.InstallExtensions
 	for _, arg := range args {
 		exts, err := parseInstallExtensions(arg)
 		if err != nil {
 			return err
 		}
 
-		result = append(result, exts...)
+		result = append(result, *exts)
 	}
 
 	i, err := plugin.GetInstaller()
@@ -51,7 +57,13 @@ func runInstall(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	return i.Install(c.Context(), result)
+	for _, exts := range result {
+		if err := i.Install(c.Context(), exts); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type errInvalidExtensionFormat struct {
@@ -66,7 +78,7 @@ var (
 	extRegexp = regexp.MustCompile(`^(.+)=(.+)@(.+)$`)
 )
 
-func parseInstallExtensions(arg string) ([]pgxman.InstallExtension, error) {
+func parseInstallExtensions(arg string) (*pgxman.InstallExtensions, error) {
 	// install from apt
 	if extRegexp.MatchString(arg) {
 		match := extRegexp.FindStringSubmatch(arg)
@@ -80,16 +92,24 @@ func parseInstallExtensions(arg string) ([]pgxman.InstallExtension, error) {
 			return nil, errInvalidExtensionFormat{Arg: arg}
 		}
 
-		var exts []pgxman.InstallExtension
+		var (
+			pgvers []pgxman.PGVersion
+			exts   = []pgxman.InstallExtension{
+				{
+					Name:    name,
+					Version: version,
+				},
+			}
+		)
 		for _, pgversion := range pgversions {
-			exts = append(exts, pgxman.InstallExtension{
-				Name:      name,
-				Version:   version,
-				PGVersion: pgxman.PGVersion(pgversion),
-			})
+			pgvers = append(pgvers, pgxman.PGVersion(pgversion))
 		}
 
-		return exts, nil
+		return &pgxman.InstallExtensions{
+			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
+			Extensions: exts,
+			PGVersions: pgvers,
+		}, nil
 	}
 
 	// install from local file
@@ -99,10 +119,14 @@ func parseInstallExtensions(arg string) ([]pgxman.InstallExtension, error) {
 			return nil, err
 		}
 
-		return []pgxman.InstallExtension{
-			{
-				Path: path,
+		return &pgxman.InstallExtensions{
+			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
+			Extensions: []pgxman.InstallExtension{
+				{
+					Path: path,
+				},
 			},
+			PGVersions: pgxman.SupportedPGVersions,
 		}, nil
 	}
 

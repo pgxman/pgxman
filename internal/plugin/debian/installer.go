@@ -17,8 +17,8 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Install(ctx context.Context, extsToInstall []pgxman.InstallExtension) error {
-	i.Logger.Debug("Installing extensions", "extensions", extsToInstall)
+func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.InstallExtensions) error {
+	i.Logger.Debug("Installing extensions", "extensions", exts)
 
 	i.Logger.Debug("Fetching installable extensions", "dir", BuildkitDir)
 	installableExts, err := installableExtensions(ctx, BuildkitDir)
@@ -30,7 +30,7 @@ func (i *DebianInstaller) Install(ctx context.Context, extsToInstall []pgxman.In
 		debPkgs  []string
 		aptRepos []pgxman.AptRepository
 	)
-	for _, extToInstall := range extsToInstall {
+	for _, extToInstall := range exts.Extensions {
 		if err := extToInstall.Validate(); err != nil {
 			return err
 		}
@@ -46,7 +46,9 @@ func (i *DebianInstaller) Install(ctx context.Context, extsToInstall []pgxman.In
 				return fmt.Errorf("extension %q with version %q not available", extToInstall.Name, extToInstall.Version)
 			}
 
-			debPkgs = append(debPkgs, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", extToInstall.PGVersion, debNormalizedName(extToInstall.Name), extToInstall.Version))
+			for _, pgv := range exts.PGVersions {
+				debPkgs = append(debPkgs, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version))
+			}
 
 			if deb := installableExt.Deb; deb != nil {
 				if ar := deb.AptRepositories; len(ar) > 0 {
