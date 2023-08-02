@@ -9,13 +9,13 @@ import (
 
 const DefaultInstallExtensionsAPIVersion = "v1"
 
-type InstallExtensions struct {
+type PGXManFile struct {
 	APIVersion string             `json:"apiVersion"`
 	Extensions []InstallExtension `json:"extensions"`
 	PGVersions []PGVersion        `json:"pgVersions"`
 }
 
-func (exts InstallExtensions) Validate() error {
+func (exts PGXManFile) Validate() error {
 	if exts.APIVersion != DefaultInstallExtensionsAPIVersion {
 		return fmt.Errorf("invalid api version: %s", exts.APIVersion)
 	}
@@ -60,5 +60,5 @@ func (e InstallExtension) Validate() error {
 }
 
 type Installer interface {
-	Install(ctx context.Context, exts InstallExtensions) error
+	Install(ctx context.Context, exts PGXManFile) error
 }

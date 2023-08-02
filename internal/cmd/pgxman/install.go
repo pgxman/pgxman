@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	flagPGXManFile string
+)
+
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
@@ -38,18 +42,39 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 		RunE: runInstall,
 	}
 
+	cmd.PersistentFlags().StringVarP(&flagPGXManFile, "file", "f", "", "PGXManFile to use. Defaults to PGXManFile in the current directory.")
+
 	return cmd
 }
 
 func runInstall(c *cobra.Command, args []string) error {
-	var result []pgxman.InstallExtensions
-	for _, arg := range args {
-		exts, err := parseInstallExtensions(arg)
+	var result []pgxman.PGXManFile
+
+	if len(args) == 0 {
+		if flagPGXManFile == "" {
+			pwd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+
+			flagPGXManFile = filepath.Join(pwd, "PGXManFile")
+		}
+
+		pgxmf, err := pgxman.ReadPGXManFile(flagPGXManFile)
 		if err != nil {
 			return err
 		}
 
-		result = append(result, *exts)
+		result = append(result, *pgxmf)
+	} else {
+		for _, arg := range args {
+			exts, err := parseInstallExtensions(arg)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, *exts)
+		}
 	}
 
 	i, err := plugin.GetInstaller()
@@ -78,7 +103,7 @@ var (
 	extRegexp = regexp.MustCompile(`^(.+)=(.+)@(.+)$`)
 )
 
-func parseInstallExtensions(arg string) (*pgxman.InstallExtensions, error) {
+func parseInstallExtensions(arg string) (*pgxman.PGXManFile, error) {
 	// install from apt
 	if extRegexp.MatchString(arg) {
 		match := extRegexp.FindStringSubmatch(arg)
@@ -105,7 +130,7 @@ func parseInstallExtensions(arg string) (*pgxman.InstallExtensions, error) {
 			pgvers = append(pgvers, pgxman.PGVersion(pgversion))
 		}
 
-		return &pgxman.InstallExtensions{
+		return &pgxman.PGXManFile{
 			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
 			Extensions: exts,
 			PGVersions: pgvers,
@@ -119,7 +144,7 @@ func parseInstallExtensions(arg string) (*pgxman.InstallExtensions, error) {
 			return nil, err
 		}
 
-		return &pgxman.InstallExtensions{
+		return &pgxman.PGXManFile{
 			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
 			Extensions: []pgxman.InstallExtension{
 				{

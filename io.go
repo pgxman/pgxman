@@ -17,6 +17,21 @@ func WriteExtension(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
+func ReadPGXManFile(path string) (*PGXManFile, error) {
+	var pgxmanf PGXManFile
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := yaml.Unmarshal(b, &pgxmanf); err != nil {
+		return nil, err
+	}
+
+	return &pgxmanf, nil
+}
+
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
