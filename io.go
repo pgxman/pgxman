@@ -18,9 +18,9 @@ func WriteExtension(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func ReadPGXManFile(path string) (*PGXManFile, error) {
+func ReadPGXManfile(path string) (*PGXManfile, error) {
 	var (
-		pgxmanf PGXManFile
+		pgxmanf PGXManfile
 		b       []byte
 		err     error
 	)

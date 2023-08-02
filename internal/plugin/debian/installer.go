@@ -17,8 +17,8 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManFile) error {
-	i.Logger.Debug("Installing extensions", "PGXManFile", exts)
+func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) error {
+	i.Logger.Debug("Installing extensions", "pgxman.yaml", exts)
 
 	i.Logger.Debug("Fetching installable extensions", "dir", BuildkitDir)
 	installableExts, err := installableExtensions(ctx, BuildkitDir)

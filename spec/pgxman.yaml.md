@@ -1,14 +1,14 @@
-# PGXManFile
+# pgxman.yaml
 
-A `PGXManFile` is a YAML configuration file used to declare a collection of PostgreSQL extensions for installation via PGXMan.
-It serves as an input file for the command `pgxman install -f PGXManFile`, defining the required extensions, their versions,
+A `pgxman.yaml` is a YAML configuration file used to declare a collection of PostgreSQL extensions for installation via PGXMan.
+It serves as an input file for the command `pgxman install -f /PATH_TO/pgxman.yaml`, defining the required extensions, their versions,
 and the targeting PostgreSQL versions.
 
 ## Fields
 
 ### `apiVersion`
 
-- **Description**: Defines the API version of the PGXManFile to ensure compatibility with PGXMan.
+- **Description**: Defines the API version to ensure compatibility with PGXMan.
 - **Type**: String
 - **Required**: Yes
 - **Supported Values**: As of now, only `v1` is supported.
@@ -32,7 +32,7 @@ and the targeting PostgreSQL versions.
 
 ## Example
 
-Here's an example of a PGXManFile that illustrates the usage of these fields:
+Here's an example that illustrates the usage of these fields:
 
 ```yaml
 apiVersion: v1

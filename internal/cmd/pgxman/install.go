@@ -13,31 +13,31 @@ import (
 )
 
 var (
-	flagPGXManFile string
+	flagPGXManfile string
 )
 
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install PostgreSQL extensions",
-		Long: `Install PostgreSQL extensions from a PGXManFile or from commandline arguments. To install from arguments, the
+		Long: `Install PostgreSQL extensions from a pgxman.yaml file or from commandline arguments. To install from arguments, the
 format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of PostgreSQL versions.`,
-		Example: `  # Install extensions from the PGXManFile in the current directory
+		Example: `  # Install extensions from the pgxman.yaml file in the current directory
   pgxman install
 
-  # Install extensions from the PGXManFile in a specific directory
-  pgxman install -f /PATH_TO/PGXManFile
+  # Install extensions from the pgxman.yaml in a specific directory
+  pgxman install -f /PATH_TO/pgxman.yaml
 
-  # Install extensions from STDIN with the PGXManFile format
+  # Install extensions from STDIN with the pgxman.yaml format
   cat <<EOF | pgxman install -f -
-	apiVersion: v1
-	extensions:
-	- name: "pgvector"
-		version: "0.4.4"
-	- path: "/local/path/to/extension"
-	pgVersions:
-	- "14"
-	- "15"
+    apiVersion: v1
+    extensions:
+      - name: "pgvector"
+        version: "0.4.4"
+      - path: "/local/path/to/extension"
+    pgVersions:
+      - "14"
+      - "15"
   EOF
 
   # Install pgvector 0.4.4 for PostgreSQL 14
@@ -54,25 +54,25 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 		RunE: runInstall,
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagPGXManFile, "file", "f", "", "PGXManFile to use. Defaults to PGXManFile in the current directory.")
+	cmd.PersistentFlags().StringVarP(&flagPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
 
 	return cmd
 }
 
 func runInstall(c *cobra.Command, args []string) error {
-	var result []pgxman.PGXManFile
+	var result []pgxman.PGXManfile
 
 	if len(args) == 0 {
-		if flagPGXManFile == "" {
+		if flagPGXManfile == "" {
 			pwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			flagPGXManFile = filepath.Join(pwd, "PGXManFile")
+			flagPGXManfile = filepath.Join(pwd, "pgxman.yaml")
 		}
 
-		pgxmf, err := pgxman.ReadPGXManFile(flagPGXManFile)
+		pgxmf, err := pgxman.ReadPGXManfile(flagPGXManfile)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ var (
 	extRegexp = regexp.MustCompile(`^(.+)=(.+)@(.+)$`)
 )
 
-func parseInstallExtensions(arg string) (*pgxman.PGXManFile, error) {
+func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
 	// install from apt
 	if extRegexp.MatchString(arg) {
 		match := extRegexp.FindStringSubmatch(arg)
@@ -142,8 +142,8 @@ func parseInstallExtensions(arg string) (*pgxman.PGXManFile, error) {
 			pgvers = append(pgvers, pgxman.PGVersion(pgversion))
 		}
 
-		return &pgxman.PGXManFile{
-			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
+		return &pgxman.PGXManfile{
+			APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 			Extensions: exts,
 			PGVersions: pgvers,
 		}, nil
@@ -156,8 +156,8 @@ func parseInstallExtensions(arg string) (*pgxman.PGXManFile, error) {
 			return nil, err
 		}
 
-		return &pgxman.PGXManFile{
-			APIVersion: pgxman.DefaultInstallExtensionsAPIVersion,
+		return &pgxman.PGXManfile{
+			APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 			Extensions: []pgxman.InstallExtension{
 				{
 					Path: path,

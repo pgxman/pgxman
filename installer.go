@@ -7,16 +7,16 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const DefaultInstallExtensionsAPIVersion = "v1"
+const DefaultPGXManfileAPIVersion = "v1"
 
-type PGXManFile struct {
+type PGXManfile struct {
 	APIVersion string             `json:"apiVersion"`
 	Extensions []InstallExtension `json:"extensions"`
 	PGVersions []PGVersion        `json:"pgVersions"`
 }
 
-func (exts PGXManFile) Validate() error {
-	if exts.APIVersion != DefaultInstallExtensionsAPIVersion {
+func (exts PGXManfile) Validate() error {
+	if exts.APIVersion != DefaultPGXManfileAPIVersion {
 		return fmt.Errorf("invalid api version: %s", exts.APIVersion)
 	}
 
@@ -60,5 +60,5 @@ func (e InstallExtension) Validate() error {
 }
 
 type Installer interface {
-	Install(ctx context.Context, exts PGXManFile) error
+	Install(ctx context.Context, exts PGXManfile) error
 }
