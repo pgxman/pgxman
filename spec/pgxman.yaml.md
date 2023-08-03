@@ -25,7 +25,7 @@ and the targeting PostgreSQL versions.
 
 ### `pgVersions`
 
-- **Description**: Specifies the PostgreSQL versions that the extensions are targeting at.
+- **Description**: Specifies the PostgreSQL versions that the extensions are targeting.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `"13"`, `"14"`, `"15"`
