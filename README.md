@@ -28,13 +28,35 @@ GOPRIVATE=github.com/pgxman/pgxman go install github.com/pgxman/pgxman/cmd/pgxma
 
 ## Installing a PostgreSQL extension
 
-Installing an extension with `pgxman` is straightforward. To install the `pgvector` extension version `0.4.4` for PostgreSQL 15:
+### Individual Extension
+
+Installing an extension, such as the `pgvector` version `0.4.4` for PostgreSQL 15, is as simple as running:
 
 ```console
 pgxman install pgvector=0.4.4@15
 ```
 
-Verify the installation using your PostgreSQL instance:
+### Batch Installation
+
+You can also utilize a [pgxman.yaml](pgxman.yaml.md) file to install multiple extensions at once:
+
+```console
+cat <<EOS > pgxman.yaml
+apiVersion: v1
+extensions:
+  - name: "pgvector"
+    version: "0.4.4"
+  - name: "pg_ivm"
+    version: "1.5.1"
+pgVersions:
+  - "15"
+EOS
+pgxman install
+```
+
+### Verification
+
+To verify the successful installation of extensions, execute the following command on your PostgreSQL instance:
 
 ```psql
 postgres=# \dx
@@ -60,7 +82,7 @@ pgxman init # follow the instruction
 
 This command generates a manifest file named after your extension (`pgvector.yaml` in this example).
 The file serves as your blueprint for building the extension.
-The full specification is available [here](spec/extension.yaml.md).
+The full specification is available [here](spec/buildkit.md).
 Feel free to adapt the [official build manifest file](https://github.com/pgxman/buildkit/blob/main/buildkit/pgvector.yaml) for your requirements.
 
 2. **Build the extension**:

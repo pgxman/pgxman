@@ -13,45 +13,49 @@ func Test_parseInstallExtension(t *testing.T) {
 	cases := []struct {
 		Name   string
 		Arg    string
-		GotExt []pgxman.InstallExtension
+		GotExt *pgxman.PGXManfile
 		Err    error
 	}{
 		{
 			Name: "valid with one pgversion",
 			Arg:  "pgvector=0.4.4@14",
-			GotExt: []pgxman.InstallExtension{
-				{
-					Name:      "pgvector",
-					Version:   "0.4.4",
-					PGVersion: pgxman.PGVersion14,
+			GotExt: &pgxman.PGXManfile{
+				APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "0.4.4",
+					},
 				},
+				PGVersions: []pgxman.PGVersion{pgxman.PGVersion14},
 			},
 		},
 		{
 			Name: "valid with sha as version",
 			Arg:  "parquet_s3_fdw=5298b7f0254923f52d15e554ec8a5fdc0474f059@14",
-			GotExt: []pgxman.InstallExtension{
-				{
-					Name:      "parquet_s3_fdw",
-					Version:   "5298b7f0254923f52d15e554ec8a5fdc0474f059",
-					PGVersion: pgxman.PGVersion14,
+			GotExt: &pgxman.PGXManfile{
+				APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "parquet_s3_fdw",
+						Version: "5298b7f0254923f52d15e554ec8a5fdc0474f059",
+					},
 				},
+				PGVersions: []pgxman.PGVersion{pgxman.PGVersion14},
 			},
 		},
 		{
 			Name: "valid with multiple pgversions",
 			Arg:  "pgvector=0.4.4@14,15",
-			GotExt: []pgxman.InstallExtension{
-				{
-					Name:      "pgvector",
-					Version:   "0.4.4",
-					PGVersion: pgxman.PGVersion14,
+			GotExt: &pgxman.PGXManfile{
+				APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "0.4.4",
+					},
 				},
-				{
-					Name:      "pgvector",
-					Version:   "0.4.4",
-					PGVersion: pgxman.PGVersion15,
-				},
+				PGVersions: []pgxman.PGVersion{pgxman.PGVersion14, pgxman.PGVersion15},
 			},
 		},
 		{

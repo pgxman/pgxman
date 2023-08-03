@@ -9,8 +9,7 @@ tools:
 
 .PHONY: build
 build:
-	go build -o $(BIN_DIR)/pgxman ./cmd/pgxman
-	go build -o $(BIN_DIR)/pgxman-pack ./cmd/pgxman-pack
+	GOBIN=$(BIN_DIR) go build ./cmd/...
 
 .PHONY: install
 install:
@@ -25,7 +24,8 @@ test:
 E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder:main
 .PHONY: e2etest
 e2etest:
-	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image $(E2ETEST_BUILD_IMAGE)
+	GOOS=linux GOARCH=$$(go env GOARCH) go build -o $(BIN_DIR)/pgxman_linux_$$(go env GOARCH) ./cmd/pgxman
+	go test ./internal/e2etest/ $(GO_TEST_FLAGS) -count=1 -race -v -e2e -build-image $(E2ETEST_BUILD_IMAGE) -pgxman-bin $(BIN_DIR)/pgxman_linux_$$(go env GOARCH)
 
 .PHONY: vet
 vet:
