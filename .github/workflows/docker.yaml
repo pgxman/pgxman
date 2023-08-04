@@ -9,14 +9,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on:
-          - buildjet-4vcpu-ubuntu-2204
-          - buildjet-4vcpu-ubuntu-2204-arm
+        platform:
+          - amd64
+          - arm64
         include:
-          - runs-on: buildjet-4vcpu-ubuntu-2204
-            platform: linux/amd64
-          - runs-on: buildjet-4vcpu-ubuntu-2204-arm
-            platform: linux/arm64
+          - platform: amd64
+            runs-on: ubuntu-22.04
+          - platform: arm64
+            runs-on: buildjet-4vcpu-ubuntu-2204-arm
     steps:
       - uses: actions/checkout@v3
       - name: Generate build meta
@@ -45,8 +45,8 @@ jobs:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=ghcr.io/pgxman/builder-cache
-          cache-to: type=registry,ref=ghcr.io/pgxman/builder-cache,mode=max
+          platforms: linux/${{ matrix.platform }}
+          cache-from: type=registry,ref=ghcr.io/pgxman/builder-cache:${{ matrix.platform }}
+          cache-to: type=registry,ref=ghcr.io/pgxman/builder-cache:${{ matrix.platform }},mode=max
           build-args: |
             BUILD_VERSION=${{ env.build_version }}
