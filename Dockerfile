@@ -15,7 +15,7 @@ RUN --mount=target=. \
     -ldflags "-s -w -X github.com/pgxman/pgxman/pgxm.Version=$BUILD_VERSION" \
     ./cmd/...
 
-FROM postgres:15-bookworm
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
