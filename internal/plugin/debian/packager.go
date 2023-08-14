@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,13 +94,29 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 }
 
 func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, targetDir, buildDir string) error {
-	sourceFile, err := p.downloadSource(ctx, ext, targetDir)
+	u, err := url.Parse(ext.Source)
 	if err != nil {
-		return fmt.Errorf("download source %s: %w", ext.Source, err)
+		return fmt.Errorf("parse source url: %w", err)
 	}
 
-	if err := p.unarchiveSource(ctx, sourceFile, buildDir); err != nil {
-		return fmt.Errorf("unarchive source: %w", err)
+	if strings.HasSuffix(ext.Source, "tar.gz") {
+		sourceFile, err := p.downloadSource(ctx, ext, targetDir)
+		if err != nil {
+			return fmt.Errorf("download source %s: %w", ext.Source, err)
+		}
+
+		if err := p.unarchiveSource(ctx, sourceFile, buildDir); err != nil {
+			return fmt.Errorf("unarchive source: %w", err)
+		}
+	} else if u.Scheme == "https" && u.Host == "github.com" {
+		cmd := exec.CommandContext(ctx, "git", "clone", ext.Source, buildDir)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("git clone: %w", err)
+		}
+	} else {
+		return fmt.Errorf("unsupported source format: %s", ext.Source)
 	}
 
 	return nil

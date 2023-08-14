@@ -3,7 +3,6 @@ package pgxman
 import (
 	"fmt"
 	"runtime"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"golang.org/x/exp/slices"
@@ -69,9 +68,9 @@ func (ext Extension) Validate() error {
 	if ext.Source == "" {
 		return fmt.Errorf("source is required")
 	}
-	if !strings.HasSuffix(ext.Source, "tar.gz") {
-		return fmt.Errorf("source only supports tar.gz format")
-	}
+	// if !strings.HasSuffix(ext.Source, "tar.gz") {
+	// 	return fmt.Errorf("source only supports tar.gz format")
+	// }
 
 	if ext.Version == "" {
 		return fmt.Errorf("version is required")
