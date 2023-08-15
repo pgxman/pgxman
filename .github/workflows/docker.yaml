@@ -31,15 +31,14 @@ jobs:
           images: |
             ghcr.io/pgxman/builder
       - name: Docker build and push
-        uses: docker/build-push-action@v4
+        uses: docker/bake-action@v3
         with:
           push: ${{ github.event_name != 'pull_request' }}
           pull: true
-          context: .
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/arm64,linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILD_VERSION=${{ env.build_version }}
+          files: |
+            docker/docker-bake.hcl
+          set: |
+            *.platform=linux/amd64,linux/arm64
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+            pgxman.args.BUILD_VERSION=${{ env.build_version }}

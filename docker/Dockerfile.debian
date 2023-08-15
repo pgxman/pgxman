@@ -1,21 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:latest as gobuild
-
-ARG TARGETOS TARGETARCH
-ARG BUILD_VERSION
-
-WORKDIR /src
-ENV CGO_ENABLED=0
-
-RUN --mount=target=. \
-    --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg \
-    GOOS=$TARGETOS GOARCH=$TARGETARCH go install \
-    -ldflags "-s -w -X github.com/pgxman/pgxman/pgxm.Version=$BUILD_VERSION" \
-    ./cmd/...
-
-FROM postgres:15-bookworm
+FROM debian_base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -57,7 +42,7 @@ RUN set -eux; \
 COPY patch/make_pg_buildext_parallel.patch /tmp
 RUN patch `which pg_buildext` < /tmp/make_pg_buildext_parallel.patch
 
-COPY --from=gobuild /go/bin/* /usr/local/bin/
+COPY --from=pgxman /go/bin/* /usr/local/bin/
 
 # add pgxman repo
 RUN pgxman update
