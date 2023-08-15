@@ -22,36 +22,36 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    ca-certificates \
-    git \
-    gnupg2 \
-    postgresql-common \
-    ; \
-    sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
     autoconf \
+    binutils \
     build-essential \
     ca-certificates \
+    clang-15 \
     cmake \
     curl \
     debhelper \
     devscripts \
     dh-make \
-    gcc \
+    git \
+    gnupg2 \
     libcurl4-openssl-dev \
     libssl-dev \
     lsb-release \
     make \
     ninja-build \
     pkg-config \
-    postgresql-server-dev-all \
+    postgresql-common \
     python3.11 \
     python3.11-dev \
     python3.11-venv \
     wget \
     ; \
-    rm -rf /var/lib/apt/lists/*
+    sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    postgresql-server-dev-all \
+    ; \
+    apt-get clean
 
 # patch pg_buildext to use multiple processors
 COPY patch/make_pg_buildext_parallel.patch /tmp
