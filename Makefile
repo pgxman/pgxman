@@ -21,7 +21,7 @@ GO_TEST_FLAGS ?=
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
 
-E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder:main
+E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
 .PHONY: e2etest
 e2etest:
 	GOOS=linux GOARCH=$$(go env GOARCH) go build -o $(BIN_DIR)/pgxman_linux_$$(go env GOARCH) ./cmd/pgxman
