@@ -34,7 +34,7 @@ vet:
 		--rm \
 		-v $(CURDIR):/app \
 		-w /app \
-		golangci/golangci-lint:latest \
+		golangci/golangci-lint:v1.53 \
 		golangci-lint run --timeout 5m -v
 
 REPO ?= ghcr.io/pgxman/builder
