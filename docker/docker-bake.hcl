@@ -12,6 +12,8 @@ group "default" {
 }
 
 target "debian-bookworm" {
+    inherits = ["docker-metadata-action"]
+
     contexts = {
         pgxman = "target:pgxman"
         debian_base = "docker-image://postgres:15-bookworm"
@@ -22,6 +24,8 @@ target "debian-bookworm" {
 }
 
 target "ubuntu-jammy" {
+    inherits = ["docker-metadata-action"]
+
     contexts = {
         pgxman = "target:pgxman"
         debian_base = "docker-image://ubuntu:jammy"
@@ -39,3 +43,7 @@ target "pgxman" {
         BUILD_VERSION = "${BUILD_VERSION}"
     }
 }
+
+# Inherit this target for CI use
+# Ref https://github.com/docker/metadata-action#bake-definition
+target "docker-metadata-action" {}
