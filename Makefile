@@ -21,7 +21,7 @@ GO_TEST_FLAGS ?=
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
 
-E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder:main
+E2ETEST_BUILD_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
 .PHONY: e2etest
 e2etest:
 	GOOS=linux GOARCH=$$(go env GOARCH) go build -o $(BIN_DIR)/pgxman_linux_$$(go env GOARCH) ./cmd/pgxman
@@ -40,11 +40,11 @@ vet:
 REPO ?= ghcr.io/pgxman/builder
 .PHONY: docker_build
 docker_build:
-	docker buildx build -t $(REPO) --load --pull .
+	docker buildx bake -f $(PWD)/docker/docker-bake.hcl --pull --load
 
 .PHONY: docker_push
 docker_push:
-	docker buildx build -t $(REPO) --platform linux/amd64,linux/arm64 --push --pull .
+	docker buildx bake -f $(PWD)/docker/docker-bake.hcl --pull --push
 
 .PHONY: goreleaser
 goreleaser:
