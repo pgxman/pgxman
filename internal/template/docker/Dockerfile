@@ -13,7 +13,3 @@ RUN pgxman-pack init $PGXMAN_PACK_ARGS
 RUN pgxman-pack pre $PGXMAN_PACK_ARGS
 RUN pgxman-pack main $PGXMAN_PACK_ARGS
 RUN pgxman-pack post $PGXMAN_PACK_ARGS
-
-FROM scratch AS export
-
-COPY --from=build /workspace/target/*.deb  .
