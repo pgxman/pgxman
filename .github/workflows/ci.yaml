@@ -71,7 +71,7 @@ jobs:
           files: |
             docker/docker-bake.hcl
           targets: |
-            debian-bookworm
+            default
           set: |
             *.platform=linux/amd64
             *.cache-from=type=gha
