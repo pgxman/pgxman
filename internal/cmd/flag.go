@@ -21,8 +21,28 @@ func ParseMapFlag(flagSet map[string]string) map[string]any {
 			val = strings.Split(valStr, ",")
 		}
 
-		overrides[key] = val
+		split := strings.Split(key, ".")
+		setNestedMap(overrides, split, val)
 	}
 
 	return overrides
+}
+
+func setNestedMap(m map[string]any, keys []string, val any) {
+	if len(keys) == 0 {
+		return
+	}
+
+	if len(keys) == 1 {
+		m[keys[0]] = val
+		return
+	}
+
+	v, ok := m[keys[0]]
+	if !ok {
+		v = make(map[string]any)
+		m[keys[0]] = v
+	}
+
+	setNestedMap(v.(map[string]any), keys[1:], val)
 }

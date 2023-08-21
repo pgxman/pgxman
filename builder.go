@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/sha1"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman/internal/filepathx"
@@ -53,6 +55,8 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 		}
 	}()
 
+	b.logger.Debug("Building extension", "ext", ext, "workdir", workDir)
+
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("generate Dockerfile: %w", err)
 	}
@@ -82,7 +86,7 @@ func (b *dockerBuilder) generateDockerFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Debug("Generating Dockerfile")
 
-	return tmpl.Export(docker.FS, nil, dstDir)
+	return tmpl.Export(docker.FS, dockerFileTemplater{ext}, dstDir)
 }
 
 func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) error {
@@ -187,16 +191,8 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 		sha             = buildSHA(ext)
 	)
 
-	extBuilders := make(map[OS]ExtensionBuilder)
-	if builder := ext.Builders.DebianBookworm; builder != nil {
-		extBuilders[OSDebianBookworm] = *builder
-	}
-	if builder := ext.Builders.UbuntuJammy; builder != nil {
-		extBuilders[OSUbuntuJammy] = *builder
-	}
-
 	for _, builder := range ext.Builders.Items() {
-		bakeTargetName := dockerBakeTargetFromBuilderID(builder.OS)
+		bakeTargetName := dockerBakeTargetFromBuilderID(builder.Type)
 
 		buildTargetArgs = append(
 			buildTargetArgs,
@@ -210,7 +206,7 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 			buildTargetArgs = append(
 				buildTargetArgs,
 				"--set",
-				fmt.Sprintf("%s.tags=%s", bakeTargetName, dockerDebugImage(builder.OS, ext)),
+				fmt.Sprintf("%s.tags=%s", bakeTargetName, dockerDebugImage(builder.Type, ext)),
 				"--set",
 				fmt.Sprintf("%s.args.PGXMAN_PACK_ARGS=--debug", bakeTargetName),
 			)
@@ -263,9 +259,9 @@ func buildSHA(ext Extension) string {
 	return fmt.Sprintf("%x", sha1.Sum(extb))
 }
 
-func dockerDebugImage(os OS, ext Extension) string {
+func dockerDebugImage(bt ExtensionBuilderType, ext Extension) string {
 	var (
-		imagePath = strings.ReplaceAll(string(os), ":", "/")
+		imagePath = strings.ReplaceAll(string(bt), ":", "/")
 		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
 		tag = strings.ReplaceAll(ext.Version, "+", "-")
 	)
@@ -276,12 +272,49 @@ func dockerDebugImage(os OS, ext Extension) string {
 func dockerBakeTargets(ext Extension) []string {
 	var result []string
 	for _, builder := range ext.Builders.Items() {
-		result = append(result, dockerBakeTargetFromBuilderID(builder.OS))
+		result = append(result, dockerBakeTargetFromBuilderID(builder.Type))
 	}
 
 	return result
 }
 
-func dockerBakeTargetFromBuilderID(os OS) string {
-	return strings.ReplaceAll(string(os), ":", "-")
+func dockerBakeTargetFromBuilderID(bt ExtensionBuilderType) string {
+	return strings.ReplaceAll(string(bt), ":", "-")
+}
+
+type dockerFileExtension struct {
+	Extension
+}
+
+func (e dockerFileExtension) ExportDebianBookwormArtifacts() bool {
+	if builders := e.Builders; builders != nil {
+		return builders.HasBuilder(ExtensionBuilderDebianBookworm)
+	}
+
+	return false
+}
+
+func (e dockerFileExtension) ExportUbuntuJammyArtifacts() bool {
+	if builders := e.Builders; builders != nil {
+		return builders.HasBuilder(ExtensionBuilderUbuntuJammy)
+	}
+
+	return false
+}
+
+type dockerFileTemplater struct {
+	ext Extension
+}
+
+func (d dockerFileTemplater) Render(content []byte, out io.Writer) error {
+	t, err := template.New("").Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("parse template: %w", err)
+	}
+
+	if err := t.Execute(out, dockerFileExtension{d.ext}); err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	return nil
 }

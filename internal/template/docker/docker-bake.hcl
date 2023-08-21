@@ -8,8 +8,12 @@ variable "TAG" {
 
 target "export" {
     contexts = {
+        {{- if .ExportDebianBookwormArtifacts }}
         debian-bookworm = "target:debian-bookworm"
+        {{- end }}
+        {{- if .ExportUbuntuJammyArtifacts }}
         ubuntu-jammy = "target:ubuntu-jammy"
+        {{- end }}
     }
 
     dockerfile = "Dockerfile.export"

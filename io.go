@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"sigs.k8s.io/yaml"
 )
 
@@ -64,7 +64,23 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 		return ext, err
 	}
 
-	if err := mergo.Merge(&ext, NewDefaultExtension()); err != nil {
+	defExt := NewDefaultExtension()
+	// Remove default builders that aren't declared
+	// so that mergo only merges those that are declared
+	if builders := ext.Builders; builders != nil {
+		if !builders.HasBuilder(ExtensionBuilderDebianBookworm) {
+			defExt.Builders.DebianBookworm = nil
+		}
+
+		if !builders.HasBuilder(ExtensionBuilderUbuntuJammy) {
+			defExt.Builders.UbuntuJammy = nil
+		}
+	}
+
+	if err := mergo.Merge(
+		&ext,
+		defExt,
+	); err != nil {
 		return ext, err
 	}
 

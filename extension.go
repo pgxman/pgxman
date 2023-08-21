@@ -26,12 +26,12 @@ func NewDefaultExtension() Extension {
 		Formats:    []Format{FormatDeb},
 		Builders: &ExtensionBuilders{
 			DebianBookworm: &ExtensionBuilder{
-				OS:    OSDebianBookworm,
-				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[OSDebianBookworm], buildImageVersion),
+				Type:  ExtensionBuilderDebianBookworm,
+				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], buildImageVersion),
 			},
 			UbuntuJammy: &ExtensionBuilder{
-				OS:    OSUbuntuJammy,
-				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[OSUbuntuJammy], buildImageVersion),
+				Type:  ExtensionBuilderUbuntuJammy,
+				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], buildImageVersion),
 			},
 		},
 	}
@@ -128,7 +128,7 @@ func (ext Extension) Validate() error {
 
 	for _, builder := range builders {
 		if err := builder.Validate(); err != nil {
-			return fmt.Errorf("builders.%s has errors: %w", builder.OS, err)
+			return fmt.Errorf("builders.%s has errors: %w", builder.Type, err)
 		}
 	}
 
@@ -235,27 +235,27 @@ func (s BuildScript) Validate() error {
 }
 
 var (
-	extensionBuilderImages = map[OS]string{
-		OSDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
-		OSUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
+	extensionBuilderImages = map[ExtensionBuilderType]string{
+		ExtensionBuilderDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
+		ExtensionBuilderUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
 	}
 )
 
-type OS string
+type ExtensionBuilderType string
 
 const (
-	OSUnsupported    OS = "unsupported"
-	OSDebianBookworm OS = "debian:bookworm"
-	OSUbuntuJammy    OS = "ubuntu:jammy"
+	ExtensionBuilderUnsupported    ExtensionBuilderType = "unsupported"
+	ExtensionBuilderDebianBookworm ExtensionBuilderType = "debian:bookworm"
+	ExtensionBuilderUbuntuJammy    ExtensionBuilderType = "ubuntu:jammy"
 )
 
-type ErrUnsupportedOS struct {
+type ErrUnsupportedExtensionBuilder struct {
 	osVendor  string
 	osVersion string
 }
 
-func (e *ErrUnsupportedOS) Error() string {
-	return fmt.Sprintf("Unsupported OS: %s %s", e.osVendor, e.osVersion)
+func (e *ErrUnsupportedExtensionBuilder) Error() string {
+	return fmt.Sprintf("Unsupported builder: %s:%s", e.osVendor, e.osVersion)
 }
 
 type ExtensionBuilders struct {
@@ -263,45 +263,55 @@ type ExtensionBuilders struct {
 	UbuntuJammy    *ExtensionBuilder `json:"ubuntu:jammy,omitempty"`
 }
 
+func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
+	switch bt {
+	case ExtensionBuilderDebianBookworm:
+		return ebs.DebianBookworm != nil
+	case ExtensionBuilderUbuntuJammy:
+		return ebs.UbuntuJammy != nil
+	}
+
+	return false
+}
+
 func (ebs ExtensionBuilders) Items() []ExtensionBuilder {
 	var result []ExtensionBuilder
 
 	if builder := ebs.DebianBookworm; builder != nil {
-		result = append(result, ebs.newBuilder(OSDebianBookworm, builder))
+		result = append(result, ebs.newBuilder(ExtensionBuilderDebianBookworm, builder))
 	}
 	if builder := ebs.UbuntuJammy; builder != nil {
-		result = append(result, ebs.newBuilder(OSUbuntuJammy, builder))
+		result = append(result, ebs.newBuilder(ExtensionBuilderUbuntuJammy, builder))
 	}
 
 	return result
 }
 
 func (ebs ExtensionBuilders) Current() ExtensionBuilder {
-	os, err := DetectOS()
-
+	bt, err := detectExtensionBuilder()
 	if err != nil {
 		panic(err.Error())
 	}
 
 	var builder *ExtensionBuilder
-	switch os {
-	case OSDebianBookworm:
+	switch bt {
+	case ExtensionBuilderDebianBookworm:
 		builder = ebs.DebianBookworm
-	case OSUbuntuJammy:
+	case ExtensionBuilderUbuntuJammy:
 		builder = ebs.UbuntuJammy
 	}
 
-	return ebs.newBuilder(os, builder)
+	return ebs.newBuilder(bt, builder)
 }
 
-func (ebs ExtensionBuilders) newBuilder(os OS, builder *ExtensionBuilder) ExtensionBuilder {
+func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *ExtensionBuilder) ExtensionBuilder {
 	image := builder.Image
 	if image == "" {
 		image = extensionBuilderImages[os]
 	}
 
 	return ExtensionBuilder{
-		OS:                os,
+		Type:              os,
 		Image:             image,
 		BuildDependencies: builder.BuildDependencies,
 		RunDependencies:   builder.RunDependencies,
@@ -310,11 +320,11 @@ func (ebs ExtensionBuilders) newBuilder(os OS, builder *ExtensionBuilder) Extens
 }
 
 type ExtensionBuilder struct {
-	OS                OS              `json:"-"`
-	Image             string          `json:"image,omitempty"`
-	BuildDependencies []string        `json:"buildDependencies,omitempty"`
-	RunDependencies   []string        `json:"runDependencies,omitempty"`
-	AptRepositories   []AptRepository `json:"aptRepositories,omitempty"`
+	Type              ExtensionBuilderType `json:"-"`
+	Image             string               `json:"image,omitempty"`
+	BuildDependencies []string             `json:"buildDependencies,omitempty"`
+	RunDependencies   []string             `json:"runDependencies,omitempty"`
+	AptRepositories   []AptRepository      `json:"aptRepositories,omitempty"`
 }
 
 func (builder ExtensionBuilder) Validate() error {
@@ -325,12 +335,6 @@ func (builder ExtensionBuilder) Validate() error {
 	}
 
 	return nil
-}
-
-type Deb struct {
-	BuildDependencies []string        `json:"buildDependencies,omitempty"`
-	Dependencies      []string        `json:"dependencies,omitempty"`
-	AptRepositories   []AptRepository `json:"aptRepositories,omitempty"`
 }
 
 // Ref: https://manpages.ubuntu.com/manpages/lunar/en/man5/sources.list.5.html
@@ -423,7 +427,7 @@ const (
 	AptRepositorySignedKeyFormatGpg AptRepositorySignedKeyFormat = "gpg"
 )
 
-func DetectOS() (OS, error) {
+func detectExtensionBuilder() (ExtensionBuilderType, error) {
 	info := osx.Sysinfo()
 
 	var (
@@ -432,12 +436,12 @@ func DetectOS() (OS, error) {
 	)
 
 	if vendor == "debian" && version == "12" {
-		return OSDebianBookworm, nil
+		return ExtensionBuilderDebianBookworm, nil
 	}
 
 	if vendor == "ubuntu" && version == "22.04" {
-		return OSUbuntuJammy, nil
+		return ExtensionBuilderUbuntuJammy, nil
 	}
 
-	return OSUnsupported, &ErrUnsupportedOS{osVendor: vendor, osVersion: version}
+	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
 }
