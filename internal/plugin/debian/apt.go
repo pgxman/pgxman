@@ -13,7 +13,6 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
-	"github.com/pgxman/pgxman/internal/osx"
 )
 
 var (
@@ -39,15 +38,6 @@ func addAptRepos(ctx context.Context, repos []pgxman.AptRepository, logger *log.
 	for _, repo := range repos {
 		logger := logger.WithGroup(repo.ID)
 		logger.Debug("Adding apt repo")
-
-		var (
-			osn = osx.Sysinfo().OS.Name
-		)
-		// if specified target does not match the current OS, skip
-		if repo.Target != "" && !strings.Contains(osn, repo.Target) {
-			logger.Debug("Skipping apt repo", "target", repo.Target, "os", osn)
-			continue
-		}
 
 		gpgKeyPath := filepath.Join(keyringsDir, repo.ID+"."+string(repo.SignedKey.Format))
 		logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", gpgKeyPath)

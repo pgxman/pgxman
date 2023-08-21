@@ -186,18 +186,22 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 		buildTargetArgs []string
 		sha             = buildSHA(ext)
 	)
-	for builderID := range ext.Builders {
-		image, ok := supportedExtensionBuilderImages[builderID]
-		if !ok {
-			panic(fmt.Sprintf("unsupported extension builder image: %s", builderID)) // impossible
-		}
 
-		bakeTargetName := dockerBakeTargetFromBuilderID(builderID)
+	extBuilders := make(map[OS]ExtensionBuilder)
+	if builder := ext.Builders.DebianBookworm; builder != nil {
+		extBuilders[OSDebianBookworm] = *builder
+	}
+	if builder := ext.Builders.UbuntuJammy; builder != nil {
+		extBuilders[OSUbuntuJammy] = *builder
+	}
+
+	for _, builder := range ext.Builders.Items() {
+		bakeTargetName := dockerBakeTargetFromBuilderID(builder.OS)
 
 		buildTargetArgs = append(
 			buildTargetArgs,
 			"--set",
-			fmt.Sprintf("%s.args.BUILD_IMAGE=%s", bakeTargetName, image),
+			fmt.Sprintf("%s.args.BUILD_IMAGE=%s", bakeTargetName, builder.Image),
 			"--set",
 			fmt.Sprintf("%s.args.BUILD_SHA=%s", bakeTargetName, sha),
 		)
@@ -206,7 +210,7 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 			buildTargetArgs = append(
 				buildTargetArgs,
 				"--set",
-				fmt.Sprintf("%s.tags=%s", bakeTargetName, dockerDebugImage(builderID, ext)),
+				fmt.Sprintf("%s.tags=%s", bakeTargetName, dockerDebugImage(builder.OS, ext)),
 				"--set",
 				fmt.Sprintf("%s.args.PGXMAN_PACK_ARGS=--debug", bakeTargetName),
 			)
@@ -259,9 +263,9 @@ func buildSHA(ext Extension) string {
 	return fmt.Sprintf("%x", sha1.Sum(extb))
 }
 
-func dockerDebugImage(builderID string, ext Extension) string {
+func dockerDebugImage(os OS, ext Extension) string {
 	var (
-		imagePath = strings.ReplaceAll(builderID, ":", "/")
+		imagePath = strings.ReplaceAll(string(os), ":", "/")
 		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
 		tag = strings.ReplaceAll(ext.Version, "+", "-")
 	)
@@ -271,13 +275,13 @@ func dockerDebugImage(builderID string, ext Extension) string {
 
 func dockerBakeTargets(ext Extension) []string {
 	var result []string
-	for builderID := range ext.Builders {
-		result = append(result, dockerBakeTargetFromBuilderID(builderID))
+	for _, builder := range ext.Builders.Items() {
+		result = append(result, dockerBakeTargetFromBuilderID(builder.OS))
 	}
 
 	return result
 }
 
-func dockerBakeTargetFromBuilderID(builderID string) string {
-	return strings.ReplaceAll(builderID, ":", "-")
+func dockerBakeTargetFromBuilderID(os OS) string {
+	return strings.ReplaceAll(string(os), ":", "-")
 }

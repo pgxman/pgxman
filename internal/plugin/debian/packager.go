@@ -176,18 +176,10 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, buildDir s
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
-	var (
-		deps     = ext.BuildDependencies
-		aptRepos = []pgxman.AptRepository{}
-	)
-
-	if deb := ext.Deb; deb != nil {
-		deps = append(deps, deb.BuildDependencies...)
-		aptRepos = deb.AptRepositories
-	}
+	builder := ext.Builders.Current()
 
 	var depsToInstall []string
-	for _, dep := range deps {
+	for _, dep := range builder.BuildDependencies {
 		if strings.Contains(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
 			for _, ver := range ext.PGVersions {
@@ -198,11 +190,9 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		}
 	}
 
-	fmt.Println(depsToInstall)
-
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", depsToInstall))
 	logger.Info("Installing build deps")
-	return runAptInstall(ctx, depsToInstall, aptRepos, logger)
+	return runAptInstall(ctx, depsToInstall, builder.AptRepositories, logger)
 }
 
 func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {
@@ -292,12 +282,15 @@ func (e extensionData) BuildDeps() string {
 		"postgresql-server-dev-all (>= 158~)",
 	}
 
-	bdeps := e.BuildDependencies
-	if deb := e.Deb; deb != nil && len(deb.BuildDependencies) != 0 {
-		bdeps = deb.BuildDependencies
+	deps := e.BuildDependencies
+	if builders := e.Builders; builders != nil {
+		builder := builders.Current()
+		if len(builder.BuildDependencies) != 0 {
+			deps = builder.BuildDependencies
+		}
 	}
 
-	return strings.Join(append(required, e.expandDeps(bdeps)...), ", ")
+	return strings.Join(append(required, e.expandDeps(deps)...), ", ")
 }
 
 func (e extensionData) Deps() string {
@@ -307,8 +300,11 @@ func (e extensionData) Deps() string {
 	}
 
 	deps := e.Dependencies
-	if deb := e.Deb; deb != nil && len(deb.Dependencies) != 0 {
-		deps = deb.Dependencies
+	if builders := e.Builders; builders != nil {
+		builder := builders.Current()
+		if len(builder.RunDependencies) != 0 {
+			deps = builder.RunDependencies
+		}
 	}
 
 	return strings.Join(append(required, e.expandDeps(deps)...), ", ")
