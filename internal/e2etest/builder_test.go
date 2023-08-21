@@ -160,8 +160,6 @@ echo $PGXS
 				"pipefail",
 				"-c",
 				fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
-echo "hihi"
-echo $DEBIAN_FRONTEND
 apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available

@@ -121,7 +121,7 @@ func (ext Extension) Validate() error {
 		}
 	}
 
-	builders := ext.Builders.Items()
+	builders := ext.Builders.Available()
 	if len(builders) == 0 {
 		return fmt.Errorf("at least one extension builder is required")
 	}
@@ -274,7 +274,8 @@ func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
 	return false
 }
 
-func (ebs ExtensionBuilders) Items() []ExtensionBuilder {
+// Available returns all available extension builders.
+func (ebs ExtensionBuilders) Available() []ExtensionBuilder {
 	var result []ExtensionBuilder
 
 	if builder := ebs.DebianBookworm; builder != nil {
@@ -287,6 +288,8 @@ func (ebs ExtensionBuilders) Items() []ExtensionBuilder {
 	return result
 }
 
+// Current returns the extension builder for the current os.
+// It panics if no extension builder is available.
 func (ebs ExtensionBuilders) Current() ExtensionBuilder {
 	bt, err := detectExtensionBuilder()
 	if err != nil {

@@ -191,7 +191,7 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 		sha             = buildSHA(ext)
 	)
 
-	for _, builder := range ext.Builders.Items() {
+	for _, builder := range ext.Builders.Available() {
 		bakeTargetName := dockerBakeTargetFromBuilderID(builder.Type)
 
 		buildTargetArgs = append(
@@ -271,7 +271,7 @@ func dockerDebugImage(bt ExtensionBuilderType, ext Extension) string {
 
 func dockerBakeTargets(ext Extension) []string {
 	var result []string
-	for _, builder := range ext.Builders.Items() {
+	for _, builder := range ext.Builders.Available() {
 		result = append(result, dockerBakeTargetFromBuilderID(builder.Type))
 	}
 
