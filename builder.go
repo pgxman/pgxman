@@ -55,7 +55,11 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 		}
 	}()
 
-	b.logger.Debug("Building extension", "ext", ext, "workdir", workDir)
+	extb, err := yaml.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	b.logger.Debug("Building extension", "ext", string(extb), "workdir", workDir)
 
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("generate Dockerfile: %w", err)

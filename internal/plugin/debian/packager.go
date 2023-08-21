@@ -178,8 +178,13 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, buildDir s
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
 	builder := ext.Builders.Current()
 
+	deps := ext.BuildDependencies
+	if len(builder.BuildDependencies) > 0 {
+		deps = builder.BuildDependencies
+	}
+
 	var depsToInstall []string
-	for _, dep := range builder.BuildDependencies {
+	for _, dep := range deps {
 		if strings.Contains(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
 			for _, ver := range ext.PGVersions {
