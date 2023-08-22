@@ -23,33 +23,44 @@ func TestBuilder(t *testing.T) {
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
 	ext.Version = "0.4.4"
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
-	ext.Dependencies = []string{"libcurl4-openssl-dev"}
-	ext.Deb = &pgxman.Deb{
-		BuildDependencies: []string{"libarrow-dev"},
-		AptRepositories: []pgxman.AptRepository{
-			{
-				ID:         "apache-arrow-debian-bookworm",
-				Types:      pgxman.SupportedAptRepositoryTypes,
-				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/debian"},
-				Components: []string{"main"},
-				Suites:     []string{"bookworm"},
-				SignedKey: pgxman.AptRepositorySignedKey{
-					URL:    "https://downloads.apache.org/arrow/KEYS",
-					Format: pgxman.AptRepositorySignedKeyFormatAsc,
-				},
-				Target: "bookworm",
+	ext.RunDependencies = []string{"libcurl4-openssl-dev"}
+	ext.Builders = &pgxman.ExtensionBuilders{
+		DebianBookworm: &pgxman.AptExtensionBuilder{
+			ExtensionBuilder: pgxman.ExtensionBuilder{
+				BuildDependencies: []string{"libarrow-dev"},
+				Image:             flagDebianBookwormImage,
 			},
-			{
-				ID:         "apache-arrow-ubuntu-jammy",
-				Types:      pgxman.SupportedAptRepositoryTypes,
-				URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/ubuntu"},
-				Components: []string{"main"},
-				Suites:     []string{"jammy"},
-				SignedKey: pgxman.AptRepositorySignedKey{
-					URL:    "https://downloads.apache.org/arrow/KEYS",
-					Format: pgxman.AptRepositorySignedKeyFormatAsc,
+			AptRepositories: []pgxman.AptRepository{
+				{
+					ID:         "apache-arrow-debian-bookworm",
+					Types:      pgxman.SupportedAptRepositoryTypes,
+					URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/debian"},
+					Components: []string{"main"},
+					Suites:     []string{"bookworm"},
+					SignedKey: pgxman.AptRepositorySignedKey{
+						URL:    "https://downloads.apache.org/arrow/KEYS",
+						Format: pgxman.AptRepositorySignedKeyFormatAsc,
+					},
 				},
-				Target: "ubuntu",
+			},
+		},
+		UbuntuJammy: &pgxman.AptExtensionBuilder{
+			ExtensionBuilder: pgxman.ExtensionBuilder{
+				BuildDependencies: []string{"libarrow-dev"},
+				Image:             flagUbuntuJammyImage,
+			},
+			AptRepositories: []pgxman.AptRepository{
+				{
+					ID:         "apache-arrow-ubuntu-jammy",
+					Types:      pgxman.SupportedAptRepositoryTypes,
+					URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/ubuntu"},
+					Components: []string{"main"},
+					Suites:     []string{"jammy"},
+					SignedKey: pgxman.AptRepositorySignedKey{
+						URL:    "https://downloads.apache.org/arrow/KEYS",
+						Format: pgxman.AptRepositorySignedKeyFormatAsc,
+					},
+				},
 			},
 		},
 	}
@@ -75,7 +86,6 @@ echo $PGXS
 			Email: "o@owenou.com",
 		},
 	}
-	ext.BuildImage = flagBuildImage
 
 	extdir := t.TempDir()
 	builder := pgxman.NewBuilder(
@@ -94,7 +104,7 @@ echo $PGXS
 
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
-	assert.Len(matches, 3) // 13, 14, 15 for current arch only
+	assert.Len(matches, 3*2) // 13, 14, 15 for current arch only for debian:bookworm & ubuntu:jammy
 
 	for _, match := range matches {
 		var (
@@ -106,42 +116,56 @@ echo $PGXS
 			continue
 		}
 
-		for _, image := range []string{"ubuntu:jammy", "postgres:14-bookworm"} {
-			image := image
-			name := fmt.Sprintf("%s-%s", image, debFile)
-			name = strings.ReplaceAll(name, ":", "-")
-			name = strings.ReplaceAll(name, ".", "-")
+		var (
+			image      string
+			pathPrefix string
+		)
+		if strings.Contains(match, "ubuntu") {
+			image = "ubuntu:jammy"
+			pathPrefix = "ubuntu/jammy"
+		} else if strings.Contains(match, "debian") {
+			image = "postgres:14-bookworm"
+			pathPrefix = "debian/bookworm"
+		} else {
+			assert.Failf("unexpected debian package os: %s", match)
+		}
 
-			t.Run(name, func(t *testing.T) {
-				t.Parallel()
+		name := fmt.Sprintf("%s-%s", image, debFile)
+		name = strings.ReplaceAll(name, ":", "-")
+		name = strings.ReplaceAll(name, ".", "-")
 
-				assert := tassert.New(t)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-				EnsureCleanup(t, func() {
-					cmd := exec.Command("docker", "rm", "-f", name)
-					_ = cmd.Run()
-				})
+			assert := tassert.New(t)
 
-				cmd := exec.Command(
-					"docker",
-					"run",
-					"--rm",
-					"--name",
-					name,
-					"-v",
-					filepath.Join(extdir, "out")+":/out",
-					"-v",
-					flagPGXManBin+":/usr/local/bin/pgxman",
-					image,
-					"bash",
-					"--noprofile",
-					"--norc",
-					"-eo",
-					"pipefail",
-					"-c",
-					fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
-apt update
-apt install ca-certificates gnupg2 postgresql-common git -y
+			EnsureCleanup(t, func() {
+				cmd := exec.Command("docker", "rm", "-f", name)
+				_ = cmd.Run()
+			})
+
+			cmd := exec.Command(
+				"docker",
+				"run",
+				"--rm",
+				"--name",
+				name,
+				"-e",
+				"DEBIAN_FRONTEND=noninteractive",
+				"-v",
+				filepath.Join(extdir, "out")+":/out",
+				"-v",
+				flagPGXManBin+":/usr/local/bin/pgxman",
+				image,
+				"bash",
+				"--noprofile",
+				"--norc",
+				"-eo",
+				"pipefail",
+				"-c",
+				fmt.Sprintf(`export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 pgxman update
@@ -154,12 +178,11 @@ extensions:
 pgVersions:
 - "14"
 EOS
-`, debFile),
-				)
+`, filepath.Join(pathPrefix, debFile)),
+			)
 
-				b, err := cmd.CombinedOutput()
-				assert.NoError(err, string(b))
-			})
-		}
+			b, err := cmd.CombinedOutput()
+			assert.NoError(err, string(b))
+		})
 	}
 }

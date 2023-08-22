@@ -50,8 +50,9 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 				debPkgs = append(debPkgs, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version))
 			}
 
-			if deb := installableExt.Deb; deb != nil {
-				if ar := deb.AptRepositories; len(ar) > 0 {
+			if builders := installableExt.Builders; builders != nil {
+				builder := builders.Current()
+				if ar := builder.AptRepositories; len(ar) > 0 {
 					aptRepos = append(aptRepos, ar...)
 				}
 			}

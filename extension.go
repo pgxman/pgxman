@@ -6,11 +6,8 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/pgxman/pgxman/internal/osx"
 	"golang.org/x/exp/slices"
-)
-
-const (
-	defaultBuildImage = "ghcr.io/pgxman/builder"
 )
 
 func NewDefaultExtension() Extension {
@@ -24,10 +21,23 @@ func NewDefaultExtension() Extension {
 	return Extension{
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
-		Platform:   []Platform{PlatformLinux},
 		Arch:       []Arch{Arch(runtime.GOARCH)},
+		Platform:   []Platform{PlatformLinux},
 		Formats:    []Format{FormatDeb},
-		BuildImage: fmt.Sprintf("%s:%s", defaultBuildImage, buildImageVersion),
+		Builders: &ExtensionBuilders{
+			DebianBookworm: &AptExtensionBuilder{
+				ExtensionBuilder: ExtensionBuilder{
+					Type:  ExtensionBuilderDebianBookworm,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], buildImageVersion),
+				},
+			},
+			UbuntuJammy: &AptExtensionBuilder{
+				ExtensionBuilder: ExtensionBuilder{
+					Type:  ExtensionBuilderUbuntuJammy,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], buildImageVersion),
+				},
+			},
+		},
 	}
 }
 
@@ -42,19 +52,16 @@ type Extension struct {
 	Maintainers []Maintainer `json:"maintainers"`
 
 	// optional
-	Arch              []Arch     `json:"arch,omitempty"`
-	Platform          []Platform `json:"platform,omitempty"`
-	Formats           []Format   `json:"formats,omitempty"`
-	Description       string     `json:"description,omitempty"`
-	License           string     `json:"license,omitempty"`
-	Keywords          []string   `json:"keywords,omitempty"`
-	Homepage          string     `json:"homepage,omitempty"`
-	BuildDependencies []string   `json:"buildDependencies,omitempty"`
-	Dependencies      []string   `json:"dependencies,omitempty"`
-	BuildImage        string     `json:"buildImage,omitempty"`
-
-	// override
-	Deb *Deb `json:"deb,omitempty"`
+	Builders          *ExtensionBuilders `json:"builders,omitempty"`
+	Arch              []Arch             `json:"arch,omitempty"`
+	Platform          []Platform         `json:"platform,omitempty"`
+	Formats           []Format           `json:"formats,omitempty"`
+	Description       string             `json:"description,omitempty"`
+	License           string             `json:"license,omitempty"`
+	Keywords          []string           `json:"keywords,omitempty"`
+	Homepage          string             `json:"homepage,omitempty"`
+	BuildDependencies []string           `json:"buildDependencies,omitempty"`
+	RunDependencies   []string           `json:"runDependencies,omitempty"`
 }
 
 func (ext Extension) Validate() error {
@@ -94,10 +101,6 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("maintainers is required")
 	}
 
-	if ext.BuildImage == "" {
-		return fmt.Errorf("build image is required")
-	}
-
 	for _, pgv := range ext.PGVersions {
 		if !slices.Contains(SupportedPGVersions, pgv) {
 			return fmt.Errorf("unsupported pg version: %s", pgv)
@@ -122,36 +125,14 @@ func (ext Extension) Validate() error {
 		}
 	}
 
-	if deb := ext.Deb; deb != nil {
-		for _, repo := range deb.AptRepositories {
-			if repo.ID == "" {
-				return fmt.Errorf("apt repository id is required")
-			}
+	builders := ext.Builders.Available()
+	if len(builders) == 0 {
+		return fmt.Errorf("at least one extension builder is required")
+	}
 
-			if len(repo.Types) == 0 {
-				return fmt.Errorf("apt repository types is required")
-			}
-			for _, t := range repo.Types {
-				if err := t.Validate(); err != nil {
-					return fmt.Errorf("apt repository types: %w", err)
-				}
-			}
-
-			if len(repo.URIs) == 0 {
-				return fmt.Errorf("apt repository uris is required")
-			}
-
-			if len(repo.Suites) == 0 {
-				return fmt.Errorf("apt repository suites is required")
-			}
-
-			if len(repo.Components) == 0 {
-				return fmt.Errorf("apt repository components is required")
-			}
-
-			if err := repo.SignedKey.Validate(); err != nil {
-				return fmt.Errorf("apt repository signed key: %w", err)
-			}
+	for _, builder := range builders {
+		if err := builder.Validate(); err != nil {
+			return fmt.Errorf("builders.%s has errors: %w", builder.Type, err)
 		}
 	}
 
@@ -257,10 +238,117 @@ func (s BuildScript) Validate() error {
 	return nil
 }
 
-type Deb struct {
-	BuildDependencies []string        `json:"buildDependencies,omitempty"`
-	Dependencies      []string        `json:"dependencies,omitempty"`
-	AptRepositories   []AptRepository `json:"aptRepositories,omitempty"`
+var (
+	extensionBuilderImages = map[ExtensionBuilderType]string{
+		ExtensionBuilderDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
+		ExtensionBuilderUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
+	}
+)
+
+type ExtensionBuilderType string
+
+const (
+	ExtensionBuilderUnsupported    ExtensionBuilderType = "unsupported"
+	ExtensionBuilderDebianBookworm ExtensionBuilderType = "debian:bookworm"
+	ExtensionBuilderUbuntuJammy    ExtensionBuilderType = "ubuntu:jammy"
+)
+
+type ErrUnsupportedExtensionBuilder struct {
+	osVendor  string
+	osVersion string
+}
+
+func (e *ErrUnsupportedExtensionBuilder) Error() string {
+	return fmt.Sprintf("Unsupported builder: %s:%s", e.osVendor, e.osVersion)
+}
+
+type ExtensionBuilders struct {
+	DebianBookworm *AptExtensionBuilder `json:"debian:bookworm,omitempty"`
+	UbuntuJammy    *AptExtensionBuilder `json:"ubuntu:jammy,omitempty"`
+}
+
+func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
+	switch bt {
+	case ExtensionBuilderDebianBookworm:
+		return ebs.DebianBookworm != nil
+	case ExtensionBuilderUbuntuJammy:
+		return ebs.UbuntuJammy != nil
+	}
+
+	return false
+}
+
+// Available returns all available extension builders.
+func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
+	var result []AptExtensionBuilder
+
+	if builder := ebs.DebianBookworm; builder != nil {
+		result = append(result, ebs.newBuilder(ExtensionBuilderDebianBookworm, builder))
+	}
+	if builder := ebs.UbuntuJammy; builder != nil {
+		result = append(result, ebs.newBuilder(ExtensionBuilderUbuntuJammy, builder))
+	}
+
+	return result
+}
+
+// Current returns the extension builder for the current os.
+// It panics if no extension builder is available.
+func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
+	bt, err := DetectExtensionBuilder()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var builder *AptExtensionBuilder
+	switch bt {
+	case ExtensionBuilderDebianBookworm:
+		builder = ebs.DebianBookworm
+	case ExtensionBuilderUbuntuJammy:
+		builder = ebs.UbuntuJammy
+	}
+
+	return ebs.newBuilder(bt, builder)
+}
+
+func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *AptExtensionBuilder) AptExtensionBuilder {
+	image := builder.Image
+	if image == "" {
+		image = extensionBuilderImages[os]
+	}
+
+	return AptExtensionBuilder{
+		ExtensionBuilder: ExtensionBuilder{
+			Type:              os,
+			Image:             image,
+			BuildDependencies: builder.BuildDependencies,
+			RunDependencies:   builder.RunDependencies,
+		},
+		AptRepositories: builder.AptRepositories,
+	}
+}
+
+type ExtensionBuilder struct {
+	Type              ExtensionBuilderType `json:"-"`
+	Image             string               `json:"image,omitempty"`
+	BuildDependencies []string             `json:"buildDependencies,omitempty"`
+	RunDependencies   []string             `json:"runDependencies,omitempty"`
+}
+
+type AptExtensionBuilder struct {
+	ExtensionBuilder
+
+	AptRepositories []AptRepository `json:"aptRepositories,omitempty"`
+}
+
+func (builder AptExtensionBuilder) Validate() error {
+	for i, repo := range builder.AptRepositories {
+		if err := repo.Validate(); err != nil {
+			return fmt.Errorf("aptRepositories[%d] has errors: %w", i, err)
+		}
+	}
+
+	return nil
 }
 
 // Ref: https://manpages.ubuntu.com/manpages/lunar/en/man5/sources.list.5.html
@@ -271,7 +359,39 @@ type AptRepository struct {
 	Suites     []string               `json:"suites"`
 	Components []string               `json:"components"`
 	SignedKey  AptRepositorySignedKey `json:"signedKey"`
-	Target     string                 `json:"target"`
+}
+
+func (repo AptRepository) Validate() error {
+	if repo.ID == "" {
+		return fmt.Errorf("apt repository id is required")
+	}
+
+	if len(repo.Types) == 0 {
+		return fmt.Errorf("apt repository types is required")
+	}
+	for _, t := range repo.Types {
+		if err := t.Validate(); err != nil {
+			return fmt.Errorf("apt repository types: %w", err)
+		}
+	}
+
+	if len(repo.URIs) == 0 {
+		return fmt.Errorf("apt repository uris is required")
+	}
+
+	if len(repo.Suites) == 0 {
+		return fmt.Errorf("apt repository suites is required")
+	}
+
+	if len(repo.Components) == 0 {
+		return fmt.Errorf("apt repository components is required")
+	}
+
+	if err := repo.SignedKey.Validate(); err != nil {
+		return fmt.Errorf("apt repository signed key: %w", err)
+	}
+
+	return nil
 }
 
 type AptRepositorySignedKey struct {
@@ -320,3 +440,22 @@ const (
 	AptRepositorySignedKeyFormatAsc AptRepositorySignedKeyFormat = "asc"
 	AptRepositorySignedKeyFormatGpg AptRepositorySignedKeyFormat = "gpg"
 )
+
+func DetectExtensionBuilder() (ExtensionBuilderType, error) {
+	info := osx.Sysinfo()
+
+	var (
+		vendor  = info.OS.Vendor
+		version = info.OS.Version
+	)
+
+	if vendor == "debian" && version == "12" {
+		return ExtensionBuilderDebianBookworm, nil
+	}
+
+	if vendor == "ubuntu" && version == "22.04" {
+		return ExtensionBuilderUbuntuJammy, nil
+	}
+
+	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
+}

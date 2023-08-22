@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1
+
+FROM ubuntu AS merge
+
+{{- if .ExportDebianBookwormArtifacts }}
+COPY --from=debian-bookworm /workspace/target/*.deb  /out/debian/bookworm/
+{{- end }}
+
+{{- if .ExportUbuntuJammyArtifacts }}
+COPY --from=ubuntu-jammy /workspace/target/*.deb  /out/ubuntu/jammy/
+{{- end }}
+
+FROM ubuntu AS export
+
+COPY --from=merge /out/ .

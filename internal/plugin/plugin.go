@@ -5,7 +5,6 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
-	"github.com/pgxman/pgxman/internal/osx"
 
 	"github.com/pgxman/pgxman/internal/plugin/debian"
 )
@@ -14,74 +13,86 @@ func init() {
 	pkg := &debian.DebianPackager{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterPackager("debian", pkg)
-	RegisterPackager("ubuntu", pkg)
+	RegisterPackager(pgxman.ExtensionBuilderDebianBookworm, pkg)
+	RegisterPackager(pgxman.ExtensionBuilderUbuntuJammy, pkg)
 
 	updater := &debian.DebianUpdater{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterUpdater("debian", updater)
-	RegisterUpdater("ubuntu", updater)
+	RegisterUpdater(pgxman.ExtensionBuilderDebianBookworm, updater)
+	RegisterUpdater(pgxman.ExtensionBuilderUbuntuJammy, updater)
 
 	installer := &debian.DebianInstaller{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterInstaller("debian", installer)
-	RegisterInstaller("ubuntu", installer)
+	RegisterInstaller(pgxman.ExtensionBuilderDebianBookworm, installer)
+	RegisterInstaller(pgxman.ExtensionBuilderUbuntuJammy, installer)
 }
 
 var (
-	packagers  = make(map[string]pgxman.Packager)
-	updaters   = make(map[string]pgxman.Updater)
-	installers = make(map[string]pgxman.Installer)
+	packagers  = make(map[pgxman.ExtensionBuilderType]pgxman.Packager)
+	updaters   = make(map[pgxman.ExtensionBuilderType]pgxman.Updater)
+	installers = make(map[pgxman.ExtensionBuilderType]pgxman.Installer)
 )
 
-func RegisterPackager(os string, packager pgxman.Packager) {
-	packagers[os] = packager
+func RegisterPackager(bt pgxman.ExtensionBuilderType, packager pgxman.Packager) {
+	packagers[bt] = packager
 }
 
 func GetPackager() (pgxman.Packager, error) {
-	si := osx.Sysinfo()
-	pkg := packagers[si.OS.Vendor]
+	bt, err := pgxman.DetectExtensionBuilder()
+	if err != nil {
+		return nil, err
+	}
+
+	pkg := packagers[bt]
 	if pkg == nil {
-		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
+		return nil, &ErrUnsupportedPlugin{bt: bt}
 	}
 
 	return pkg, nil
 }
 
-func RegisterUpdater(os string, updater pgxman.Updater) {
-	updaters[os] = updater
+func RegisterUpdater(bt pgxman.ExtensionBuilderType, updater pgxman.Updater) {
+	updaters[bt] = updater
 }
 
 func GetUpdater() (pgxman.Updater, error) {
-	si := osx.Sysinfo()
-	u := updaters[si.OS.Vendor]
+	bt, err := pgxman.DetectExtensionBuilder()
+	if err != nil {
+		return nil, err
+	}
+
+	u := updaters[bt]
 	if u == nil {
-		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
+		return nil, &ErrUnsupportedPlugin{bt: bt}
 	}
 
 	return u, nil
 }
 
-func RegisterInstaller(os string, installer pgxman.Installer) {
-	installers[os] = installer
+func RegisterInstaller(bt pgxman.ExtensionBuilderType, installer pgxman.Installer) {
+	installers[bt] = installer
 }
 
 func GetInstaller() (pgxman.Installer, error) {
-	si := osx.Sysinfo()
-	i := installers[si.OS.Vendor]
+	bt, err := pgxman.DetectExtensionBuilder()
+	if err != nil {
+		return nil, err
+	}
+
+	i := installers[bt]
 	if i == nil {
-		return nil, ErrUnsupportedOS{os: si.OS.Vendor}
+		return nil, &ErrUnsupportedPlugin{bt: bt}
 	}
 
 	return i, nil
 }
 
-type ErrUnsupportedOS struct {
-	os string
+type ErrUnsupportedPlugin struct {
+	bt pgxman.ExtensionBuilderType
 }
 
-func (e ErrUnsupportedOS) Error() string {
-	return fmt.Sprintf("unsupported OS: %s", e.os)
+func (e *ErrUnsupportedPlugin) Error() string {
+	return fmt.Sprintf("Unsupported plugin: %s", e.bt)
 }

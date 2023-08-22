@@ -62,21 +62,23 @@ jobs:
           driver-opts: network=host
       - name: Build and push to local registry
         uses: docker/bake-action@v3
+        env:
+          DEBIAN_BOOKWORM_REPO: localhost:5000/pgxman/builder/debian/bookworm
+          UBUNTU_JAMMY_REPO: localhost:5000/pgxman/builder/ubuntu/jammy
         with:
           push: true
           pull: true
           files: |
             docker/docker-bake.hcl
           targets: |
-            debian-bookworm
+            default
           set: |
             *.platform=linux/amd64
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            *.tags=localhost:5000/pgxman/builder/debian/bookworm:latest
       - name: Run e2etest
         run: |
-          E2ETEST_BUILD_IMAGE=localhost:5000/pgxman/builder/debian/bookworm make e2etest
+          E2ETEST_DEBIAN_BOOKWORM_IMAGE=localhost:5000/pgxman/builder/debian/bookworm:dev E2ETEST_UBUNTU_JAMMY_IMAGE=localhost:5000/pgxman/builder/ubuntu/jammy:dev make e2etest
   docker:
     name: Docker
     needs: [e2etest]

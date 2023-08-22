@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/sha1"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman/internal/filepathx"
@@ -53,6 +55,12 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 		}
 	}()
 
+	extb, err := yaml.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	b.logger.Debug("Building extension", "ext", string(extb), "workdir", workDir)
+
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("generate Dockerfile: %w", err)
 	}
@@ -82,7 +90,7 @@ func (b *dockerBuilder) generateDockerFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Debug("Generating Dockerfile")
 
-	return tmpl.Export(docker.FS, nil, dstDir)
+	return tmpl.Export(docker.FS, dockerFileTemplater{ext}, dstDir)
 }
 
 func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) error {
@@ -101,32 +109,33 @@ func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 	return b.runDockerCmd(
 		ctx,
 		dstDir,
-		append(
-			b.dockerBuildCommonArgs(ext),
-			"--output",
-			"out",
-			"--platform",
-			dockerPlatforms(ext),
-			".",
+		b.dockerBakeArgs(
+			ext,
+			[]string{"export"},
+			[]string{
+				"--set",
+				fmt.Sprintf("*.platform=%s", dockerPlatforms(ext)),
+				"--set",
+				"export.output=type=local,dest=./out",
+			},
 		)...,
 	)
 }
 
 func (b *dockerBuilder) runDockerDebugBuild(ctx context.Context, ext Extension, dstDir string) error {
-	///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
-	tag := strings.ReplaceAll(ext.Version, "+", "-")
+	targets := dockerBakeTargets(ext)
 
 	return b.runDockerCmd(
 		ctx,
 		dstDir,
-		append(
-			b.dockerBuildCommonArgs(ext),
-			"--tag",
-			fmt.Sprintf("pgxman/%s-debug:%s", ext.Name, tag),
-			"--target",
-			"build",
-			"--load",
-			".",
+		b.dockerBakeArgs(
+			ext,
+			targets,
+			[]string{
+				"--set",
+				"*.target=build",
+				"--load",
+			},
 		)...,
 	)
 }
@@ -164,9 +173,14 @@ func (b *dockerBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	}
 
 	for _, match := range matches {
+		rel, err := filepath.Rel(src, match)
+		if err != nil {
+			return fmt.Errorf("relative path: %w", err)
+		}
+
 		if err := cp.Copy(
 			match,
-			filepath.Join(dst, filepath.Base(match)),
+			filepath.Join(dst, rel),
 		); err != nil {
 			return fmt.Errorf("copy built extension %s: %w", match, err)
 		}
@@ -175,35 +189,54 @@ func (b *dockerBuilder) copyBuild(ctx context.Context, workDir, dstDir string) e
 	return nil
 }
 
-func (b *dockerBuilder) dockerBuildCommonArgs(ext Extension) []string {
-	args := []string{
-		"buildx",
-		"build",
-		"--build-arg",
-		fmt.Sprintf("BUILD_IMAGE=%s", ext.BuildImage),
-		"--build-arg",
-		fmt.Sprintf("BUILD_SHA=%s", buildSHA(ext)),
+func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArgs []string) []string {
+	var (
+		buildTargetArgs []string
+		sha             = buildSHA(ext)
+	)
+
+	for _, builder := range ext.Builders.Available() {
+		bakeTargetName := dockerBakeTargetFromBuilderID(builder.Type)
+
+		buildTargetArgs = append(
+			buildTargetArgs,
+			"--set",
+			fmt.Sprintf("%s.args.BUILD_IMAGE=%s", bakeTargetName, builder.Image),
+			"--set",
+			fmt.Sprintf("%s.args.BUILD_SHA=%s", bakeTargetName, sha),
+		)
+
+		if b.BuilderOptions.Debug {
+			buildTargetArgs = append(
+				buildTargetArgs,
+				"--set",
+				fmt.Sprintf("%s.tags=%s", bakeTargetName, dockerDebugImage(builder.Type, ext)),
+				"--set",
+				fmt.Sprintf("%s.args.PGXMAN_PACK_ARGS=--debug", bakeTargetName),
+			)
+		}
 	}
 
-	if b.BuilderOptions.Debug {
-		args = append(
-			args,
-			"--build-arg",
-			"PGXMAN_PACK_ARGS=--debug",
-		)
+	args := []string{
+		"buildx",
+		"bake",
 	}
+	args = append(args, buildTargetArgs...)
+	args = append(args, extraArgs...)
 
 	if b.NoCache {
 		args = append(args, "--no-cache")
 	} else {
 		for _, cacheFrom := range b.CacheFrom {
-			args = append(args, "--cache-from", cacheFrom)
+			args = append(args, "--set", fmt.Sprintf("*.cache-from=%s", cacheFrom))
 		}
 
 		for _, cacheTo := range b.CacheTo {
-			args = append(args, "--cache-to", cacheTo)
+			args = append(args, "--set", fmt.Sprintf("*.cache-to=%s", cacheTo))
 		}
 	}
+
+	args = append(args, targets...)
 
 	return args
 }
@@ -228,4 +261,64 @@ func buildSHA(ext Extension) string {
 	}
 
 	return fmt.Sprintf("%x", sha1.Sum(extb))
+}
+
+func dockerDebugImage(bt ExtensionBuilderType, ext Extension) string {
+	var (
+		imagePath = strings.ReplaceAll(string(bt), ":", "/")
+		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
+		tag = strings.ReplaceAll(ext.Version, "+", "-")
+	)
+
+	return fmt.Sprintf("pgxman/%s/%s-debug:%s", imagePath, ext.Name, tag)
+}
+
+func dockerBakeTargets(ext Extension) []string {
+	var result []string
+	for _, builder := range ext.Builders.Available() {
+		result = append(result, dockerBakeTargetFromBuilderID(builder.Type))
+	}
+
+	return result
+}
+
+func dockerBakeTargetFromBuilderID(bt ExtensionBuilderType) string {
+	return strings.ReplaceAll(string(bt), ":", "-")
+}
+
+type dockerFileExtension struct {
+	Extension
+}
+
+func (e dockerFileExtension) ExportDebianBookwormArtifacts() bool {
+	if builders := e.Builders; builders != nil {
+		return builders.HasBuilder(ExtensionBuilderDebianBookworm)
+	}
+
+	return false
+}
+
+func (e dockerFileExtension) ExportUbuntuJammyArtifacts() bool {
+	if builders := e.Builders; builders != nil {
+		return builders.HasBuilder(ExtensionBuilderUbuntuJammy)
+	}
+
+	return false
+}
+
+type dockerFileTemplater struct {
+	ext Extension
+}
+
+func (d dockerFileTemplater) Render(content []byte, out io.Writer) error {
+	t, err := template.New("").Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("parse template: %w", err)
+	}
+
+	if err := t.Execute(out, dockerFileExtension{d.ext}); err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	return nil
 }

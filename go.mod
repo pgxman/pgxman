@@ -3,11 +3,11 @@ module github.com/pgxman/pgxman
 go 1.21
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.7.1
-	github.com/imdario/mergo v0.3.16
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/otiai10/copy v1.11.0
 	github.com/spf13/cobra v1.7.0

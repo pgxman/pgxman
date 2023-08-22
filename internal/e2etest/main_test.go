@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	flagBuildImage string
-	flagPGXManBin  string
+	flagDebianBookwormImage string
+	flagUbuntuJammyImage    string
+	flagPGXManBin           string
 )
 
 var cf struct {
@@ -53,7 +54,8 @@ func EnsureCleanup(t *testing.T, cleanup func()) {
 func TestMain(m *testing.M) {
 	var e2etest bool
 	flag.BoolVar(&e2etest, "e2e", false, "Run e2e tests")
-	flag.StringVar(&flagBuildImage, "build-image", "", "Build image")
+	flag.StringVar(&flagDebianBookwormImage, "debian-bookworm-image", "", "Debian Bookworm Build image")
+	flag.StringVar(&flagUbuntuJammyImage, "ubuntu-jammy-image", "", "Ubuntu Jammy Build image")
 	flag.StringVar(&flagPGXManBin, "pgxman-bin", "", "THe Linux binary of pgxman")
 	flag.Parse()
 
@@ -65,8 +67,13 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 
-	if flagBuildImage == "" {
-		logger.Info("-build-image is required")
+	if flagDebianBookwormImage == "" {
+		logger.Info("-debian-bookworm-image is required")
+		os.Exit(0)
+	}
+
+	if flagUbuntuJammyImage == "" {
+		logger.Info("-ubuntu-jammy-image is required")
 		os.Exit(0)
 	}
 
