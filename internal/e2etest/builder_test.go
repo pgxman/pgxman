@@ -25,9 +25,11 @@ func TestBuilder(t *testing.T) {
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
 	ext.RunDependencies = []string{"libcurl4-openssl-dev"}
 	ext.Builders = &pgxman.ExtensionBuilders{
-		DebianBookworm: &pgxman.ExtensionBuilder{
-			BuildDependencies: []string{"libarrow-dev"},
-			Image:             flagDebianBookwormImage,
+		DebianBookworm: &pgxman.AptExtensionBuilder{
+			ExtensionBuilder: pgxman.ExtensionBuilder{
+				BuildDependencies: []string{"libarrow-dev"},
+				Image:             flagDebianBookwormImage,
+			},
 			AptRepositories: []pgxman.AptRepository{
 				{
 					ID:         "apache-arrow-debian-bookworm",
@@ -42,9 +44,11 @@ func TestBuilder(t *testing.T) {
 				},
 			},
 		},
-		UbuntuJammy: &pgxman.ExtensionBuilder{
-			BuildDependencies: []string{"libarrow-dev"},
-			Image:             flagUbuntuJammyImage,
+		UbuntuJammy: &pgxman.AptExtensionBuilder{
+			ExtensionBuilder: pgxman.ExtensionBuilder{
+				BuildDependencies: []string{"libarrow-dev"},
+				Image:             flagUbuntuJammyImage,
+			},
 			AptRepositories: []pgxman.AptRepository{
 				{
 					ID:         "apache-arrow-ubuntu-jammy",

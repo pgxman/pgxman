@@ -25,13 +25,17 @@ func NewDefaultExtension() Extension {
 		Platform:   []Platform{PlatformLinux},
 		Formats:    []Format{FormatDeb},
 		Builders: &ExtensionBuilders{
-			DebianBookworm: &ExtensionBuilder{
-				Type:  ExtensionBuilderDebianBookworm,
-				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], buildImageVersion),
+			DebianBookworm: &AptExtensionBuilder{
+				ExtensionBuilder: ExtensionBuilder{
+					Type:  ExtensionBuilderDebianBookworm,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], buildImageVersion),
+				},
 			},
-			UbuntuJammy: &ExtensionBuilder{
-				Type:  ExtensionBuilderUbuntuJammy,
-				Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], buildImageVersion),
+			UbuntuJammy: &AptExtensionBuilder{
+				ExtensionBuilder: ExtensionBuilder{
+					Type:  ExtensionBuilderUbuntuJammy,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], buildImageVersion),
+				},
 			},
 		},
 	}
@@ -259,8 +263,8 @@ func (e *ErrUnsupportedExtensionBuilder) Error() string {
 }
 
 type ExtensionBuilders struct {
-	DebianBookworm *ExtensionBuilder `json:"debian:bookworm,omitempty"`
-	UbuntuJammy    *ExtensionBuilder `json:"ubuntu:jammy,omitempty"`
+	DebianBookworm *AptExtensionBuilder `json:"debian:bookworm,omitempty"`
+	UbuntuJammy    *AptExtensionBuilder `json:"ubuntu:jammy,omitempty"`
 }
 
 func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
@@ -275,8 +279,8 @@ func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
 }
 
 // Available returns all available extension builders.
-func (ebs ExtensionBuilders) Available() []ExtensionBuilder {
-	var result []ExtensionBuilder
+func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
+	var result []AptExtensionBuilder
 
 	if builder := ebs.DebianBookworm; builder != nil {
 		result = append(result, ebs.newBuilder(ExtensionBuilderDebianBookworm, builder))
@@ -290,13 +294,13 @@ func (ebs ExtensionBuilders) Available() []ExtensionBuilder {
 
 // Current returns the extension builder for the current os.
 // It panics if no extension builder is available.
-func (ebs ExtensionBuilders) Current() ExtensionBuilder {
+func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
 	bt, err := detectExtensionBuilder()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	var builder *ExtensionBuilder
+	var builder *AptExtensionBuilder
 	switch bt {
 	case ExtensionBuilderDebianBookworm:
 		builder = ebs.DebianBookworm
@@ -307,18 +311,20 @@ func (ebs ExtensionBuilders) Current() ExtensionBuilder {
 	return ebs.newBuilder(bt, builder)
 }
 
-func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *ExtensionBuilder) ExtensionBuilder {
+func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *AptExtensionBuilder) AptExtensionBuilder {
 	image := builder.Image
 	if image == "" {
 		image = extensionBuilderImages[os]
 	}
 
-	return ExtensionBuilder{
-		Type:              os,
-		Image:             image,
-		BuildDependencies: builder.BuildDependencies,
-		RunDependencies:   builder.RunDependencies,
-		AptRepositories:   builder.AptRepositories,
+	return AptExtensionBuilder{
+		ExtensionBuilder: ExtensionBuilder{
+			Type:              os,
+			Image:             image,
+			BuildDependencies: builder.BuildDependencies,
+			RunDependencies:   builder.RunDependencies,
+		},
+		AptRepositories: builder.AptRepositories,
 	}
 }
 
@@ -327,10 +333,15 @@ type ExtensionBuilder struct {
 	Image             string               `json:"image,omitempty"`
 	BuildDependencies []string             `json:"buildDependencies,omitempty"`
 	RunDependencies   []string             `json:"runDependencies,omitempty"`
-	AptRepositories   []AptRepository      `json:"aptRepositories,omitempty"`
 }
 
-func (builder ExtensionBuilder) Validate() error {
+type AptExtensionBuilder struct {
+	ExtensionBuilder
+
+	AptRepositories []AptRepository `json:"aptRepositories,omitempty"`
+}
+
+func (builder AptExtensionBuilder) Validate() error {
 	for i, repo := range builder.AptRepositories {
 		if err := repo.Validate(); err != nil {
 			return fmt.Errorf("aptRepositories[%d] has errors: %w", i, err)
