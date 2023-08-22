@@ -23,7 +23,7 @@ func TestBuilder(t *testing.T) {
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
 	ext.Version = "0.4.4"
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
-	ext.Dependencies = []string{"libcurl4-openssl-dev"}
+	ext.RunDependencies = []string{"libcurl4-openssl-dev"}
 	ext.Builders = &pgxman.ExtensionBuilders{
 		DebianBookworm: &pgxman.ExtensionBuilder{
 			BuildDependencies: []string{"libarrow-dev"},

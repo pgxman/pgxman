@@ -304,7 +304,7 @@ func (e extensionData) Deps() string {
 		"${misc:Depends}",
 	}
 
-	deps := e.Dependencies
+	deps := e.RunDependencies
 	if builders := e.Builders; builders != nil {
 		builder := builders.Current()
 		if len(builder.RunDependencies) != 0 {

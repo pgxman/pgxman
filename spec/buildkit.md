@@ -74,7 +74,7 @@ build: |
   DESTDIR=${DESTDIR} make install
 ```
 
-## `dependencies`
+## `runDependencies`
 
 - **Description**:  Lists the rpackages needed for the extension to function properly at runtime.
 - **Type**: List of strings
@@ -135,7 +135,7 @@ build: |
 - **Required**: No
 - **Object Fields**:
   - `buildDepdencies`: Additional list of Debian packages required for building the extension. (List of strings, Optional)
-  - `Dependencies`: Additional list of Debian packages required for running the extension. (List of strings, Optional)
+  - `runDependencies`: Additional list of Debian packages required for running the extension. (List of strings, Optional)
   - `AptRepositories`: Lists the APT repositories containing the above Debian packages. (List of objects, Optional)
     - `id`: The repository's id. (String, Required)
     - `types`: The repository's types. (String, Required, Supported Values: `deb`, `deb-src`)

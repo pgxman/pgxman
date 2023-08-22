@@ -15,7 +15,7 @@ func Test_debianPackageTemplater(t *testing.T) {
 		Name:              "pgvector",
 		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
 		BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
-		Dependencies:      []string{"libxml2", "pgxman/multicorn"},
+		RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
 	}
 
 	cases := []struct {

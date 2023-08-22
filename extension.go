@@ -57,7 +57,7 @@ type Extension struct {
 	Keywords          []string           `json:"keywords,omitempty"`
 	Homepage          string             `json:"homepage,omitempty"`
 	BuildDependencies []string           `json:"buildDependencies,omitempty"`
-	Dependencies      []string           `json:"dependencies,omitempty"`
+	RunDependencies   []string           `json:"runDependencies,omitempty"`
 }
 
 func (ext Extension) Validate() error {
