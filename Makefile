@@ -21,8 +21,8 @@ GO_TEST_FLAGS ?=
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
 
-E2ETEST_DEBIAN_BOOKWORM_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
-E2ETEST_UBUNTU_JAMMY_IMAGE ?= ghcr.io/pgxman/builder/ubuntu/jammy:main
+DEBIAN_BOOKWORM_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
+UBUNTU_JAMMY_IMAGE ?= ghcr.io/pgxman/builder/ubuntu/jammy:main
 .PHONY: e2etest
 e2etest:
 	GOOS=linux GOARCH=$$(go env GOARCH) go build -o $(BIN_DIR)/pgxman_linux_$$(go env GOARCH) ./cmd/pgxman
@@ -31,8 +31,8 @@ e2etest:
 		-count=1 -race \
 		-v \
 		-e2e \
-		-debian-bookworm-image $(E2ETEST_DEBIAN_BOOKWORM_IMAGE) \
-		-ubuntu-jammy-image $(E2ETEST_UBUNTU_JAMMY_IMAGE) \
+		-debian-bookworm-image $(DEBIAN_BOOKWORM_IMAGE) \
+		-ubuntu-jammy-image $(UBUNTU_JAMMY_IMAGE) \
 		-pgxman-bin $(BIN_DIR)/pgxman_linux_$$(go env GOARCH)
 
 .PHONY: vet
@@ -45,10 +45,14 @@ vet:
 		golangci/golangci-lint:v1.53 \
 		golangci-lint run --timeout 5m -v
 
-REPO ?= ghcr.io/pgxman/builder
 .PHONY: docker_build
 docker_build:
-	docker buildx bake -f $(PWD)/docker/docker-bake.hcl --pull --load
+	docker buildx bake \
+		-f $(PWD)/docker/docker-bake.hcl \
+		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
+		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
+		--pull \
+		--load
 
 .PHONY: docker_push
 docker_push:

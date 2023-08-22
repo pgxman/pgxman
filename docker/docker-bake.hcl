@@ -1,17 +1,5 @@
 
-variable "BASE_REPO" {
-    default = "ghcr.io/pgxman/builder"
-}
-
-variable "DEBIAN_BOOKWORM_REPO" {
-    default = "${BASE_REPO}/debian/bookworm"
-}
-
-variable "UBUNTU_JAMMY_REPO" {
-    default = "${BASE_REPO}/ubuntu/jammy"
-}
-
-variable "TAG" {
+variable "BUILD_VERSION" {
     default = "dev"
 }
 
@@ -28,7 +16,6 @@ target "debian-bookworm" {
     }
 
     dockerfile = "docker/Dockerfile.debian"
-    tags = ["${DEBIAN_BOOKWORM_REPO}:${TAG}"]
 }
 
 target "ubuntu-jammy" {
@@ -40,7 +27,6 @@ target "ubuntu-jammy" {
     }
 
     dockerfile = "docker/Dockerfile.debian"
-    tags = ["${UBUNTU_JAMMY_REPO}:${TAG}"]
 }
 
 target "pgxman" {
@@ -48,7 +34,7 @@ target "pgxman" {
     target = "gobuild"
 
     args = {
-        BUILD_VERSION = "${TAG}"
+        BUILD_VERSION = "${BUILD_VERSION}"
     }
 }
 
