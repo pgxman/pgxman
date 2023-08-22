@@ -20,9 +20,15 @@ PGXMan buildkit is a configuration file in YAML format that `pgxman` uses to spe
 - **Description**: Lists the individuals or organizations responsible for maintaining the extension.
 - **Type**: List of objects
 - **Required**: Yes
-- **Object Fields**:
-  - `name`: The maintainer's full name. (String, Required)
-  - `email`: The maintainer's contact email. (String, Required)
+- **Fields**:
+  - `name`:
+    - **Description**: The maintainer's full name.
+    - **Type**: String
+    - **Required:** Yes
+  - `email`:
+    - **Description**: The maintainer's contact email.
+    - **Type**: String
+    - **Required**: Yes
 
 ## `source`
 
@@ -50,21 +56,51 @@ PGXMan buildkit is a configuration file in YAML format that `pgxman` uses to spe
 - **Type**: Object
 - **Required**: Yes
 - **Fields**:
-  - `pre`: A list of steps before the main build process. (List of objects, Optional)
-    - `name`: Name of the build step. (String, Required)
-    - `run`: Bash command for the build step. (String, Required)
-  - `main`: A list of steps to be executed during main build process. (List of objects, Required)
-    - `name`: Name of the build step. (String, Required)
-    - `run`: Bash command for the build step. (String, Required)
+  - `pre`:
+    - **Description**: A list of steps before the main build process.
+    - **Type**: List of objects
+    - **Required**: No
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
+  - `main`:
+    - **Description**: A list of steps to be executed during main build process.
+    - **Type**: List of objects
+    - **Required**: Yes
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
     - **Environment Variables**:
       - `DESTDIR`: Indicates the directory where the built extension should be placed.
       - `WORKDIR`: The working directory that contains the source code and the script.
       - `PG_CONFIG`: Identifies the path to the `pg_config` executable.
       - `USE_PGXS`: Always set to `1`.
       - `PG_VERSION`: The PostgreSQL version that the script is building against.
-  - `post`: A list of steps after the main build process. (List of objects, Optional)
-    - `name`: Name of the build step. (String, Required)
-    - `run`: Bash command for the build step. (String, Required)
+  - `post`:
+    - **Description**: A list of steps after the main build process.
+    - **Type**: List of objects
+    - **Required**: No
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
 
 The following is an example:
 
