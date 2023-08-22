@@ -295,7 +295,7 @@ func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
 // Current returns the extension builder for the current os.
 // It panics if no extension builder is available.
 func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
-	bt, err := detectExtensionBuilder()
+	bt, err := DetectExtensionBuilder()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -441,7 +441,7 @@ const (
 	AptRepositorySignedKeyFormatGpg AptRepositorySignedKeyFormat = "gpg"
 )
 
-func detectExtensionBuilder() (ExtensionBuilderType, error) {
+func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 	info := osx.Sysinfo()
 
 	var (
