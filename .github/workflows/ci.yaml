@@ -45,6 +45,9 @@ jobs:
     name: E2Etest
     needs: [build, test, vet]
     runs-on: ubuntu-latest
+    env:
+      DEBIAN_BOOKWORM_IMAGE: localhost:5000/pgxman/builder/debian/bookworm:dev
+      UBUNTU_JAMMY_IMAGE: localhost:5000/pgxman/builder/ubuntu/jammy:dev
     services:
       registry:
         image: registry:2
@@ -62,9 +65,6 @@ jobs:
           driver-opts: network=host
       - name: Build and push to local registry
         uses: docker/bake-action@v3
-        env:
-          DEBIAN_BOOKWORM_REPO: localhost:5000/pgxman/builder/debian/bookworm
-          UBUNTU_JAMMY_REPO: localhost:5000/pgxman/builder/ubuntu/jammy
         with:
           push: true
           pull: true
@@ -76,9 +76,11 @@ jobs:
             *.platform=linux/amd64
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
+            debian-bookworm.tags=${{ env.DEBIAN_BOOKWORM_IMAGE }}
+            ubuntu-jammy.tags=${{ env.UBUNTU_JAMMY_IMAGE }}
       - name: Run e2etest
         run: |
-          E2ETEST_DEBIAN_BOOKWORM_IMAGE=localhost:5000/pgxman/builder/debian/bookworm:dev E2ETEST_UBUNTU_JAMMY_IMAGE=localhost:5000/pgxman/builder/ubuntu/jammy:dev make e2etest
+          make e2etest
   docker:
     name: Docker
     needs: [e2etest]
