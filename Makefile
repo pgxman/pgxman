@@ -56,7 +56,12 @@ docker_build:
 
 .PHONY: docker_push
 docker_push:
-	docker buildx bake -f $(PWD)/docker/docker-bake.hcl --pull --push
+	docker buildx bake \
+		-f $(PWD)/docker/docker-bake.hcl \
+		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
+		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
+		--pull \
+		--push
 
 .PHONY: goreleaser
 goreleaser:

@@ -97,6 +97,7 @@ func runAptInstall(ctx context.Context, debPkgs []string, aptRepos []pgxman.AptR
 		logger.Debug("Running apt install", "package", pkg)
 
 		cmd := exec.CommandContext(ctx, "apt", "install", "-y", "--no-install-recommends", pkg)
+		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
