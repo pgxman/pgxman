@@ -26,15 +26,36 @@ func (u *DebianUpdater) Update(ctx context.Context) error {
 		return errBuildkitSource{Err: err}
 	}
 
+	bt, err := pgxman.DetectExtensionBuilder()
+	if err != nil {
+		return fmt.Errorf("detect platform: %s", err)
+	}
+
+	var (
+		prefix   string
+		codename string
+	)
+
+	switch bt {
+	case pgxman.ExtensionBuilderDebianBookworm:
+		prefix = "debian"
+		codename = "bookworm"
+	case pgxman.ExtensionBuilderUbuntuJammy:
+		prefix = "ubuntu"
+		codename = "jammy"
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
 	u.Logger.Debug("Adding apt repositories")
 	if err := addAptRepos(
 		ctx,
 		[]pgxman.AptRepository{
 			{
 				ID:         "pgxman",
-				Types:      []pgxman.AptRepositoryType{"deb"},
-				URIs:       []string{sourcesURL},
-				Suites:     []string{"stable"},
+				Types:      []pgxman.AptRepositoryType{pgxman.AptRepositoryTypeDeb},
+				URIs:       []string{fmt.Sprintf("%s/%s", sourcesURL, prefix)},
+				Suites:     []string{codename},
 				Components: []string{"main"},
 				SignedKey: pgxman.AptRepositorySignedKey{
 					URL:    gpgkeyURL,
