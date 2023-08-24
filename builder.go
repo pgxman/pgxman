@@ -5,12 +5,14 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/mholt/archiver/v3"
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman/internal/filepathx"
 	"github.com/pgxman/pgxman/internal/log"
@@ -61,6 +63,10 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 	}
 	b.logger.Debug("Building extension", "ext", string(extb), "workdir", workDir)
 
+	if err := b.fetchSource(ext, workDir); err != nil {
+		return fmt.Errorf("download source: %w", err)
+	}
+
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("generate Dockerfile: %w", err)
 	}
@@ -103,6 +109,39 @@ func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 	}
 
 	return os.WriteFile(filepath.Join(dstDir, "extension.yaml"), e, 0644)
+}
+
+func (b *dockerBuilder) fetchSource(ext Extension, dstDir string) error {
+	source, err := ext.ParseSource()
+	if err != nil {
+		return nil
+	}
+
+	dstSource := filepath.Join(dstDir, "source.tar.gz")
+
+	// local source
+	if filepath.IsAbs(source) {
+		return archiver.Archive([]string{source}, dstSource)
+	}
+
+	// http source
+	resp, err := http.Get(source)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	f, err := os.Create(dstSource)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {

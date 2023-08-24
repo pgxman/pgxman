@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mholt/archiver/v3"
+	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
@@ -23,6 +23,7 @@ import (
 
 const (
 	extensionDepPrefix = "pgxman/"
+	sourceTarGzPath    = "/workspace/source.tar.gz"
 )
 
 type DebianPackager struct {
@@ -93,7 +94,7 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 }
 
 func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, targetDir, buildDir string) error {
-	sourceFile, err := p.downloadSource(ctx, ext, targetDir)
+	sourceFile, err := p.copySource(ctx, ext, targetDir)
 	if err != nil {
 		return fmt.Errorf("download source %s: %w", ext.Source, err)
 	}
@@ -105,34 +106,22 @@ func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgx
 	return nil
 }
 
-func (p *DebianPackager) downloadSource(ctx context.Context, ext pgxman.Extension, targetDir string) (string, error) {
+func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, targetDir string) (string, error) {
 	logger := p.Logger.With(slog.String("source", ext.Source))
-	logger.Info("Downloading source")
+	logger.Info("Copying source")
 
-	sourceFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
+	targetFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
 
-	// file is already downloaded
-	if _, err := os.Stat(sourceFile); err == nil {
-		return sourceFile, nil
+	// file is already coped
+	if _, err := os.Stat(targetFile); err == nil {
+		return targetFile, nil
 	}
 
-	resp, err := http.Get(ext.Source)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	f, err := os.Create(sourceFile)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	if err := cp.Copy(sourceTarGzPath, targetFile); err != nil {
 		return "", err
 	}
 
-	return sourceFile, nil
+	return targetFile, nil
 }
 
 func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildDir string) error {
