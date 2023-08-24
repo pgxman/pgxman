@@ -40,9 +40,10 @@ func (exts PGXManfile) Validate() error {
 }
 
 type InstallExtension struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-	Path    string `json:"path,omitempty"`
+	Name    string   `json:"name,omitempty"`
+	Version string   `json:"version,omitempty"`
+	Path    string   `json:"path,omitempty"`
+	Options []string `json:"options,omitempty"`
 }
 
 func (e InstallExtension) Validate() error {

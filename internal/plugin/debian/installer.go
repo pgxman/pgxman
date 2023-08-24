@@ -17,6 +17,11 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
+type installDebPkg struct {
+	Pkg  string
+	Opts []string
+}
+
 func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) error {
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", exts)
 
@@ -27,7 +32,7 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 	}
 
 	var (
-		debPkgs  []string
+		debPkgs  []installDebPkg
 		aptRepos []pgxman.AptRepository
 	)
 	for _, extToInstall := range exts.Extensions {
@@ -36,7 +41,13 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 		}
 
 		if extToInstall.Path != "" {
-			debPkgs = append(debPkgs, extToInstall.Path)
+			debPkgs = append(
+				debPkgs,
+				installDebPkg{
+					Pkg:  extToInstall.Path,
+					Opts: extToInstall.Options,
+				},
+			)
 		} else {
 			installableExt, ok := installableExts[extToInstall.Name]
 			if !ok {
@@ -47,7 +58,13 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 			}
 
 			for _, pgv := range exts.PGVersions {
-				debPkgs = append(debPkgs, fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version))
+				debPkgs = append(
+					debPkgs,
+					installDebPkg{
+						Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version),
+						Opts: extToInstall.Options,
+					},
+				)
 			}
 
 			if builders := installableExt.Builders; builders != nil {
@@ -87,7 +104,7 @@ func installableExtensions(ctx context.Context, buildkitDir string) (map[string]
 	return exts, nil
 }
 
-func runAptInstall(ctx context.Context, debPkgs []string, aptRepos []pgxman.AptRepository, logger *log.Logger) error {
+func runAptInstall(ctx context.Context, debPkgs []installDebPkg, aptRepos []pgxman.AptRepository, logger *log.Logger) error {
 	logger.Debug("add apt repo", slog.Any("repos", aptRepos))
 	if err := addAptRepos(ctx, aptRepos, logger); err != nil {
 		return fmt.Errorf("add apt repos: %w", err)
@@ -96,7 +113,11 @@ func runAptInstall(ctx context.Context, debPkgs []string, aptRepos []pgxman.AptR
 	for _, pkg := range debPkgs {
 		logger.Debug("Running apt install", "package", pkg)
 
-		cmd := exec.CommandContext(ctx, "apt", "install", "-y", "--no-install-recommends", pkg)
+		opts := []string{"install", "-y", "--no-install-recommends"}
+		opts = append(opts, pkg.Opts...)
+		opts = append(opts, pkg.Pkg)
+
+		cmd := exec.CommandContext(ctx, "apt", opts...)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
