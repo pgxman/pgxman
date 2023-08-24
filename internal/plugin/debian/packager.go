@@ -183,15 +183,25 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		deps = builder.BuildDependencies
 	}
 
-	var depsToInstall []string
+	var depsToInstall []installDebPkg
 	for _, dep := range deps {
 		if strings.Contains(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
 			for _, ver := range ext.PGVersions {
-				depsToInstall = append(depsToInstall, extensionDebPkg(string(ver), dep))
+				depsToInstall = append(
+					depsToInstall,
+					installDebPkg{
+						Pkg: extensionDebPkg(string(ver), dep),
+					},
+				)
 			}
 		} else {
-			depsToInstall = append(depsToInstall, dep)
+			depsToInstall = append(
+				depsToInstall,
+				installDebPkg{
+					Pkg: dep,
+				},
+			)
 		}
 	}
 

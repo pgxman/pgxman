@@ -19,9 +19,22 @@ and the targeting PostgreSQL versions.
 - **Type**: List of objects
 - **Required**: No
 - **Object Fields**:
-  - `name`: Specifies the name of the extension. Either the `name` or the `path` field must be present. (String, Optional)
-  - `version`: Specifies the version of the extension. This field is mandatory if the `name` field is provided. (String, Required if `name` is present)
-  - `path`: Provides the local path to the extension package. Either the `name` or the `path` field must be present. (String, Optional)
+  - `name`:
+    - **Description**: Specifies the name of the extension. Either the `name` or the `path` field must be present.
+    - **Type**: String
+    - **Required**: No
+  - `version`:
+    - **Description**: Specifies the version of the extension. This field is mandatory if the `name` field is provided.
+    - **Type**: String
+    - **Required**: Yes if `name` is present
+  - `path`:
+    - **Description**: Specifies the local path to the extension package. Either the `name` or the `path` field must be present.
+    - **Type**: String
+    - **Required**: No
+  - `options`:
+    - **Description**: Specifies the options to be passed to corresponding package manager when installing the extension.
+    - **Type**: List of strings
+    - **Required**: No
 
 ### `pgVersions`
 
