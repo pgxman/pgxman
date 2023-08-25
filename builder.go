@@ -64,7 +64,7 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 	b.logger.Debug("Building extension", "ext", string(extb), "workdir", workDir)
 
 	if err := b.fetchSource(ext, workDir); err != nil {
-		return fmt.Errorf("download source: %w", err)
+		return fmt.Errorf("fetch source: %w", err)
 	}
 
 	if err := b.generateDockerFile(ext, workDir); err != nil {
