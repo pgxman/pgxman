@@ -2,6 +2,8 @@ package pgxman
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -62,6 +64,9 @@ type Extension struct {
 	Homepage          string             `json:"homepage,omitempty"`
 	BuildDependencies []string           `json:"buildDependencies,omitempty"`
 	RunDependencies   []string           `json:"runDependencies,omitempty"`
+
+	// internal
+	Path string `json:"-"`
 }
 
 func (ext Extension) Validate() error {
@@ -76,15 +81,16 @@ func (ext Extension) Validate() error {
 	if ext.Source == "" {
 		return fmt.Errorf("source is required")
 	}
-	if !strings.HasSuffix(ext.Source, "tar.gz") {
-		return fmt.Errorf("source only supports tar.gz format")
+	_, err := ext.ParseSource()
+	if err != nil {
+		return fmt.Errorf("invalid source: %w", err)
 	}
 
 	if ext.Version == "" {
 		return fmt.Errorf("version is required")
 	}
 
-	_, err := semver.NewVersion(ext.Version)
+	_, err = semver.NewVersion(ext.Version)
 	if err != nil {
 		return fmt.Errorf("invalid semantic version: %w", err)
 	}
@@ -136,7 +142,41 @@ func (ext Extension) Validate() error {
 		}
 	}
 
+	if ext.Path == "" {
+		return fmt.Errorf("path is required")
+	}
+
 	return nil
+}
+
+func (ext Extension) ParseSource() (string, error) {
+	u, err := url.ParseRequestURI(ext.Source)
+	if err != nil {
+		return "", err
+	}
+
+	supportedScheme := []string{"http", "https", "file", ""}
+	if !slices.Contains(supportedScheme, u.Scheme) {
+		return "", fmt.Errorf("source only supports %s", strings.Join(supportedScheme, ", "))
+	}
+
+	if u.Scheme == "http" || u.Scheme == "https" {
+		if !strings.HasSuffix(u.Path, ".tar.gz") {
+			return "", fmt.Errorf("http source only supports tar.gz format")
+		}
+
+		return u.String(), nil
+	}
+
+	var path string
+	if filepath.IsAbs(u.Path) {
+		path = u.Path
+	} else {
+		// relative path to the buildkit file
+		path = filepath.Join(filepath.Dir(ext.Path), u.Path)
+	}
+
+	return filepath.Clean(path), nil
 }
 
 const DefaultExtensionAPIVersion = "v1"

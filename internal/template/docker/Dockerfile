@@ -6,6 +6,7 @@ FROM $BUILD_IMAGE as build
 ARG BUILD_SHA
 ARG PGXMAN_PACK_ARGS=""
 
+COPY source.tar.gz /workspace/source.tar.gz
 COPY extension.yaml /workspace/extension.yaml
 WORKDIR /workspace
 

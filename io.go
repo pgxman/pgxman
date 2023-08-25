@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"dario.cat/mergo"
 	"sigs.k8s.io/yaml"
@@ -44,6 +45,11 @@ func ReadPGXManfile(path string) (*PGXManfile, error) {
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return ext, fmt.Errorf("absolute path: %w", err)
+	}
+
 	if _, err := os.Stat(path); err != nil {
 		return ext, fmt.Errorf("%s not found: %w", path, err)
 	}
@@ -83,6 +89,8 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	); err != nil {
 		return ext, err
 	}
+
+	ext.Path = path
 
 	if err := ext.Validate(); err != nil {
 		return ext, fmt.Errorf("invalid extension: %w", err)

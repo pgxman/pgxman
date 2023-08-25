@@ -32,7 +32,8 @@ PGXMan buildkit is a configuration file in YAML format that `pgxman` uses to spe
 
 ## `source`
 
-- **Description**: Specifies the URL for downloading the extension's source code, which must be in in `tar.gz` format.
+- **Description**: Specifies the URI for the extension's source code. The URI can be a HTTP/HTTPS URL or a local file path.
+If the URI is a HTTP/HTTPS URL, it must end with `.tar.gz`.
 - **Type**: String
 - **Required**: Yes
 
