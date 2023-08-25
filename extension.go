@@ -160,10 +160,11 @@ func (ext Extension) ParseSource() (string, error) {
 		return "", fmt.Errorf("source only supports %s", strings.Join(supportedScheme, ", "))
 	}
 
-	if (u.Scheme == "http" || u.Scheme == "https") && !strings.HasSuffix(u.Path, ".tar.gz") {
-		return "", fmt.Errorf("http source only supports tar.gz format")
-	}
 	if u.Scheme == "http" || u.Scheme == "https" {
+		if !strings.HasSuffix(u.Path, ".tar.gz") {
+			return "", fmt.Errorf("http source only supports tar.gz format")
+		}
+
 		return u.String(), nil
 	}
 
