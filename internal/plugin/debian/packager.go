@@ -112,7 +112,7 @@ func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, t
 
 	targetFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
 
-	// file is already coped
+	// file is already copied
 	if _, err := os.Stat(targetFile); err == nil {
 		return targetFile, nil
 	}
