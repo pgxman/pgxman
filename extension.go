@@ -162,7 +162,7 @@ func (ext Extension) ParseSource() (string, error) {
 
 	if u.Scheme == "http" || u.Scheme == "https" {
 		if !strings.HasSuffix(u.Path, ".tar.gz") {
-			return "", fmt.Errorf("http source only supports tar.gz format")
+			return "", fmt.Errorf("http source only supports tar.gz format: %s", u.Path)
 		}
 
 		return u.String(), nil
