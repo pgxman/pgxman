@@ -1,6 +1,8 @@
 package pgxman
 
 import (
+	"fmt"
+
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 )
@@ -20,5 +22,10 @@ func runUpdate(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	return u.Update(c.Context())
+	if err := u.Update(c.Context()); err != nil {
+		return err
+	}
+
+	fmt.Println("Update complete.")
+	return nil
 }

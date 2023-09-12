@@ -6,27 +6,33 @@ import (
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 
+	"github.com/pgxman/pgxman/internal/plugin/darwin"
 	"github.com/pgxman/pgxman/internal/plugin/debian"
 )
 
 func init() {
-	pkg := &debian.DebianPackager{
+	debPkg := &debian.DebianPackager{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterPackager(pgxman.ExtensionBuilderDebianBookworm, pkg)
-	RegisterPackager(pgxman.ExtensionBuilderUbuntuJammy, pkg)
+	RegisterPackager(pgxman.ExtensionBuilderDebianBookworm, debPkg)
+	RegisterPackager(pgxman.ExtensionBuilderUbuntuJammy, debPkg)
 
-	updater := &debian.DebianUpdater{
+	debUpdater := &debian.DebianUpdater{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterUpdater(pgxman.ExtensionBuilderDebianBookworm, updater)
-	RegisterUpdater(pgxman.ExtensionBuilderUbuntuJammy, updater)
+	RegisterUpdater(pgxman.ExtensionBuilderDebianBookworm, debUpdater)
+	RegisterUpdater(pgxman.ExtensionBuilderUbuntuJammy, debUpdater)
 
-	installer := &debian.DebianInstaller{
+	debInstaller := &debian.DebianInstaller{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterInstaller(pgxman.ExtensionBuilderDebianBookworm, installer)
-	RegisterInstaller(pgxman.ExtensionBuilderUbuntuJammy, installer)
+	RegisterInstaller(pgxman.ExtensionBuilderDebianBookworm, debInstaller)
+	RegisterInstaller(pgxman.ExtensionBuilderUbuntuJammy, debInstaller)
+
+	darwinUpdater := &darwin.DarwinUpdater{
+		Logger: log.NewTextLogger(),
+	}
+	RegisterUpdater(pgxman.ExtensionBuilderDarwin, darwinUpdater)
 }
 
 var (

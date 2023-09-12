@@ -291,6 +291,7 @@ const (
 	ExtensionBuilderUnsupported    ExtensionBuilderType = "unsupported"
 	ExtensionBuilderDebianBookworm ExtensionBuilderType = "debian:bookworm"
 	ExtensionBuilderUbuntuJammy    ExtensionBuilderType = "ubuntu:jammy"
+	ExtensionBuilderDarwin         ExtensionBuilderType = "darwin"
 )
 
 type ErrUnsupportedExtensionBuilder struct {
@@ -504,6 +505,10 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 
 	if vendor == "ubuntu" && version == "22.04" {
 		return ExtensionBuilderUbuntuJammy, nil
+	}
+
+	if vendor == "darwin" {
+		return ExtensionBuilderDarwin, nil
 	}
 
 	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
