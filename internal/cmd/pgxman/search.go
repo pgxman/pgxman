@@ -14,7 +14,7 @@ func newSearchCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "search [<query>]",
 		Aliases: []string{"s"},
-		Short:   "Search for extensions",
+		Short:   "Search for PostgreSQL extensions",
 		Long: `Search for installable PostgreSQL extensions. The query is a regular expression that is matched
 against the extension name and description.`,
 		Example: `  # Search for pgvector
