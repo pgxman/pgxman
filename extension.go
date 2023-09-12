@@ -299,7 +299,12 @@ type ErrUnsupportedExtensionBuilder struct {
 }
 
 func (e *ErrUnsupportedExtensionBuilder) Error() string {
-	return fmt.Sprintf("Unsupported builder: %s:%s", e.osVendor, e.osVersion)
+	builder := e.osVendor
+	if e.osVersion != "" {
+		builder += ":" + e.osVersion
+	}
+
+	return fmt.Sprintf("Unsupported builder: %s", builder)
 }
 
 type ExtensionBuilders struct {
@@ -488,6 +493,10 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 		vendor  = info.OS.Vendor
 		version = info.OS.Version
 	)
+
+	if vendor == "" {
+		vendor = runtime.GOOS
+	}
 
 	if vendor == "debian" && version == "12" {
 		return ExtensionBuilderDebianBookworm, nil

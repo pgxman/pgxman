@@ -67,30 +67,30 @@ var (
 	blurredButton = blurredStyle.Copy().Render("[ Done ]")
 )
 
-type input struct {
+type initInput struct {
 	textinput.Model
 
 	Label     string
 	UpdateExt func(ext *pgxman.Extension, val string)
 }
 
-type model struct {
+type initModel struct {
 	ext        *pgxman.Extension
 	focusIndex int
-	inputs     []input
+	inputs     []initInput
 	done       bool
 	err        error
 }
 
-func initialModel(ext *pgxman.Extension) model {
-	m := model{
+func initialModel(ext *pgxman.Extension) initModel {
+	m := initModel{
 		ext:        ext,
 		focusIndex: 0,
-		inputs:     make([]input, 5),
+		inputs:     make([]initInput, 5),
 	}
 
 	for i := range m.inputs {
-		t := input{Model: textinput.New()}
+		t := initInput{Model: textinput.New()}
 		t.PromptStyle = blurredStyle
 		t.TextStyle = blurredStyle
 
@@ -153,11 +153,11 @@ func initialModel(ext *pgxman.Extension) model {
 	return m
 }
 
-func (m model) Init() tea.Cmd {
+func (m initModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -219,7 +219,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
+func (m *initModel) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
@@ -232,7 +232,7 @@ func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m initModel) View() string {
 	var b strings.Builder
 
 	if m.err != nil {
