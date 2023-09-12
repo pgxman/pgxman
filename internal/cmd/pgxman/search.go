@@ -2,9 +2,9 @@ package pgxman
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 
+	"github.com/cli/go-gh/v2/pkg/term"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/tableprinter"
 	"github.com/spf13/cobra"
@@ -50,17 +50,16 @@ func runSearch(c *cobra.Command, args []string) error {
 		return nil
 	}
 
-	tp := tableprinter.New(os.Stdout)
-	tp.HeaderRow("Name", "Version", "Description")
+	tp := tableprinter.New(term.FromEnv())
+	tp.SetHeader("Name", "Version", "Description")
 
+	var rows [][]string
 	for _, ext := range exts {
 		if re.MatchString(ext.Name) || re.MatchString(ext.Description) {
-			tp.AddField(ext.Name)
-			tp.AddField(ext.Version)
-			tp.AddField(ext.Description)
-			tp.EndRow()
+			rows = append(rows, []string{ext.Name, ext.Version, ext.Description})
 		}
 	}
+	tp.AppendBluk(rows)
 
 	return tp.Render()
 }

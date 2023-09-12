@@ -1,27 +1,38 @@
 package tableprinter
 
 import (
-	"io"
-	"os"
 	"strings"
 
 	tp "github.com/cli/go-gh/v2/pkg/tableprinter"
-	"golang.org/x/term"
+	"github.com/cli/go-gh/v2/pkg/term"
 )
 
 type TablePrinter struct {
-	tp.TablePrinter
+	tp    tp.TablePrinter
 	isTTY bool
 }
 
-func (t *TablePrinter) HeaderRow(columns ...string) {
+func (t *TablePrinter) SetHeader(columns ...string) {
 	if !t.isTTY {
 		return
 	}
 	for _, col := range columns {
-		t.AddField(strings.ToUpper(col))
+		t.tp.AddField(strings.ToUpper(col))
 	}
-	t.EndRow()
+	t.tp.EndRow()
+}
+
+func (t *TablePrinter) AppendBluk(rows [][]string) {
+	for _, row := range rows {
+		for _, col := range row {
+			t.tp.AddField(col)
+		}
+		t.tp.EndRow()
+	}
+}
+
+func (t *TablePrinter) Render() error {
+	return t.tp.Render()
 }
 
 var (
@@ -29,27 +40,19 @@ var (
 	WithColor    = tp.WithColor
 )
 
-func New(w io.Writer) *TablePrinter {
+func New(term term.Term) *TablePrinter {
 	maxWidth := 80
-	isTTY := isStdoutTTY()
+	isTTY := term.IsTerminalOutput()
 	if isTTY {
-		width, _, _ := terminalWidth()
+		width, _, _ := term.Size()
 		if width != 0 {
 			maxWidth = width
 		}
 	}
 
-	tp := tp.New(w, isTTY, maxWidth)
+	tp := tp.New(term.Out(), isTTY, maxWidth)
 	return &TablePrinter{
-		TablePrinter: tp,
-		isTTY:        isTTY,
+		tp:    tp,
+		isTTY: isTTY,
 	}
-}
-
-func isStdoutTTY() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
-}
-
-func terminalWidth() (width, height int, err error) {
-	return term.GetSize(int(os.Stdout.Fd()))
 }
