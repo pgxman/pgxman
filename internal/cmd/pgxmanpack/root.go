@@ -4,11 +4,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"log/slog"
+
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var (

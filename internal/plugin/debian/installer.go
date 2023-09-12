@@ -6,10 +6,11 @@ import (
 	"os"
 	"os/exec"
 
+	"log/slog"
+
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
-	"golang.org/x/exp/slog"
 )
 
 type DebianInstaller struct {

@@ -3,10 +3,11 @@ package pgxman
 import (
 	"os"
 
+	"log/slog"
+
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var (

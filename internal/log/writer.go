@@ -5,7 +5,7 @@ import (
 	"io"
 	"runtime"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 // Writer returns an io.PipeWriter that writes to the logger.

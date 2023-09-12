@@ -12,13 +12,14 @@ import (
 	"strings"
 	"text/template"
 
+	"log/slog"
+
 	"github.com/mholt/archiver/v3"
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman/internal/filepathx"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/docker"
-	"golang.org/x/exp/slog"
 	"sigs.k8s.io/yaml"
 )
 
