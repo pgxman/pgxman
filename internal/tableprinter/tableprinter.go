@@ -3,12 +3,12 @@ package tableprinter
 import (
 	"strings"
 
-	tp "github.com/cli/go-gh/v2/pkg/tableprinter"
+	"github.com/cli/go-gh/v2/pkg/tableprinter"
 	"github.com/cli/go-gh/v2/pkg/term"
 )
 
 type TablePrinter struct {
-	tp    tp.TablePrinter
+	tp    tableprinter.TablePrinter
 	isTTY bool
 }
 
@@ -35,11 +35,6 @@ func (t *TablePrinter) Render() error {
 	return t.tp.Render()
 }
 
-var (
-	WithTruncate = tp.WithTruncate
-	WithColor    = tp.WithColor
-)
-
 func New(term term.Term) *TablePrinter {
 	maxWidth := 80
 	isTTY := term.IsTerminalOutput()
@@ -50,7 +45,7 @@ func New(term term.Term) *TablePrinter {
 		}
 	}
 
-	tp := tp.New(term.Out(), isTTY, maxWidth)
+	tp := tableprinter.New(term.Out(), isTTY, maxWidth)
 	return &TablePrinter{
 		tp:    tp,
 		isTTY: isTTY,
