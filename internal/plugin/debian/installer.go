@@ -26,7 +26,7 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", exts)
 
 	i.Logger.Debug("Fetching installable extensions")
-	installableExts, err := buildkit.InstallableExtensions(ctx)
+	installableExts, err := buildkit.Extensions()
 	if err != nil {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
