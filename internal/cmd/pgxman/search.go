@@ -20,7 +20,7 @@ against the extension name and description.`,
 		Example: `  # Search for pgvector
   pgxman search pgvector
 
-  # Search by reguard expression
+  # Search by regular expression
   pgxman search ^pg_
 		`,
 		Args: cobra.MinimumNArgs(1),
