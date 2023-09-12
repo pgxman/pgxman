@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/pgxman/pgxman"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 var (
