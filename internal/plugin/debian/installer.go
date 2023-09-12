@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
 	"golang.org/x/exp/slog"
-	"sigs.k8s.io/yaml"
 )
 
 type DebianInstaller struct {
@@ -25,8 +24,8 @@ type installDebPkg struct {
 func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) error {
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", exts)
 
-	i.Logger.Debug("Fetching installable extensions", "dir", BuildkitDir)
-	installableExts, err := installableExtensions(ctx, BuildkitDir)
+	i.Logger.Debug("Fetching installable extensions")
+	installableExts, err := buildkit.InstallableExtensions(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
@@ -78,30 +77,6 @@ func (i *DebianInstaller) Install(ctx context.Context, exts pgxman.PGXManfile) e
 
 	i.Logger.Debug("Installing debian packages", "packages", debPkgs)
 	return runAptInstall(ctx, debPkgs, aptRepos, i.Logger)
-}
-
-func installableExtensions(ctx context.Context, buildkitDir string) (map[string]pgxman.Extension, error) {
-	matches, err := filepath.Glob(filepath.Join(buildkitDir, "buildkit", "*.yaml"))
-	if err != nil {
-		return nil, errBuildkitSource{Err: err}
-	}
-
-	exts := make(map[string]pgxman.Extension)
-	for _, m := range matches {
-		b, err := os.ReadFile(m)
-		if err != nil {
-			return nil, errBuildkitSource{Err: err}
-		}
-
-		var ext pgxman.Extension
-		if err := yaml.Unmarshal(b, &ext); err != nil {
-			return nil, errBuildkitSource{Err: err}
-		}
-
-		exts[ext.Name] = ext
-	}
-
-	return exts, nil
 }
 
 func runAptInstall(ctx context.Context, debPkgs []installDebPkg, aptRepos []pgxman.AptRepository, logger *log.Logger) error {

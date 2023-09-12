@@ -26,6 +26,7 @@ func Execute() error {
 	}
 
 	root.AddCommand(newInitCmd())
+	root.AddCommand(newSearchCmd())
 	root.AddCommand(newBuildCmd())
 	root.AddCommand(newUpdateCmd())
 	root.AddCommand(newInstallCmd())
