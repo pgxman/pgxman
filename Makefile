@@ -42,7 +42,7 @@ vet:
 		--rm \
 		-v $(CURDIR):/app \
 		-w /app \
-		golangci/golangci-lint:v1.53 \
+		golangci/golangci-lint:v1.54.2 \
 		golangci-lint run --timeout 5m -v
 
 .PHONY: docker_build

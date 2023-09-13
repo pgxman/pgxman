@@ -7,8 +7,9 @@ import (
 	"sync"
 	"testing"
 
+	"log/slog"
+
 	"github.com/pgxman/pgxman/internal/log"
-	"golang.org/x/exp/slog"
 )
 
 var (

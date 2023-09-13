@@ -12,13 +12,14 @@ import (
 	"text/template"
 	"time"
 
+	"log/slog"
+
 	"github.com/mholt/archiver/v3"
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
-	"golang.org/x/exp/slog"
 )
 
 const (

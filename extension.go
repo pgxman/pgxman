@@ -162,7 +162,7 @@ func (ext Extension) ParseSource() (string, error) {
 
 	if u.Scheme == "http" || u.Scheme == "https" {
 		if !strings.HasSuffix(u.Path, ".tar.gz") {
-			return "", fmt.Errorf("http source only supports tar.gz format")
+			return "", fmt.Errorf("http source only supports tar.gz format: %s", u.Path)
 		}
 
 		return u.String(), nil
@@ -291,6 +291,7 @@ const (
 	ExtensionBuilderUnsupported    ExtensionBuilderType = "unsupported"
 	ExtensionBuilderDebianBookworm ExtensionBuilderType = "debian:bookworm"
 	ExtensionBuilderUbuntuJammy    ExtensionBuilderType = "ubuntu:jammy"
+	ExtensionBuilderDarwin         ExtensionBuilderType = "darwin"
 )
 
 type ErrUnsupportedExtensionBuilder struct {
@@ -299,7 +300,12 @@ type ErrUnsupportedExtensionBuilder struct {
 }
 
 func (e *ErrUnsupportedExtensionBuilder) Error() string {
-	return fmt.Sprintf("Unsupported builder: %s:%s", e.osVendor, e.osVersion)
+	builder := e.osVendor
+	if e.osVersion != "" {
+		builder += ":" + e.osVersion
+	}
+
+	return fmt.Sprintf("Unsupported builder: %s", builder)
 }
 
 type ExtensionBuilders struct {
@@ -489,12 +495,20 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 		version = info.OS.Version
 	)
 
+	if vendor == "" {
+		vendor = runtime.GOOS
+	}
+
 	if vendor == "debian" && version == "12" {
 		return ExtensionBuilderDebianBookworm, nil
 	}
 
 	if vendor == "ubuntu" && version == "22.04" {
 		return ExtensionBuilderUbuntuJammy, nil
+	}
+
+	if vendor == "darwin" {
+		return ExtensionBuilderDarwin, nil
 	}
 
 	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
