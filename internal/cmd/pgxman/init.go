@@ -2,7 +2,9 @@ package pgxman
 
 import (
 	"fmt"
+	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -15,8 +17,10 @@ import (
 func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Create an extension.yaml file",
-		RunE:  runInit,
+		Short: "Create a buildkit file",
+		Long: `Create a buildkit YAML file that specifies how a PostgreSQL extension is built and packaged. The
+specification is available at https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md.`,
+		RunE: runInit,
 	}
 
 	return cmd
@@ -34,10 +38,10 @@ func runInit(c *cobra.Command, args []string) error {
 		Build: pgxman.Build{
 			Main: []pgxman.BuildScript{
 				{
-					Name: "build step",
+					Name: "my build step",
 					Run: `# Uncomment to write the build script for the extension.
 # The built extension must be installed in the $DESTDIR directory.
-# See https://github.com/pgxman/pgxman/blob/main/spec/extension.yaml.md#build for details.
+# See https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md#build for details.
 `,
 				},
 			},
@@ -52,7 +56,12 @@ func runInit(c *cobra.Command, args []string) error {
 		PGVersions: pgxman.SupportedPGVersions,
 	}
 
-	p := tea.NewProgram(initialModel(ext))
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	p := tea.NewProgram(initialModel(pwd, ext))
 	_, err = p.Run()
 
 	return err
@@ -76,15 +85,17 @@ type initInput struct {
 
 type initModel struct {
 	ext        *pgxman.Extension
+	extPath    string
 	focusIndex int
 	inputs     []initInput
 	done       bool
 	err        error
 }
 
-func initialModel(ext *pgxman.Extension) initModel {
+func initialModel(pwd string, ext *pgxman.Extension) initModel {
 	m := initModel{
 		ext:        ext,
+		extPath:    filepath.Join(pwd, "extension.yaml"),
 		focusIndex: 0,
 		inputs:     make([]initInput, 5),
 	}
@@ -112,7 +123,7 @@ func initialModel(ext *pgxman.Extension) initModel {
 				ext.Version = val
 			}
 		case 2:
-			t.Label = "Keywords"
+			t.Label = "Keywords (comma-separated)"
 			t.Placeholder = strings.Join(ext.Keywords, ",")
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Keywords = splitString(val)
@@ -124,7 +135,7 @@ func initialModel(ext *pgxman.Extension) initModel {
 				ext.Source = val
 			}
 		case 4:
-			t.Label = "PG versions"
+			t.Label = "PG versions (comma-separated)"
 
 			var pgvs []string
 			for _, pgv := range ext.PGVersions {
@@ -171,7 +182,7 @@ func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				m.done = true
 
-				if err := pgxman.WriteExtension(fmt.Sprintf("%s.yaml", m.ext.Name), *m.ext); err != nil {
+				if err := pgxman.WriteExtension(m.extPath, *m.ext); err != nil {
 					m.err = err
 				}
 
@@ -241,12 +252,12 @@ func (m initModel) View() string {
 	}
 
 	if m.done {
-		b.WriteString("Generated extension.yaml\n")
+		b.WriteString(fmt.Sprintf("Generated %s.\n", filepath.Base(m.extPath)))
 		return b.String()
 	}
-	b.WriteString(`This utility will walk you through creating a extension.yaml file.
-It only covers the most common items, and tries to guess sensible defaults.
-See https://github.com/pgxman/pgxman/blob/main/spec/extension.yaml.md for documentation.
+	b.WriteString(`This utility will walk you through creating a buildkit file.
+It only covers the most common items and tries to guess sensible defaults.
+See https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md for documentation.
 
 `)
 
