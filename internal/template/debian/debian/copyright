@@ -2,5 +2,4 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: {{ .Name }}
 Source: {{ .Homepage }}
 Files: *
-Copyright: 2023, Hydra Inc.
 License: {{ .License }}
