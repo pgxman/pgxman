@@ -51,6 +51,12 @@ If the URI is a HTTP/HTTPS URL, it must end with `.tar.gz`.
 - **Supported Values**: `"13"`, `"14"`, `"15"`
 - **Default Values**: `"13"`, `"14"`, `"15"`
 
+## `license`
+
+- **Description**: Specifies the license under which the extension is distributed. The license must be a valid [SPDX license identifier](https://spdx.org/licenses/).
+- **Type**: String
+- **Required**: No
+
 ## `build`
 
 - **Description**: Contains Bash scripts that automates the extension's build process. Some environment variables are set during the execution of these scripts. The built extension must be placed in the `$DESTDIR` directory.
