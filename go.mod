@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/cli/go-gh/v2 v2.3.0
+	github.com/github/go-spdx/v2 v2.2.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/otiai10/copy v1.11.0
 	github.com/spf13/cobra v1.7.0
