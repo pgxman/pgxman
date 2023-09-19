@@ -1,5 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: {{ .Name }}
+{{- if .Homepage }}
 Source: {{ .Homepage }}
+{{- end }}
 Files: *
+{{- if .License }}
 License: {{ .License }}
+{{- end }}

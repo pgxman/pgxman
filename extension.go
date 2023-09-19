@@ -25,9 +25,8 @@ func NewDefaultExtension() Extension {
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
 		Arch:       []Arch{Arch(runtime.GOARCH)},
-		Platform:   []Platform{PlatformLinux},
-		Formats:    []Format{FormatDeb},
-		License:    "PostgreSQL",
+		Platform:   SupprtedPlatforms,
+		Formats:    SupportedFormats,
 		Builders: &ExtensionBuilders{
 			DebianBookworm: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{

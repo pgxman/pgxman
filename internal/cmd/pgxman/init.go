@@ -47,6 +47,7 @@ func runInit(c *cobra.Command, args []string) error {
 			},
 		},
 		Version: "1.0.0",
+		License: "PostgreSQL",
 		Maintainers: []pgxman.Maintainer{
 			{
 				Name:  user.Name,
@@ -123,18 +124,24 @@ func initialModel(pwd string, ext *pgxman.Extension) initModel {
 				ext.Version = val
 			}
 		case 2:
+			t.Label = "License"
+			t.Placeholder = ext.License
+			t.UpdateExt = func(ext *pgxman.Extension, val string) {
+				ext.License = val
+			}
+		case 3:
 			t.Label = "Keywords (comma-separated)"
 			t.Placeholder = strings.Join(ext.Keywords, ",")
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Keywords = splitString(val)
 			}
-		case 3:
+		case 4:
 			t.Label = "Source URL"
 			t.Placeholder = ext.Source
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Source = val
 			}
-		case 4:
+		case 5:
 			t.Label = "PG versions (comma-separated)"
 
 			var pgvs []string
@@ -237,7 +244,10 @@ func (m *initModel) updateInputs(msg tea.Msg) tea.Cmd {
 	// update all of them here without any further logic.
 	for i := range m.inputs {
 		m.inputs[i].Model, cmds[i] = m.inputs[i].Update(msg)
-		m.inputs[i].UpdateExt(m.ext, m.inputs[i].Value())
+		val := m.inputs[i].Value()
+		if val != "" {
+			m.inputs[i].UpdateExt(m.ext, val)
+		}
 	}
 
 	return tea.Batch(cmds...)
