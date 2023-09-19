@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/github/go-spdx/v2/spdxexp"
 	"github.com/pgxman/pgxman/internal/osx"
 	"golang.org/x/exp/slices"
 )
@@ -24,8 +25,8 @@ func NewDefaultExtension() Extension {
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
 		Arch:       []Arch{Arch(runtime.GOARCH)},
-		Platform:   []Platform{PlatformLinux},
-		Formats:    []Format{FormatDeb},
+		Platform:   SupprtedPlatforms,
+		Formats:    SupportedFormats,
 		Builders: &ExtensionBuilders{
 			DebianBookworm: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{
@@ -110,6 +111,13 @@ func (ext Extension) Validate() error {
 	for _, pgv := range ext.PGVersions {
 		if !slices.Contains(SupportedPGVersions, pgv) {
 			return fmt.Errorf("unsupported pg version: %s", pgv)
+		}
+	}
+
+	if ext.License != "" {
+		valid, invalidLicenses := spdxexp.ValidateLicenses([]string{ext.License})
+		if !valid {
+			return fmt.Errorf("invalid licenses: %s", strings.Join(invalidLicenses, ", "))
 		}
 	}
 
