@@ -58,12 +58,7 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 		}
 	}()
 
-	extb, err := yaml.Marshal(ext)
-	if err != nil {
-		return err
-	}
-	b.logger.Debug("Building extension", "ext", string(extb), "workdir", workDir)
-
+	b.logger.Debug("Building extension", "ext", ext, "workdir", workDir)
 	if err := b.fetchSource(ext, workDir); err != nil {
 		return fmt.Errorf("fetch source: %w", err)
 	}
