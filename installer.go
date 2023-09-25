@@ -60,6 +60,27 @@ func (e InstallExtension) Validate() error {
 	return nil
 }
 
+func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
+	opts := &InstallerOptions{}
+	for _, f := range optFuncs {
+		f(opts)
+	}
+
+	return opts
+}
+
+type InstallerOptions struct {
+	IgnorePrompt bool
+}
+
+type InstallerOptionsFunc func(*InstallerOptions)
+
+func InstallOptWithIgnorePrompt(ignore bool) InstallerOptionsFunc {
+	return func(ops *InstallerOptions) {
+		ops.IgnorePrompt = ignore
+	}
+}
+
 type Installer interface {
-	Install(ctx context.Context, exts PGXManfile) error
+	Install(ctx context.Context, exts []PGXManfile, opts ...InstallerOptionsFunc) error
 }

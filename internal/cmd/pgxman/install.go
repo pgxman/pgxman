@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	flagPGXManfile string
+	flagInstallPGXManfile string
+	flagInstallYes        bool
 )
 
 func newInstallCmd() *cobra.Command {
@@ -54,7 +55,8 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 		RunE: runInstall,
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
+	cmd.PersistentFlags().StringVarP(&flagInstallPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
+	cmd.PersistentFlags().BoolVarP(&flagInstallYes, "yes", "y", false, `Automatic yes to prompts; assume "yes" as answer to all prompts and run non-interactively.`)
 
 	return cmd
 }
@@ -63,16 +65,16 @@ func runInstall(c *cobra.Command, args []string) error {
 	var result []pgxman.PGXManfile
 
 	if len(args) == 0 {
-		if flagPGXManfile == "" {
+		if flagInstallPGXManfile == "" {
 			pwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			flagPGXManfile = filepath.Join(pwd, "pgxman.yaml")
+			flagInstallPGXManfile = filepath.Join(pwd, "pgxman.yaml")
 		}
 
-		pgxmf, err := pgxman.ReadPGXManfile(flagPGXManfile)
+		pgxmf, err := pgxman.ReadPGXManfile(flagInstallPGXManfile)
 		if err != nil {
 			return err
 		}
@@ -94,10 +96,13 @@ func runInstall(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	for _, exts := range result {
-		if err := i.Install(c.Context(), exts); err != nil {
-			return err
-		}
+	if err := i.Install(
+		c.Context(),
+		result,
+		pgxman.InstallOptWithIgnorePrompt(flagInstallYes),
+	); err != nil {
+
+		return err
 	}
 
 	return nil
