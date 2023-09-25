@@ -26,6 +26,9 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 		Example: `  # Install extensions from the pgxman.yaml file in the current directory
   pgxman install
 
+  # Install extensions by surpressing prompts
+  pgxman install -y
+
   # Install extensions from the pgxman.yaml in a specific directory
   pgxman install -f /PATH_TO/pgxman.yaml
 
@@ -56,7 +59,7 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 	}
 
 	cmd.PersistentFlags().StringVarP(&flagInstallPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
-	cmd.PersistentFlags().BoolVarP(&flagInstallYes, "yes", "y", false, `Automatic yes to prompts; assume "yes" as answer to all prompts and run non-interactively.`)
+	cmd.PersistentFlags().BoolVarP(&flagInstallYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
 }
