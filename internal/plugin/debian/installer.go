@@ -81,8 +81,12 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 		}
 	}
 
+	if len(debPkgs) == 0 {
+		return nil
+	}
+
 	if !opts.IgnorePrompt {
-		if err := promptInstall(debPkgs); err != nil {
+		if err := promptInstall(debPkgs, aptRepos); err != nil {
 			return err
 		}
 	}
@@ -91,14 +95,23 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 	return runAptInstall(ctx, debPkgs, aptRepos, i.Logger)
 }
 
-func promptInstall(debPkgs []installDebPkg) error {
-	var out []string
+func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) error {
+	out := []string{
+		"The following Debian packages will be installed:",
+	}
 	for _, debPkg := range debPkgs {
 		out = append(out, "  "+debPkg.Pkg)
 	}
-	fmt.Printf(`The following Debian packages will be installed:
-%s
-Do you want to continue? [Y/n] `, strings.Join(out, "\n"))
+
+	if len(aptRepos) > 0 {
+		out = append(out, "The following Apt repositories will be added:")
+		for _, ar := range aptRepos {
+			out = append(out, "  "+ar.ID)
+		}
+	}
+
+	out = append(out, "Do you want to continue? [Y/n] ")
+	fmt.Print(strings.Join(out, "\n"))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
