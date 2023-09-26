@@ -1,6 +1,11 @@
 #!/bin/sh
 # shellcheck shell=dash
 
+# This is just a little script that can be downloaded from the internet to
+# install pgxman. It just does platform detection, downloads the package
+# and use corresponding package manager to install it.
+# Optinally, you can pass a pgxman file to install extensions.
+
 set -u
 set -o noglob
 
