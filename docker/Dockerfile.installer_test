@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM postgres:15
 
 WORKDIR /src
 
@@ -6,6 +6,14 @@ RUN apt update && apt install -y curl
 
 COPY dist /tmp/dist
 COPY install.sh /tmp/install.sh
-RUN PGXMAN_DOWNLOAD_URL=file:///tmp/dist sh /tmp/install.sh
+
+RUN cat <<EOS > /tmp/pgxman.yaml
+apiVersion: v1
+pgVersions: [15]
+extensions:
+  - name: "pgvector"
+    version: "0.4.4"
+EOS
+RUN PGXMAN_DOWNLOAD_URL=file:///tmp/dist sh /tmp/install.sh /tmp/pgxman.yaml
 
 RUN pgxman --version
