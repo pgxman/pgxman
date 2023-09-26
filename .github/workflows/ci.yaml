@@ -81,8 +81,21 @@ jobs:
       - name: Run e2etest
         run: |
           make e2etest
+  installer_test:
+    name: Installer Test
+    needs: [build, test, vet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Run tests
+        run: |
+          make tools installer_test
   docker:
     name: Docker
-    needs: [e2etest]
+    needs: [e2etest, installer_test]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit

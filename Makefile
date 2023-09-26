@@ -63,6 +63,13 @@ docker_push:
 		--pull \
 		--push
 
+.PHONY: installer_test
+installer_test: goreleaser
+	docker build \
+		--rm \
+		-f $(PWD)/docker/Dockerfile.installer_test \
+		.
+
 .PHONY: goreleaser
 goreleaser:
-	goreleaser release --clean --snapshot --skip-publish
+	goreleaser release --clean --snapshot --skip=publish
