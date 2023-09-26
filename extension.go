@@ -11,13 +11,12 @@ import (
 	"github.com/github/go-spdx/v2/spdxexp"
 	"github.com/pgxman/pgxman/internal/osx"
 	"golang.org/x/exp/slices"
+	"sigs.k8s.io/yaml"
 )
 
 func NewDefaultExtension() Extension {
-	var buildImageVersion string
-	if Version == "dev" {
-		buildImageVersion = "latest"
-	} else {
+	buildImageVersion := "latest"
+	if Version != "dev" {
 		buildImageVersion = fmt.Sprintf("v%s", Version)
 	}
 
@@ -68,6 +67,15 @@ type Extension struct {
 
 	// internal
 	Path string `json:"-"`
+}
+
+func (ext Extension) String() string {
+	extb, err := yaml.Marshal(ext)
+	if err != nil {
+		return ""
+	}
+
+	return string(extb)
 }
 
 func (ext Extension) Validate() error {
