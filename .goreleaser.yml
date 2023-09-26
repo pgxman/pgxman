@@ -14,7 +14,6 @@ archives:
     builds: [pgxman]
     name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     wrap_in_directory: false
-    rlcp: true
     format: tar.gz
     files:
       - LICENSE*
@@ -47,7 +46,7 @@ nfpms: #build:linux
       - deb
       - rpm
 brews:
-  - tap:
+  - repository:
       owner: pgxman
       name: homebrew-tap
       token: "{{ .Env.CI_GITHUB_TOKEN }}"

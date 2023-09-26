@@ -1,0 +1,11 @@
+FROM ubuntu:jammy
+
+WORKDIR /src
+
+RUN apt update && apt install -y curl
+
+COPY dist /tmp/dist
+COPY install.sh /tmp/install.sh
+RUN PGXMAN_DOWNLOAD_URL=file:///tmp/dist sh /tmp/install.sh
+
+RUN pgxman --version

@@ -6,6 +6,14 @@ PostgreSQL extensions enhance the database's capabilities by introducing new fea
 
 ## Installation
 
+### Linux
+
+Linux users can install `pgxman` with the following command:
+
+```console
+curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
+```
+
 ### Mac
 
 MacOS users can install `pgxman` via Homebrew:
