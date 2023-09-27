@@ -2,19 +2,25 @@
 # shellcheck shell=dash
 
 # This is just a little script that can be downloaded from the internet to
-# install pgxman. It just does platform detection, downloads the package
-# and use corresponding package manager to install it.
+# install pgxman. It detects platform, downloads the zipped release, unzip it
+# and copy it to $PGXMAN_DESTIATION_DIR.
 # Optinally, you can pass a pgxman file to install extensions.
 
 set -u
 set -o noglob
 
 PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/release/releases/latest/download}"
+PGXMAN_DESTIATION_DIR="${PGXMAN_DESTIATION_DIR:-/usr/local/bin}"
+SUDO="${SUDO:-}"
 
 main() {
     downloader --check
     need_cmd uname
-    need_cmd apt
+    need_cmd tar
+    need_cmd mktemp
+    need_cmd chown
+    need_cmd cp
+    need_cmd git
 
     install_pgxman
     install_extensions "$@"
@@ -22,15 +28,28 @@ main() {
 
 install_pgxman() {
     get_architecture || return 1
-
     local _arch="$RETVAL"
-    local _url="${PGXMAN_DOWNLOAD_URL}/pgxman_linux_${_arch}.deb"
-    local _file="/tmp/pgxman_linux_${_arch}.deb"
 
-    echo "Installing PGXMan for ${_arch}..."
-    ensure downloader "$_url" "$_file"
-    ensure apt update
-    ensure apt install -y "$_file"
+    local _targz="pgxman_${_arch}.tar.gz"
+    local _url="${PGXMAN_DOWNLOAD_URL}/${_targz}"
+    local _destdir="${PGXMAN_DESTIATION_DIR}"
+    local _tmpdir
+    _tmpdir="$(mktemp -d -t pgxman-install.XXXXXXXXXX)"
+
+    if [ "${SUDO}" = "false" ]; then
+        SUDO=
+    else
+        SUDO=sudo
+    fi
+    if [ "$(id -u)" -eq 0 ]; then
+        SUDO=
+    fi
+
+    say "Installing PGXMan for ${_arch}..."
+    ensure downloader "${_url}" "${_tmpdir}/${_targz}"
+    ensure tar -xf "${_tmpdir}/${_targz}" --directory "${_tmpdir}"
+    [ -n "${SUDO}" ] && ensure ${SUDO} chown -R "$(stat -c "%U:%G" "${_destdir}")" "${_tmpdir}/bin"
+    ensure ${SUDO} cp -r "${_tmpdir}/bin/." "${_destdir}/"
 }
 
 install_extensions() {
@@ -44,8 +63,21 @@ install_extensions() {
 }
 
 get_architecture() {
-    local _cputype
+    local _ostype _cputype _arch
+    _ostype="$(uname -s)"
     _cputype="$(uname -m)"
+
+    case "$_ostype" in
+    Linux)
+        _ostype=linux
+        ;;
+    Darwin)
+        _ostype=darwin
+        ;;
+    *)
+        err "unrecognized OS type: $_ostype"
+        ;;
+    esac
 
     case "$_cputype" in
     i386 | i486 | i686 | i786 | x86)
@@ -69,7 +101,8 @@ get_architecture() {
         ;;
     esac
 
-    RETVAL="$_cputype"
+    _arch="${_ostype}_${_cputype}"
+    RETVAL="$_arch"
 }
 
 ensure() {

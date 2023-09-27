@@ -2,7 +2,7 @@ FROM postgres:15
 
 WORKDIR /src
 
-RUN apt update && apt install -y curl
+RUN apt update && apt install -y curl git
 
 COPY dist /tmp/dist
 COPY install.sh /tmp/install.sh
