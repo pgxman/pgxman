@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
@@ -30,17 +31,18 @@ func Execute() error {
 				log.SetLevel(slog.LevelDebug)
 			}
 
+			var err error
+			packager, err = plugin.GetPackager()
+			if err != nil {
+				return errorsx.Pretty(err)
+			}
+
 			workDir, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
 			extension, err = pgxman.ReadExtension(filepath.Join(workDir, "extension.yaml"), nil)
-			if err != nil {
-				return err
-			}
-
-			packager, err = plugin.GetPackager()
 			if err != nil {
 				return err
 			}
