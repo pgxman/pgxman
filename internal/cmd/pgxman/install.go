@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 )
@@ -65,6 +66,11 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 }
 
 func runInstall(c *cobra.Command, args []string) error {
+	i, err := plugin.GetInstaller()
+	if err != nil {
+		return errorsx.Pretty(err)
+	}
+
 	var result []pgxman.PGXManfile
 
 	if len(args) == 0 {
@@ -92,11 +98,6 @@ func runInstall(c *cobra.Command, args []string) error {
 
 			result = append(result, *exts)
 		}
-	}
-
-	i, err := plugin.GetInstaller()
-	if err != nil {
-		return err
 	}
 
 	if err := i.Install(
