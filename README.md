@@ -92,7 +92,6 @@ pgxman init # follow the instruction
 This command generates a manifest file named `extension.yaml`.
 The file serves as your blueprint for building the extension.
 [Please refer to the full buildkit file specification for details.](https://github.com/pgxman/buildkit/blob/main/spec/buildkit.md).
-For this example, feel free to refer to the [official buildkit for pgvector](https://github.com/pgxman/buildkit/blob/main/buildkit/pgvector.yaml) to fill in the content.
 
 2. **Build the extension**:
 
