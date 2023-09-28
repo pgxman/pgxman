@@ -116,7 +116,7 @@ func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) err
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		switch scanner.Text() {
-		case "Y":
+		case "Y", "y":
 			return nil
 		default:
 			return fmt.Errorf("installation aborted")
