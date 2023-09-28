@@ -49,7 +49,7 @@ pgxman install pgvector=0.4.4@15
 
 ### Batch Installation
 
-You can also utilize a [pgxman.yaml](pgxman.yaml.md) file to install multiple extensions at once:
+You can also utilize a [pgxman.yaml](spec/pgxman.yaml.md) file to install multiple extensions at once:
 
 ```console
 cat <<EOS > pgxman.yaml
