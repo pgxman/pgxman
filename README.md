@@ -153,3 +153,12 @@ out
   - [ ] pg-embedding
   - [ ] plv8
   - [ ] pg_graphql
+
+- [ ] CLI
+  - [x] `pgxman init` to create a buildkit YAML file by following a questionnaire
+  - [x] `pgxman build` to build & package an extension
+  - [x] `pgxman search` to search for an extension
+  - [x] `pgxman install` to install an extension
+  - [ ] `pgxman upgrade` to upgrade an extension
+  - [ ] `pgxman uninstall` to uninstall an extension
+  - [ ] `pgxman container` to explore extensions in a container
