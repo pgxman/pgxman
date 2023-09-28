@@ -132,7 +132,7 @@ out
 
 ## Roadmap
 
-- [ ] Support for multiple Linux distros & package managers
+- [ ] Support for multiple operating systems & package managers
   - [x] Debian Bookworm & APT
   - [x] Ubuntu Jammy & APT
   - [ ] MacOS & Homebrew
