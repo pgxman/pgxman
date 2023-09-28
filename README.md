@@ -6,25 +6,28 @@ PostgreSQL extensions enhance the database's capabilities by introducing new fea
 
 ## Installation
 
-### Linux
+PGXMan is compatible with the following Debian-based Linux distributions:
 
-Linux users can install `pgxman` with the following command:
+- [Debian Bookworm](https://www.debian.org/releases/bookworm)
+- [Ubuntu Jammy](https://releases.ubuntu.com/jammy)
+
+### Prerequisites
+
+- Docker
+- Apt Package Manager
+- PostgreSQL
+
+### Installer
+
+The simplest method to install `pgxman` is through the installer script:
 
 ```console
 curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
 ```
 
-### Mac
+### Manual
 
-MacOS users can install `pgxman` via Homebrew:
-
-```console
-brew install pgxman/tap/pgxman
-```
-
-### Standalone
-
-For a standalone installation, download the latest [compiled binaries](https://github.com/pgxman/release/releases/) and add them to your system's executable path.
+Alternatively, download the latest [compiled Linux binaries](https://github.com/pgxman/release/releases/) and add them to your system's executable path.
 
 ### From source
 
@@ -46,7 +49,7 @@ pgxman install pgvector=0.4.4@15
 
 ### Batch Installation
 
-You can also utilize a [pgxman.yaml](pgxman.yaml.md) file to install multiple extensions at once:
+You can also utilize a [pgxman.yaml](spec/pgxman.yaml.md) file to install multiple extensions at once:
 
 ```console
 cat <<EOS > pgxman.yaml
@@ -59,7 +62,7 @@ extensions:
 pgVersions:
   - "15"
 EOS
-pgxman install
+pgxman install -f pgxman.yaml
 ```
 
 ### Verification
@@ -76,8 +79,6 @@ postgres=# \dx
 (9 rows)
 ```
 
-*Note*: `pgxman install` currently supports only Linux systems with the APT package manager. Support for more package managers is coming soon.
-
 ## Building a PostgreSQL extension
 
 As an example, here's how to build the [pgvector](https://github.com/pgvector/pgvector) extension with `pgxman`.
@@ -88,26 +89,76 @@ As an example, here's how to build the [pgvector](https://github.com/pgvector/pg
 pgxman init # follow the instruction
 ```
 
-This command generates a manifest file named after your extension (`pgvector.yaml` in this example).
+This command generates a manifest file named `extension.yaml`.
 The file serves as your blueprint for building the extension.
-The full specification is available [here](spec/buildkit.md).
-Feel free to adapt the [official build manifest file](https://github.com/pgxman/buildkit/blob/main/buildkit/pgvector.yaml) for your requirements.
+[Please refer to the full buildkit file specification for details.](https://github.com/pgxman/buildkit/blob/main/spec/buildkit.md).
 
 2. **Build the extension**:
 
 ```console
-pgxman build -f pgvector.yaml
+pgxman build -f extension.yaml
 ```
 
 This will package the extension files in the `out` directory:
 
 ```console
-$ ls out
-postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
-postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
-postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
-postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+$ tree out
+out
+├── linux_amd64
+│   ├── debian
+│   │   └── bookworm
+│   │       ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
+│   │       ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
+│   │       └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+│   └── ubuntu
+│       └── jammy
+│           ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
+│           ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
+│           └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+└── linux_arm64
+    ├── debian
+    │   └── bookworm
+    │       ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
+    │       ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
+    │       └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+    └── ubuntu
+        └── jammy
+            ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
+            ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
+            └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+
+11 directories, 12 files
 ```
 
-*Note*: `pgxman build` only supports packaging extensions into Debian packages.
-Other formats will be supported in future releases.
+## Roadmap
+
+- [ ] Support for multiple operating systems & package managers
+  - [x] Debian Bookworm & APT
+  - [x] Ubuntu Jammy & APT
+  - [ ] MacOS & Homebrew
+  - [ ] Fedora & RPM
+  - [ ] AlmaLinux & RPM
+
+- [ ] Support popular extensions
+  - [x] pgvector
+  - [x] pg_ivm
+  - [x] mysql_fdw
+  - [x] parquet_s3_fdw
+  - [x] hydra_columnar
+  - [x] multicorn2
+  - [x] pg_hint_plan
+  - [x] psql-http
+  - [ ] postgis
+  - [ ] hll
+  - [ ] pg-embedding
+  - [ ] plv8
+  - [ ] pg_graphql
+
+- [ ] CLI
+  - [x] `pgxman init` to create a buildkit YAML file by following a questionnaire
+  - [x] `pgxman build` to build & package an extension
+  - [x] `pgxman search` to search for an extension
+  - [x] `pgxman install` to install an extension
+  - [ ] `pgxman upgrade` to upgrade an extension
+  - [ ] `pgxman uninstall` to uninstall an extension
+  - [ ] `pgxman container` to explore extensions in a container
