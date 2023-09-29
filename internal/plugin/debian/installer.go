@@ -5,10 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
-
-	"log/slog"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
@@ -19,24 +16,23 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-type installDebPkg struct {
-	Pkg  string
-	Opts []string
-}
-
 func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	opts := pgxman.NewInstallerOptions(optFuncs)
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", extFiles, "options", opts)
 
 	i.Logger.Debug("Fetching installable extensions")
-	installableExts, err := buildkit.Extensions()
+	installableExts, err := buildkit.Extensions(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
 
+	aptRepos, err := coreAptRepos()
+	if err != nil {
+		return err
+	}
+
 	var (
-		debPkgs  []installDebPkg
-		aptRepos []pgxman.AptRepository
+		aptPkgs []AptPackage
 	)
 	for _, extFile := range extFiles {
 		for _, extToInstall := range extFile.Extensions {
@@ -45,9 +41,9 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 			}
 
 			if extToInstall.Path != "" {
-				debPkgs = append(
-					debPkgs,
-					installDebPkg{
+				aptPkgs = append(
+					aptPkgs,
+					AptPackage{
 						Pkg:  extToInstall.Path,
 						Opts: extToInstall.Options,
 					},
@@ -62,9 +58,9 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 				}
 
 				for _, pgv := range extFile.PGVersions {
-					debPkgs = append(
-						debPkgs,
-						installDebPkg{
+					aptPkgs = append(
+						aptPkgs,
+						AptPackage{
 							Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version),
 							Opts: extToInstall.Options,
 						},
@@ -81,21 +77,28 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 		}
 	}
 
-	if len(debPkgs) == 0 {
+	if len(aptPkgs) == 0 {
 		return nil
 	}
 
+	apt := &Apt{
+		Logger: i.Logger.WithGroup("apt"),
+	}
+	aptSources, err := apt.GetChangedSources(ctx, aptRepos)
+	if err != nil {
+		return err
+	}
+
 	if !opts.IgnorePrompt {
-		if err := promptInstall(debPkgs, aptRepos); err != nil {
+		if err := promptInstall(aptPkgs, aptSources); err != nil {
 			return err
 		}
 	}
 
-	i.Logger.Debug("Installing debian packages", "packages", debPkgs)
-	return runAptInstall(ctx, debPkgs, aptRepos, i.Logger)
+	return apt.Install(ctx, aptPkgs, aptSources)
 }
 
-func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) error {
+func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
 	out := []string{
 		"The following Debian packages will be installed:",
 	}
@@ -103,10 +106,10 @@ func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) err
 		out = append(out, "  "+debPkg.Pkg)
 	}
 
-	if len(aptRepos) > 0 {
-		out = append(out, "The following Apt repositories will be added:")
-		for _, ar := range aptRepos {
-			out = append(out, "  "+ar.ID)
+	if len(sources) > 0 {
+		out = append(out, "The following Apt repositories will be added or changed:")
+		for _, source := range sources {
+			out = append(out, "  "+source.ID)
 		}
 	}
 
@@ -115,8 +118,8 @@ func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) err
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		switch scanner.Text() {
-		case "Y", "y":
+		switch strings.ToLower(scanner.Text()) {
+		case "y", "yes":
 			return nil
 		default:
 			return fmt.Errorf("installation aborted")
@@ -126,28 +129,39 @@ func promptInstall(debPkgs []installDebPkg, aptRepos []pgxman.AptRepository) err
 	return nil
 }
 
-func runAptInstall(ctx context.Context, debPkgs []installDebPkg, aptRepos []pgxman.AptRepository, logger *log.Logger) error {
-	logger.Debug("add apt repo", slog.Any("repos", aptRepos))
-	if err := addAptRepos(ctx, aptRepos, logger); err != nil {
-		return fmt.Errorf("add apt repos: %w", err)
+func coreAptRepos() ([]pgxman.AptRepository, error) {
+	bt, err := pgxman.DetectExtensionBuilder()
+	if err != nil {
+		return nil, fmt.Errorf("detect platform: %s", err)
 	}
 
-	for _, pkg := range debPkgs {
-		logger.Debug("Running apt install", "package", pkg)
+	var (
+		prefix   string
+		codename string
+	)
 
-		opts := []string{"install", "-y", "--no-install-recommends"}
-		opts = append(opts, pkg.Opts...)
-		opts = append(opts, pkg.Pkg)
-
-		cmd := exec.CommandContext(ctx, "apt", opts...)
-		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("apt install: %w", err)
-		}
+	switch bt {
+	case pgxman.ExtensionBuilderDebianBookworm:
+		prefix = "debian"
+		codename = "bookworm"
+	case pgxman.ExtensionBuilderUbuntuJammy:
+		prefix = "ubuntu"
+		codename = "jammy"
+	default:
+		return nil, fmt.Errorf("unsupported platform")
 	}
 
-	return nil
+	return []pgxman.AptRepository{
+		{
+			ID:         "pgxman-core",
+			Types:      []pgxman.AptRepositoryType{pgxman.AptRepositoryTypeDeb},
+			URIs:       []string{fmt.Sprintf("%s/%s", sourcesURL, prefix)},
+			Suites:     []string{codename},
+			Components: []string{"main"},
+			SignedKey: pgxman.AptRepositorySignedKey{
+				URL:    gpgkeyURL,
+				Format: pgxman.AptRepositorySignedKeyFormatGpg,
+			},
+		},
+	}, nil
 }

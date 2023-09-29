@@ -59,7 +59,11 @@ func DownloadSource(ctx context.Context) error {
 	return nil
 }
 
-func Extensions() (map[string]pgxman.Extension, error) {
+func Extensions(ctx context.Context) (map[string]pgxman.Extension, error) {
+	if err := DownloadSource(ctx); err != nil {
+		return nil, err
+	}
+
 	matches, err := filepath.Glob(filepath.Join(buildkitDir, "buildkit", "*.yaml"))
 	if err != nil {
 		return nil, err
