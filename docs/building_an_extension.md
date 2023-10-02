@@ -1,0 +1,113 @@
+# Building a PostgreSQL extension
+
+## Prerequisites
+
+* Docker
+* text editor
+
+## Initialize an extension manifest file
+
+```console
+pgxman init
+```
+
+`init` is interactive and will prompt you about the extension you wish to
+create.
+
+This result is a manifest file named `extension.yaml`. The file serves as your
+blueprint for building the extension.
+
+## Writing the manifest file
+
+[Please refer to the full buildkit file specification for
+details](https://github.com/pgxman/buildkit/blob/main/spec/buildkit.md). You'll
+find a full documented example with all available fields, as well as
+documentation for the file. You can also [look at existing
+buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit) for examples
+on how to create a buildkit.
+
+Most manifest files should follow the build instructions for the extension.
+This may be as simple as `make && make install`, but others may be considerably
+more complicated. Review the documentation for the extension for build
+instructions and any required dependencies.
+
+## Building the extension
+
+Once you have a buildkit written, use pgxman to build the extension locally.
+pgxman uses Docker to build the packages.
+
+```console
+pgxman build -f extension.yaml
+```
+
+This will package the extension files in the `out` directory:
+
+```console
+$ tree out
+out
+├── linux_amd64
+│   ├── debian
+│   │   └── bookworm
+│   │       ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
+│   │       ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
+│   │       └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+│   └── ubuntu
+│       └── jammy
+│           ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
+│           ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
+│           └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+└── linux_arm64
+    ├── debian
+    │   └── bookworm
+    │       ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
+    │       ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
+    │       └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+    └── ubuntu
+        └── jammy
+            ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
+            ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
+            └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+
+11 directories, 12 files
+```
+
+## Test the extension
+
+⚠️ We plan on making it easier to test extensions in the near future.
+
+Our recommendation is to test the built extension using Docker. You could use a
+Dockerfile to build an image, or run the commands manually from inside of the
+container.
+
+Below is an example Dockerfile. In order to use this, you'll need your built
+extension in `out/` and a `pgxman.yaml` file specifying the package from `out/`
+to install.
+
+```Dockerfile
+FROM postgres:15-bookworm
+
+RUN apt-get update && \
+  apt-get install -y curl && \
+  curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
+
+COPY out/ /pgxman/out/
+COPY pgxman.yaml /pgxman/pgxman.yaml
+
+WORKDIR /pgxman
+RUN pgxman install --debug -f pgxman.yaml
+```
+
+Here's an example `pgxman.yaml` file for this setup:
+
+```yaml
+apiVersion: v1
+extensions:
+- path: "/out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
+pgVersions:
+- "15"
+```
+
+## Adding the extension to pgxman
+
+Send a PR to [pgxman/buildkit](https://github.com/pgxman/buildkit), adding your
+buildkit to the `buildkit` folder.

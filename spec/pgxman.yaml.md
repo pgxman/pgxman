@@ -4,6 +4,21 @@ A `pgxman.yaml` is a YAML configuration file used to declare a collection of Pos
 It serves as an input file for the command `pgxman install -f /PATH_TO/pgxman.yaml`, defining the required extensions, their versions,
 and the targeting PostgreSQL versions.
 
+
+## Example
+
+```yaml
+apiVersion: v1
+extensions:
+  - name: "pgvector"
+    version: "0.4.4"
+  - name: "pg_ivm"
+    version: "1.5.1"
+  - path: "/local/path/to/extension"
+pgVersions:
+  - "15"
+```
+
 ## Fields
 
 ### `apiVersion`
@@ -42,20 +57,3 @@ and the targeting PostgreSQL versions.
 - **Type**: List of strings
 - **Required**: No
 - **Supported Values**: `"13"`, `"14"`, `"15"`
-
-## Example
-
-Here's an example that illustrates the usage of these fields:
-
-```yaml
-apiVersion: v1
-extensions:
-  - name: "pgvector"
-    version: "0.4.4"
-  - path: "/local/path/to/extension"
-pgVersions:
-  - "14"
-  - "15"
-```
-
-This example file installs the `pgvector` extension with version `0.4.4`, and another extension located at a specific local path, both for PostgreSQL versions 14 and 15.
