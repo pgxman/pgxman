@@ -173,14 +173,14 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		deps = builder.BuildDependencies
 	}
 
-	var depsToInstall []installDebPkg
+	var depsToInstall []AptPackage
 	for _, dep := range deps {
 		if strings.Contains(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
 			for _, ver := range ext.PGVersions {
 				depsToInstall = append(
 					depsToInstall,
-					installDebPkg{
+					AptPackage{
 						Pkg: extensionDebPkg(string(ver), dep),
 					},
 				)
@@ -188,7 +188,7 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		} else {
 			depsToInstall = append(
 				depsToInstall,
-				installDebPkg{
+				AptPackage{
 					Pkg: dep,
 				},
 			)
@@ -197,7 +197,16 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", depsToInstall))
 	logger.Info("Installing build deps")
-	return runAptInstall(ctx, depsToInstall, builder.AptRepositories, logger)
+
+	apt := &Apt{
+		Logger: logger,
+	}
+	sources, err := apt.ConvertSources(ctx, builder.AptRepositories)
+	if err != nil {
+		return err
+	}
+
+	return apt.Install(ctx, depsToInstall, sources)
 }
 
 func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {

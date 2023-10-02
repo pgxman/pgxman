@@ -45,6 +45,7 @@ vet:
 		golangci/golangci-lint:v1.54.2 \
 		golangci-lint run --timeout 5m -v
 
+DOCKER_ARGS ?=
 .PHONY: docker_build
 docker_build:
 	docker buildx bake \
@@ -52,16 +53,15 @@ docker_build:
 		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
 		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
 		--pull \
-		--load
+		$(DOCKER_ARGS)
+
+.PHONY: docker_load
+docker_load: DOCKER_ARGS=--load
+docker_load: docker_build
 
 .PHONY: docker_push
-docker_push:
-	docker buildx bake \
-		-f $(PWD)/docker/docker-bake.hcl \
-		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
-		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
-		--pull \
-		--push
+docker_push: DOCKER_ARGS=--push
+docker_push: docker_build
 
 .PHONY: installer_test
 installer_test: goreleaser

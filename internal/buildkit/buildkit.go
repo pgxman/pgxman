@@ -26,7 +26,35 @@ func init() {
 	buildkitDir = filepath.Join(configDir, "buildkit")
 }
 
-func DownloadSource(ctx context.Context) error {
+func Extensions(ctx context.Context) (map[string]pgxman.Extension, error) {
+	if err := downloadSource(ctx); err != nil {
+		return nil, err
+	}
+
+	matches, err := filepath.Glob(filepath.Join(buildkitDir, "buildkit", "*.yaml"))
+	if err != nil {
+		return nil, err
+	}
+
+	exts := make(map[string]pgxman.Extension)
+	for _, m := range matches {
+		b, err := os.ReadFile(m)
+		if err != nil {
+			return nil, err
+		}
+
+		var ext pgxman.Extension
+		if err := yaml.Unmarshal(b, &ext); err != nil {
+			return nil, err
+		}
+
+		exts[ext.Name] = ext
+	}
+
+	return exts, nil
+}
+
+func downloadSource(ctx context.Context) error {
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return err
 	}
@@ -57,28 +85,4 @@ func DownloadSource(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func Extensions() (map[string]pgxman.Extension, error) {
-	matches, err := filepath.Glob(filepath.Join(buildkitDir, "buildkit", "*.yaml"))
-	if err != nil {
-		return nil, err
-	}
-
-	exts := make(map[string]pgxman.Extension)
-	for _, m := range matches {
-		b, err := os.ReadFile(m)
-		if err != nil {
-			return nil, err
-		}
-
-		var ext pgxman.Extension
-		if err := yaml.Unmarshal(b, &ext); err != nil {
-			return nil, err
-		}
-
-		exts[ext.Name] = ext
-	}
-
-	return exts, nil
 }

@@ -34,7 +34,6 @@ install_pgxman() {
 }
 
 install_extensions() {
-    ensure pgxman update
     if [ "$#" -ne "0" ]; then
         for _file in "$@"; do
             echo "Installing extensions from ${_file}..."
