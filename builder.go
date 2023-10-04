@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +13,6 @@ import (
 
 	"log/slog"
 
-	"github.com/mholt/archiver/v3"
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman/internal/filepathx"
 	"github.com/pgxman/pgxman/internal/log"
@@ -113,31 +111,7 @@ func (b *dockerBuilder) fetchSource(ext Extension, dstDir string) error {
 		return nil
 	}
 
-	dstSource := filepath.Join(dstDir, "source.tar.gz")
-
-	// local source
-	if filepath.IsAbs(source) {
-		return archiver.Archive([]string{source}, dstSource)
-	}
-
-	// http source
-	resp, err := http.Get(source)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	f, err := os.Create(dstSource)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(f, resp.Body); err != nil {
-		return err
-	}
-
-	return nil
+	return source.Archive(filepath.Join(dstDir, "source.tar.gz"))
 }
 
 func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {

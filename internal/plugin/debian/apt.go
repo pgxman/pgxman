@@ -47,7 +47,7 @@ type Apt struct {
 }
 
 type AptSource struct {
-	ID            string
+	Name          string
 	SourcePath    string
 	SourceContent []byte
 	KeyPath       string
@@ -150,9 +150,9 @@ func (a *Apt) install(ctx context.Context, pkgs []AptPackage) error {
 }
 
 func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*AptSource, error) {
-	logger := a.Logger.WithGroup(repo.ID)
+	logger := a.Logger.WithGroup(repo.Name())
 
-	keyPath := filepath.Join(keyringsDir, repo.ID+"."+string(repo.SignedKey.Format))
+	keyPath := filepath.Join(keyringsDir, repo.Name()+"."+string(repo.SignedKey.Format))
 	logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", keyPath)
 	keyContent, err := downloadURL(repo.SignedKey.URL)
 	if err != nil {
@@ -176,8 +176,8 @@ func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*Ap
 	}
 
 	return &AptSource{
-		ID:            repo.ID,
-		SourcePath:    filepath.Join(sourceListdDir, repo.ID+".sources"),
+		Name:          repo.Name(),
+		SourcePath:    filepath.Join(sourceListdDir, repo.Name()+".sources"),
 		SourceContent: sourceContent.Bytes(),
 		KeyPath:       keyPath,
 		KeyContent:    keyContent,
@@ -252,7 +252,7 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 
 	return []pgxman.AptRepository{
 		{
-			ID:         "pgxman-core",
+			ID:         "core",
 			Types:      []pgxman.AptRepositoryType{pgxman.AptRepositoryTypeDeb},
 			URIs:       []string{fmt.Sprintf("%s/%s", coreAptSourceURL, prefix)},
 			Suites:     []string{codename},
