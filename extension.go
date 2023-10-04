@@ -2,13 +2,17 @@ package pgxman
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/github/go-spdx/v2/spdxexp"
+	"github.com/mholt/archiver/v3"
 	"github.com/pgxman/pgxman/internal/osx"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/yaml"
@@ -87,9 +91,6 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("name is required")
 	}
 
-	if ext.Source == "" {
-		return fmt.Errorf("source is required")
-	}
 	_, err := ext.ParseSource()
 	if err != nil {
 		return fmt.Errorf("invalid source: %w", err)
@@ -165,23 +166,31 @@ func (ext Extension) Validate() error {
 	return nil
 }
 
-func (ext Extension) ParseSource() (string, error) {
-	u, err := url.ParseRequestURI(ext.Source)
-	if err != nil {
-		return "", err
+type ExtensionSource interface {
+	Archive(dst string) error
+}
+
+func (ext Extension) ParseSource() (ExtensionSource, error) {
+	if ext.Source == "" {
+		return &emptyExtensionSource{}, nil
 	}
 
-	supportedScheme := []string{"http", "https", "file", ""}
+	u, err := url.ParseRequestURI(ext.Source)
+	if err != nil {
+		return nil, err
+	}
+
+	supportedScheme := []string{"http", "https", "file"}
 	if !slices.Contains(supportedScheme, u.Scheme) {
-		return "", fmt.Errorf("source only supports %s", strings.Join(supportedScheme, ", "))
+		return nil, fmt.Errorf("source only supports %s", strings.Join(supportedScheme, ", "))
 	}
 
 	if u.Scheme == "http" || u.Scheme == "https" {
 		if !strings.HasSuffix(u.Path, ".tar.gz") {
-			return "", fmt.Errorf("http source only supports tar.gz format: %s", u.Path)
+			return nil, fmt.Errorf("http source only supports tar.gz format: %s", u.Path)
 		}
 
-		return u.String(), nil
+		return &httpExtensionSource{URL: u.String()}, nil
 	}
 
 	var path string
@@ -192,7 +201,7 @@ func (ext Extension) ParseSource() (string, error) {
 		path = filepath.Join(filepath.Dir(ext.Path), u.Path)
 	}
 
-	return filepath.Clean(path), nil
+	return &fileExtensionSource{Dir: filepath.Clean(path)}, nil
 }
 
 const DefaultExtensionAPIVersion = "v1"
@@ -528,4 +537,48 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 	}
 
 	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
+}
+
+type emptyExtensionSource struct {
+}
+
+func (s *emptyExtensionSource) Archive(dst string) error {
+	dir, err := os.MkdirTemp("", "source")
+	if err != nil {
+		return err
+	}
+
+	return archiver.Archive([]string{dir}, dst)
+}
+
+type fileExtensionSource struct {
+	Dir string
+}
+
+func (s *fileExtensionSource) Archive(dst string) error {
+	return archiver.Archive([]string{s.Dir}, dst)
+}
+
+type httpExtensionSource struct {
+	URL string
+}
+
+func (s *httpExtensionSource) Archive(dst string) error {
+	resp, err := http.Get(s.URL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return err
+	}
+
+	return nil
 }
