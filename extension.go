@@ -256,15 +256,11 @@ type Maintainer struct {
 
 type Build struct {
 	Pre  []BuildScript `json:"pre,omitempty"`
-	Main []BuildScript `json:"main"`
+	Main []BuildScript `json:"main,omitempty"`
 	Post []BuildScript `json:"post,omitempty"`
 }
 
 func (b Build) Validate() error {
-	if len(b.Main) == 0 {
-		return fmt.Errorf("main build script is required")
-	}
-
 	for _, s := range b.Pre {
 		if err := s.Validate(); err != nil {
 			return fmt.Errorf("pre-build script: %w", err)
