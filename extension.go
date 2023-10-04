@@ -428,6 +428,10 @@ type AptRepository struct {
 	SignedKey  AptRepositorySignedKey `json:"signedKey"`
 }
 
+func (repo AptRepository) Name() string {
+	return "pgxman-" + repo.ID
+}
+
 func (repo AptRepository) Validate() error {
 	if repo.ID == "" {
 		return fmt.Errorf("apt repository id is required")

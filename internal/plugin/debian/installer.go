@@ -109,7 +109,7 @@ func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
 	if len(sources) > 0 {
 		out = append(out, "The following Apt repositories will be added or updated:")
 		for _, source := range sources {
-			out = append(out, "  "+source.ID)
+			out = append(out, "  "+source.Name)
 		}
 	}
 
