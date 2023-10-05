@@ -3,8 +3,7 @@
 In short:
 
 * buildkits contain metadata about how to build packages.
-* every time a buildkit is created or updated, we build packages which are
-  added to a repository.
+* Whenever a buildkit is created or updated in the [buildkit GitHub repo](https://github.com/pgxman/buildkit), [GitHub Actions](https://github.com/pgxman/buildkit/blob/main/.github/workflows/ci.yaml) builds the package and publishes it to a repository.
 * `pgxman install` adds pgxman's repository to your system, and then installs
   the packages using your system package manager.
 
