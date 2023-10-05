@@ -58,7 +58,7 @@ pgxman search fdw
 
 ## How it works
 
-pgxman's build system works with your local package manager. The buildkit
+pgxman's build system works with your system package manager. The buildkit
 specifies how to build each extension and builds it for each package manager.
 When a buildkit is added or updated, a build is conducted and the packages are
 stored in pgxman's repositories.
@@ -67,6 +67,9 @@ When installing an extension, pgxman's package repository is used to install
 the packages into your system. This way, pgxman is able to handle dependency
 management, installation, and uninstallation through your system's package
 manager.
+
+For more details, see [How It Works](docs/how_it_works.md) in the
+documentation.
 
 ## Roadmap
 
