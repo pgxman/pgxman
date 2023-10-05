@@ -50,8 +50,8 @@ Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
 
 	assert.Equal(
 		map[string]struct{}{
-			"https://apt.postgresql.org/pub/repos/apt":  struct{}{},
-			"https://apt.postgresql.org/pub/repos/apt1": struct{}{},
+			"https://apt.postgresql.org/pub/repos/apt":  {},
+			"https://apt.postgresql.org/pub/repos/apt1": {},
 		},
 		uris,
 	)
