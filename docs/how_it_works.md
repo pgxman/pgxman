@@ -33,7 +33,7 @@ your system's package manager.
 pgxman uses [a repository of
 buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit) to know what
 extensions are available. When you use `search` or `install`, the buildkit
-metadata is is used to obtain information about that extension. A cached copy
+metadata is used to obtain information about that extension. A cached copy
 of this repository is stored in the `pgxman` folder in your [user config
 directory](https://pkg.go.dev/os#UserConfigDir).
 
