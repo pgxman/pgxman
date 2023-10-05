@@ -9,7 +9,7 @@ In short:
 
 ## Supported systems
 
-pgxman's build system works with your local package manager. Currently, pgxman
+pgxman's build system works with your system's package manager. Currently, pgxman
 supports `apt`-based systems and targets [Debian
 Bookworm](https://www.debian.org/releases/bookworm) and [Ubuntu
 Jammy](https://releases.ubuntu.com/jammy). In the future, other package
