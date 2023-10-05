@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -18,8 +19,8 @@ import (
 )
 
 const (
-	keyringsDir    = "/usr/share/keyrings"
-	sourceListdDir = "/etc/apt/sources.list.d"
+	aptKeyRingsDir = "/usr/share/keyrings"
+	aptSourceDir   = "/etc/apt/sources.list.d"
 
 	coreAptSourceGPGKeyURL = "https://pgxman.github.io/buildkit/pgxman.gpg"
 	coreAptSourceURL       = "https://pgxman-buildkit-debian.s3.amazonaws.com"
@@ -32,6 +33,8 @@ Suites: {{ .Suites }}
 Components: {{ .Components }}
 Signed-By: {{ .SignedBy }}
 `))
+
+	regexpSourceURIs = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
 )
 
 type aptSourcesTmplData struct {
@@ -42,8 +45,21 @@ type aptSourcesTmplData struct {
 	SignedBy   string
 }
 
+func NewApt(logger *log.Logger) (*Apt, error) {
+	uris, err := exitingAptSourceURIs(aptSourceDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Apt{
+		ExitingSourceURIs: uris,
+		Logger:            logger,
+	}, nil
+}
+
 type Apt struct {
-	Logger *log.Logger
+	ExitingSourceURIs map[string]struct{}
+	Logger            *log.Logger
 }
 
 type AptSource struct {
@@ -62,6 +78,13 @@ type AptPackage struct {
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
 	var result []AptSource
 	for _, repo := range repos {
+		uris := a.removeDuplicatedSourceURIs(repo.URIs)
+		if len(uris) == 0 {
+			a.Logger.Debug("Skipping apt source that already exists", "name", repo.Name())
+			continue
+		}
+		repo.URIs = uris
+
 		file, err := a.newSourceFile(ctx, repo)
 		if err != nil {
 			return nil, err
@@ -76,6 +99,13 @@ func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) 
 func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
 	var result []AptSource
 	for _, repo := range repos {
+		uris := a.removeDuplicatedSourceURIs(repo.URIs)
+		if len(uris) == 0 {
+			a.Logger.Debug("Skipping apt source that already exists", "name", repo.Name())
+			continue
+		}
+		repo.URIs = uris
+
 		file, err := a.newSourceFile(ctx, repo)
 		if err != nil {
 			return nil, err
@@ -112,6 +142,18 @@ func (a *Apt) Install(ctx context.Context, pkgs []AptPackage, sources []AptSourc
 	}
 
 	return nil
+}
+
+func (a *Apt) removeDuplicatedSourceURIs(uris []string) []string {
+	var result []string
+	for _, uri := range uris {
+		_, exists := a.ExitingSourceURIs[uri]
+		if !exists {
+			result = append(result, uri)
+		}
+	}
+
+	return result
 }
 
 func (a *Apt) addSources(ctx context.Context, files []AptSource) error {
@@ -152,24 +194,19 @@ func (a *Apt) install(ctx context.Context, pkgs []AptPackage) error {
 func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*AptSource, error) {
 	logger := a.Logger.WithGroup(repo.Name())
 
-	keyPath := filepath.Join(keyringsDir, repo.Name()+"."+string(repo.SignedKey.Format))
+	keyPath := filepath.Join(aptKeyRingsDir, repo.Name()+"."+string(repo.SignedKey.Format))
 	logger.Debug("Downloading gpg key", "url", repo.SignedKey, "path", keyPath)
 	keyContent, err := downloadURL(repo.SignedKey.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	var types []string
-	for _, t := range repo.Types {
-		types = append(types, string(t))
-	}
-
 	sourceContent := bytes.NewBuffer(nil)
 	if err := aptSourcesTmpl.Execute(sourceContent, aptSourcesTmplData{
-		Types:      strings.Join(types, " "),
-		URIs:       strings.Join(repo.URIs, " "),
-		Suites:     strings.Join(repo.Suites, " "),
-		Components: strings.Join(repo.Components, " "),
+		Types:      repo.TypesString(),
+		URIs:       repo.URIsString(),
+		Suites:     repo.SuitesString(),
+		Components: repo.ComponentsString(),
 		SignedBy:   keyPath,
 	}); err != nil {
 		return nil, err
@@ -177,7 +214,7 @@ func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*Ap
 
 	return &AptSource{
 		Name:          repo.Name(),
-		SourcePath:    filepath.Join(sourceListdDir, repo.Name()+".sources"),
+		SourcePath:    filepath.Join(aptSourceDir, repo.Name()+".sources"),
 		SourceContent: sourceContent.Bytes(),
 		KeyPath:       keyPath,
 		KeyContent:    keyContent,
@@ -263,4 +300,37 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 			},
 		},
 	}, nil
+}
+
+func exitingAptSourceURIs(sourceDir string) (map[string]struct{}, error) {
+	files, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]struct{})
+	for _, file := range files {
+		// always ignore pgxman-core.sources so that it can be updated
+		if file.Name() == "pgxman-core.sources" {
+			continue
+		}
+
+		b, err := os.ReadFile(filepath.Join(sourceDir, file.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, m := range regexpSourceURIs.FindAllStringSubmatch(string(b), -1) {
+			for _, s := range strings.Split(m[1], " ") {
+				s = strings.TrimSpace(s)
+				if s == "" {
+					continue
+				}
+
+				result[s] = struct{}{}
+			}
+		}
+	}
+
+	return result, nil
 }
