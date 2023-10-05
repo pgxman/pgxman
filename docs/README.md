@@ -6,7 +6,7 @@
 * [`pgxman install`: Installing Extensions](installing_extensions.md)
   * [Installing extensions using a `pgxman.yaml` file](../spec/pgxman.yaml.md)
 * [How pgxman Works](how_it_works.md)
-* [Uninstall pgxman](uninstalling_pgxman.md)
+* [Uninstalling pgxman](uninstalling_pgxman.md)
 
 ## Developer Guide
 
