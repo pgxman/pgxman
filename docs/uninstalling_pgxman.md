@@ -1,0 +1,35 @@
+# Uninstalling pgxman
+
+## Optional: remove extensions
+
+Note that extensions you have installed will continue to work even if you
+remove the `pgxman` CLI.
+
+1. Use [`DROP EXTENSION`][drop extension] to remove any installed extensions
+   from your Postgres databases.
+2. Uninstall extensions by running
+   `apt remove postgresql-$VERSION-pgxman-$EXTNAME`.
+   You can get a list of installed extensions with the command
+   `apt list --installed | grep pgxman`.
+
+[drop extension]: https://www.postgresql.org/docs/current/sql-dropextension.html
+
+## Remove pgxman
+
+This will depend on how you installed pgxman.
+
+* If you used the shell script, it installs pgxman via an apt package. To
+  remove the package, use `apt remove pgxman`.
+* If you installed the binary manually into your path, use `which pgxman` to
+  locate the binary, then `rm` it.
+
+## Remove pgxman config directory
+
+This directory is located in your [user config directory][]. Typically on
+Linux, this is located at `~/.config/pgxman`:
+
+```sh
+rm -r ~/.config/pgxman
+```
+
+[user config directory]: https://www.postgresql.org/docs/current/sql-dropextension.html
