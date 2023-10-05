@@ -3,7 +3,6 @@
 ## Prerequisites
 
 * Docker
-* text editor
 
 ## Initialize an extension manifest file
 

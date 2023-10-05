@@ -34,6 +34,8 @@ $ pgxman install -f pgxman.yaml
 
 ## Verification
 
+⚠️ Postgres needs to be restarted to see newly installed extensions.
+
 To verify the successful installation of extensions, execute the following
 command on your PostgreSQL instance:
 
@@ -46,3 +48,6 @@ postgres=# \dx
  ...
 (9 rows)
 ```
+
+To install the extension into a database, use [`CREATE
+EXTENSION`](https://www.postgresql.org/docs/current/sql-createextension.html).
