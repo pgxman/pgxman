@@ -81,9 +81,11 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 		return nil
 	}
 
-	apt := &Apt{
-		Logger: i.Logger.WithGroup("apt"),
+	apt, err := NewApt(i.Logger.WithGroup("apt"))
+	if err != nil {
+		return err
 	}
+
 	aptSources, err := apt.GetChangedSources(ctx, aptRepos)
 	if err != nil {
 		return err

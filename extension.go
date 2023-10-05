@@ -432,6 +432,27 @@ func (repo AptRepository) Name() string {
 	return "pgxman-" + repo.ID
 }
 
+func (repo AptRepository) URIsString() string {
+	return strings.Join(repo.URIs, " ")
+}
+
+func (repo AptRepository) SuitesString() string {
+	return strings.Join(repo.Suites, " ")
+}
+
+func (repo AptRepository) TypesString() string {
+	var types []string
+	for _, t := range repo.Types {
+		types = append(types, string(t))
+	}
+
+	return strings.Join(types, " ")
+}
+
+func (repo AptRepository) ComponentsString() string {
+	return strings.Join(repo.Components, " ")
+}
+
 func (repo AptRepository) Validate() error {
 	if repo.ID == "" {
 		return fmt.Errorf("apt repository id is required")

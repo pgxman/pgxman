@@ -198,9 +198,11 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version), slog.Any("deps", depsToInstall))
 	logger.Info("Installing build deps")
 
-	apt := &Apt{
-		Logger: logger,
+	apt, err := NewApt(logger)
+	if err != nil {
+		return err
 	}
+
 	sources, err := apt.ConvertSources(ctx, builder.AptRepositories)
 	if err != nil {
 		return err
