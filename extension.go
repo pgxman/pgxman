@@ -243,10 +243,11 @@ const (
 	PGVersion13 PGVersion = "13"
 	PGVersion14 PGVersion = "14"
 	PGVersion15 PGVersion = "15"
+	PGVersion16 PGVersion = "16"
 )
 
 var (
-	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15}
+	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
 )
 
 type Maintainer struct {

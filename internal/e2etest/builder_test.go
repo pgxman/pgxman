@@ -105,7 +105,7 @@ echo $PGXS
 
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
-	assert.Len(matches, 3*2) // 13, 14, 15 for current arch only for debian:bookworm & ubuntu:jammy
+	assert.Len(matches, 4*2) // 13, 14, 15, 16 for current arch only for debian:bookworm & ubuntu:jammy
 
 	for _, match := range matches {
 		var (
