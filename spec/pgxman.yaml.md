@@ -11,7 +11,7 @@ and the targeting PostgreSQL versions.
 apiVersion: v1
 extensions:
   - name: "pgvector"
-    version: "0.4.4"
+    version: "0.5.0"
   - name: "pg_ivm"
     version: "1.5.1"
   - path: "/local/path/to/extension"

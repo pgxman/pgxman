@@ -20,8 +20,8 @@ func TestBuilder(t *testing.T) {
 	ext := pgxman.NewDefaultExtension()
 	ext.Name = "pgvector"
 	ext.Description = "pgvector is a PostgreSQL extension for vector similarity search."
-	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.4.4.tar.gz"
-	ext.Version = "0.4.4"
+	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.0.tar.gz"
+	ext.Version = "0.5.0"
 	ext.License = "PostgreSQL"
 	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
 	ext.RunDependencies = []string{"libcurl4-openssl-dev"}

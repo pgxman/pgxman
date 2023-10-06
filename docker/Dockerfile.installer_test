@@ -12,7 +12,7 @@ apiVersion: v1
 pgVersions: [15]
 extensions:
   - name: "pgvector"
-    version: "0.4.4"
+    version: "0.5.0"
 EOS
 RUN PGXMAN_DOWNLOAD_URL=file:///tmp/dist sh /tmp/install.sh /tmp/pgxman.yaml
 
