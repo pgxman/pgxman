@@ -2,6 +2,9 @@ SHELL=/bin/bash -eo pipefail
 
 BIN_DIR ?= $(CURDIR)/bin
 export PATH := $(BIN_DIR):$(PATH)
+
+all: build
+
 .PHONY: tools
 tools:
 	# goreleaser
