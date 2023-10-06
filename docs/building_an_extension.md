@@ -47,25 +47,25 @@ out
 ├── linux_amd64
 │   ├── debian
 │   │   └── bookworm
-│   │       ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
-│   │       ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
-│   │       └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+│   │       ├── postgresql-13-pgxman-pgvector_0.5.0_amd64.deb
+│   │       ├── postgresql-14-pgxman-pgvector_0.5.0_amd64.deb
+│   │       └── postgresql-15-pgxman-pgvector_0.5.0_amd64.deb
 │   └── ubuntu
 │       └── jammy
-│           ├── postgresql-13-pgxman-pgvector_0.4.4_amd64.deb
-│           ├── postgresql-14-pgxman-pgvector_0.4.4_amd64.deb
-│           └── postgresql-15-pgxman-pgvector_0.4.4_amd64.deb
+│           ├── postgresql-13-pgxman-pgvector_0.5.0_amd64.deb
+│           ├── postgresql-14-pgxman-pgvector_0.5.0_amd64.deb
+│           └── postgresql-15-pgxman-pgvector_0.5.0_amd64.deb
 └── linux_arm64
     ├── debian
     │   └── bookworm
-    │       ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
-    │       ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
-    │       └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+    │       ├── postgresql-13-pgxman-pgvector_0.5.0_arm64.deb
+    │       ├── postgresql-14-pgxman-pgvector_0.5.0_arm64.deb
+    │       └── postgresql-15-pgxman-pgvector_0.5.0_arm64.deb
     └── ubuntu
         └── jammy
-            ├── postgresql-13-pgxman-pgvector_0.4.4_arm64.deb
-            ├── postgresql-14-pgxman-pgvector_0.4.4_arm64.deb
-            └── postgresql-15-pgxman-pgvector_0.4.4_arm64.deb
+            ├── postgresql-13-pgxman-pgvector_0.5.0_arm64.deb
+            ├── postgresql-14-pgxman-pgvector_0.5.0_arm64.deb
+            └── postgresql-15-pgxman-pgvector_0.5.0_arm64.deb
 
 11 directories, 12 files
 ```

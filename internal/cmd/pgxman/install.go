@@ -38,24 +38,24 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
     apiVersion: v1
     extensions:
       - name: "pgvector"
-        version: "0.4.4"
+        version: "0.5.0"
       - path: "/local/path/to/extension"
     pgVersions:
       - "14"
       - "15"
   EOF
 
-  # Install pgvector 0.4.4 for PostgreSQL 14
-  pgxman install pgvector=0.4.4@14
+  # Install pgvector 0.5.0 for PostgreSQL 14
+  pgxman install pgvector=0.5.0@14
 
-  # Install pgvector 0.4.4 for PostgreSQL 14 & 15
-  pgxman install pgvector=0.4.4@14,15
+  # Install pgvector 0.5.0 for PostgreSQL 14 & 15
+  pgxman install pgvector=0.5.0@14,15
 
-  # Install pgvector 0.4.4 for PostgreSQL 14 & 15, and postgis 3.3.3 for PostgreSQL 14
-  pgxman install pgvector=0.4.4@14,15 postgis=3.3.3@14
+  # Install pgvector 0.5.0 for PostgreSQL 14 & 15, and postgis 3.3.3 for PostgreSQL 14
+  pgxman install pgvector=0.5.0@14,15 postgis=3.3.3@14
 
   # Install from a local Debian package
-  pgxman install /PATH_TO/postgresql-15-pgxman-pgvector_0.4.4_arm64.deb`,
+  pgxman install /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`,
 		RunE: runInstall,
 	}
 

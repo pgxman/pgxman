@@ -30,10 +30,10 @@ For further detailed instructions, see [our documentation](docs/installing_pgxma
 
 ### `install`
 
-To install an extension, such as the `pgvector` version `0.4.4` for PostgreSQL 15, run:
+To install an extension, such as the `pgvector` version `0.5.0` for PostgreSQL 15, run:
 
 ```console
-pgxman install pgvector=0.4.4@15
+pgxman install pgvector=0.5.0@15
 ```
 
 You can also utilize a [pgxman.yaml](spec/pgxman.yaml.md) file to install multiple extensions at once:

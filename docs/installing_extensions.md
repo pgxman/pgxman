@@ -2,11 +2,11 @@
 
 ## Individual Extension
 
-Installing an extension, such as the `pgvector` version `0.4.4` for PostgreSQL
+Installing an extension, such as the `pgvector` version `0.5.0` for PostgreSQL
 15, is as simple as running:
 
 ```console
-pgxman install pgvector=0.4.4@15
+pgxman install pgvector=0.5.0@15
 ```
 
 Both the version number of the extension and Postgres version must be
@@ -22,7 +22,7 @@ $ cat <<EOF >pgxman.yaml
 apiVersion: v1
 extensions:
   - name: "pgvector"
-    version: "0.4.4"
+    version: "0.5.0"
   - name: "pg_ivm"
     version: "1.5.1"
 pgVersions:
@@ -44,7 +44,7 @@ postgres=# \dx
                                             List of installed extensions
         Name        | Version |   Schema   |                              Description
 --------------------+---------+------------+----------------------------------------------------------------
- vector             | 0.4.4   |   public   | vector data type and ivfflat access method
+ vector             | 0.5.0   |   public   | vector data type and ivfflat access method
  ...
 (9 rows)
 ```
