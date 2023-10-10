@@ -71,6 +71,7 @@ func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
 
 type InstallerOptions struct {
 	IgnorePrompt bool
+	Sudo         bool
 }
 
 type InstallerOptionsFunc func(*InstallerOptions)
@@ -78,6 +79,12 @@ type InstallerOptionsFunc func(*InstallerOptions)
 func InstallOptWithIgnorePrompt(ignore bool) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {
 		ops.IgnorePrompt = ignore
+	}
+}
+
+func InstallOptWithSudo(sudo bool) InstallerOptionsFunc {
+	return func(ops *InstallerOptions) {
+		ops.Sudo = sudo
 	}
 }
 

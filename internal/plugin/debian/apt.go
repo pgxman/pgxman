@@ -45,13 +45,14 @@ type aptSourcesTmplData struct {
 	SignedBy   string
 }
 
-func NewApt(logger *log.Logger) (*Apt, error) {
+func NewApt(sudo bool, logger *log.Logger) (*Apt, error) {
 	uris, err := exitingAptSourceURIs(aptSourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Apt{
+		Sudo:              sudo,
 		ExitingSourceURIs: uris,
 		Logger:            logger,
 	}, nil
@@ -59,6 +60,7 @@ func NewApt(logger *log.Logger) (*Apt, error) {
 
 type Apt struct {
 	ExitingSourceURIs map[string]struct{}
+	Sudo              bool
 	Logger            *log.Logger
 }
 
@@ -141,7 +143,7 @@ func (a *Apt) Install(ctx context.Context, pkgs []AptPackage, sources []AptSourc
 	if err := a.addSources(ctx, sources); err != nil {
 		return err
 	}
-	if err := a.install(ctx, pkgs); err != nil {
+	if err := a.aptInstall(ctx, pkgs); err != nil {
 		return err
 	}
 
@@ -171,10 +173,10 @@ func (a *Apt) addSources(ctx context.Context, files []AptSource) error {
 		}
 	}
 
-	return runAptUpdate(ctx)
+	return a.aptUpdate(ctx)
 }
 
-func (a *Apt) install(ctx context.Context, pkgs []AptPackage) error {
+func (a *Apt) aptInstall(ctx context.Context, pkgs []AptPackage) error {
 	for _, pkg := range pkgs {
 		a.Logger.Debug("Running apt install", "package", pkg)
 
@@ -182,17 +184,34 @@ func (a *Apt) install(ctx context.Context, pkgs []AptPackage) error {
 		opts = append(opts, pkg.Opts...)
 		opts = append(opts, pkg.Pkg)
 
-		cmd := exec.CommandContext(ctx, "apt", opts...)
-		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
+		if err := a.runAptCmd(ctx, opts...); err != nil {
 			return fmt.Errorf("apt install: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func (a *Apt) aptUpdate(ctx context.Context) error {
+	return a.runAptCmd(ctx, "update")
+}
+
+func (a *Apt) runAptCmd(ctx context.Context, args ...string) error {
+	var c []string
+	if a.Sudo {
+		c = append(c, "sudo", "apt")
+	} else {
+		c = append(c, "apt")
+	}
+	c = append(c, args...)
+
+	cmd := exec.CommandContext(ctx, c[0], c[1:]...)
+	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	a.Logger.Debug("Running apt command", "command", cmd.String())
+	return cmd.Run()
 }
 
 func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*AptSource, error) {
@@ -259,14 +278,6 @@ func writeFile(path string, content []byte) error {
 	}
 
 	return os.WriteFile(path, content, 0644)
-}
-
-func runAptUpdate(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "apt", "update")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
 }
 
 func coreAptRepos() ([]pgxman.AptRepository, error) {
