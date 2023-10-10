@@ -82,7 +82,7 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 		return nil
 	}
 
-	apt, err := NewApt(i.Logger.WithGroup("apt"))
+	apt, err := NewApt(opts.Sudo, i.Logger.WithGroup("apt"))
 	if err != nil {
 		return err
 	}

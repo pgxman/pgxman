@@ -30,6 +30,7 @@ RUN set -eux; \
     python3.11 \
     python3.11-dev \
     python3.11-venv \
+    sudo \
     wget \
     ; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \

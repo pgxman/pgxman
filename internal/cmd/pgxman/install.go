@@ -16,6 +16,7 @@ import (
 var (
 	flagInstallPGXManfile string
 	flagInstallYes        bool
+	flagInstallSudo       bool
 )
 
 func newInstallCmd() *cobra.Command {
@@ -48,6 +49,9 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
   # Install pgvector 0.5.0 for PostgreSQL 14
   pgxman install pgvector=0.5.0@14
 
+  # Install pgvector 0.5.0 for PostgreSQL 14 with sudo
+  pgxman install pgvector=0.5.0@14 --sudo
+
   # Install pgvector 0.5.0 for PostgreSQL 14 & 15
   pgxman install pgvector=0.5.0@14,15
 
@@ -60,6 +64,7 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
 	}
 
 	cmd.PersistentFlags().StringVarP(&flagInstallPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
+	cmd.PersistentFlags().BoolVar(&flagInstallSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
 	cmd.PersistentFlags().BoolVarP(&flagInstallYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
@@ -104,6 +109,7 @@ func runInstall(c *cobra.Command, args []string) error {
 		c.Context(),
 		result,
 		pgxman.InstallOptWithIgnorePrompt(flagInstallYes),
+		pgxman.InstallOptWithSudo(flagInstallSudo),
 	); err != nil {
 
 		return err
