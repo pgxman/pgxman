@@ -12,6 +12,14 @@ pgxman install pgvector=0.5.0@15
 Both the version number of the extension and Postgres version must be
 specified.
 
+As `pgxman` harnesses system's package manager for extension management,
+admin privilleges might be required. To install extensions with `sudo`,
+append the `--sudo` flag:
+
+```console
+pgxman install pgvector=0.5.0@15 --sudo
+```
+
 ## Batch Installation using a pgxman file
 
 You can also utilize a [pgxman.yaml](spec/pgxman.yaml.md) file to install
