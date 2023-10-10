@@ -24,7 +24,7 @@ import (
 
 const (
 	extensionDepPrefix = "pgxman/"
-	sourceTarGzPath    = "/workspace/source.tar.gz"
+	sourceTarGzFile    = "source.tar.gz"
 )
 
 type DebianPackager struct {
@@ -32,12 +32,14 @@ type DebianPackager struct {
 }
 
 func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	workDir, buildDir, err := p.mkdir(opts)
+	p.Logger.Debug("Init step", "opts", opts, "ext", ext)
+
+	targetDir, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	if err := p.downloadAndUnarchiveSource(ctx, ext, workDir, buildDir); err != nil {
+	if err := p.downloadAndUnarchiveSource(ctx, ext, opts.WorkDir, targetDir, buildDir); err != nil {
 		return fmt.Errorf("download and unarchive source: %w", err)
 	}
 
@@ -53,6 +55,8 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 }
 
 func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	p.Logger.Debug("Pre step", "opts", opts, "ext", ext)
+
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -62,6 +66,8 @@ func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgx
 }
 
 func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	p.Logger.Debug("Post step", "opts", opts, "ext", ext)
+
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -74,6 +80,7 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 //
 //   - workspace
 //     -- extension.yaml
+//     -- source.tar.gz
 //     -- target
 //     --- pgvector.orig.tar.gz
 //     --- debian_build
@@ -82,6 +89,8 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 //     ---- debian
 //     ---- script
 func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
+	p.Logger.Debug("Main step", "opts", opts, "ext", ext)
+
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -94,8 +103,8 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	return nil
 }
 
-func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, targetDir, buildDir string) error {
-	sourceFile, err := p.copySource(ctx, ext, targetDir)
+func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, workDir, targetDir, buildDir string) error {
+	sourceFile, err := p.copySource(ctx, ext, workDir, targetDir)
 	if err != nil {
 		return fmt.Errorf("download source %s: %w", ext.Source, err)
 	}
@@ -107,7 +116,7 @@ func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgx
 	return nil
 }
 
-func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, targetDir string) (string, error) {
+func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, workDir, targetDir string) (string, error) {
 	logger := p.Logger.With(slog.String("source", ext.Source))
 	logger.Info("Copying source")
 
@@ -118,7 +127,7 @@ func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, t
 		return targetFile, nil
 	}
 
-	if err := cp.Copy(sourceTarGzPath, targetFile); err != nil {
+	if err := cp.Copy(filepath.Join(workDir, sourceTarGzFile), targetFile); err != nil {
 		return "", err
 	}
 
@@ -236,6 +245,7 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	buildext.Stdout = os.Stdout
 	buildext.Stderr = os.Stderr
 
+	logger.Debug("Running pg_buildext updatecontrol", "cmd", buildext.String())
 	if err := buildext.Run(); err != nil {
 		return fmt.Errorf("pg_buildext updatecontrol: %w", err)
 	}
@@ -243,13 +253,8 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	debuild := exec.CommandContext(
 		ctx,
 		"debuild",
-		"--prepend-path", "/usr/local/bin",
-		"--preserve-envvar", "CONF_EXTRA_VERSION",
-		"--preserve-envvar", "UNENCRYPTED_PACKAGE",
-		"--preserve-envvar", "PACKAGE_ENCRYPTION_KEY",
-		"--preserve-envvar", "MSRUSTUP_PAT",
-		"--preserve-envvar", "MSCODEHUB_USERNAME",
-		"--preserve-envvar", "MSCODEHUB_PASSWORD",
+		"--preserve-env",
+		"--preserve-envvar", "PATH",
 		"-uc", "-us", "-B", "--lintian-opts", "--profile", "debian", "--allow-root",
 	)
 	debuild.Env = append(
@@ -260,6 +265,7 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	debuild.Stdout = os.Stdout
 	debuild.Stderr = os.Stderr
 
+	logger.Debug("Running debuild", "cmd", debuild.String())
 	if err := debuild.Run(); err != nil {
 		return fmt.Errorf("debuild: %w", err)
 	}
@@ -267,16 +273,16 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	return nil
 }
 
-func (p *DebianPackager) mkdir(opts pgxman.PackagerOptions) (workDir string, buildDir string, err error) {
-	workDir = filepath.Join(opts.WorkDir, "target")
-	buildDir = filepath.Join(workDir, "debian_build")
+func (p *DebianPackager) mkdir(opts pgxman.PackagerOptions) (targetDir string, buildDir string, err error) {
+	targetDir = filepath.Join(opts.WorkDir, "target")
+	buildDir = filepath.Join(targetDir, "debian_build")
 
 	err = os.MkdirAll(buildDir, 0755)
 	if err != nil {
 		return "", "", err
 	}
 
-	return workDir, buildDir, nil
+	return targetDir, buildDir, nil
 }
 
 type extensionData struct {

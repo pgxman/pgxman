@@ -70,6 +70,10 @@ type AptSource struct {
 	KeyContent    []byte
 }
 
+func (a AptSource) String() string {
+	return fmt.Sprintf("%s (%s)", a.Name, a.SourcePath)
+}
+
 type AptPackage struct {
 	Pkg  string
 	Opts []string

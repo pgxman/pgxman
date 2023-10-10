@@ -21,6 +21,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	buildWorkspaceDir = "/root/workspace"
+)
+
 type BuilderOptions struct {
 	ExtDir    string
 	Debug     bool
@@ -125,6 +129,8 @@ func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDi
 				"--set",
 				fmt.Sprintf("*.platform=%s", dockerPlatforms(ext)),
 				"--set",
+				fmt.Sprintf("*.args.WORKSPACE_DIR=%s", buildWorkspaceDir),
+				"--set",
 				"export.output=type=local,dest=./out",
 			},
 		)...,
@@ -213,6 +219,8 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 			fmt.Sprintf("%s.args.BUILD_IMAGE=%s", bakeTargetName, builder.Image),
 			"--set",
 			fmt.Sprintf("%s.args.BUILD_SHA=%s", bakeTargetName, sha),
+			"--set",
+			fmt.Sprintf("%s.args.WORKSPACE_DIR=%s", bakeTargetName, buildWorkspaceDir),
 		)
 
 		if b.BuilderOptions.Debug {
@@ -243,6 +251,10 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 		for _, cacheTo := range b.CacheTo {
 			args = append(args, "--set", fmt.Sprintf("*.cache-to=%s", cacheTo))
 		}
+	}
+
+	if b.Debug {
+		args = append(args, "--progress=plain")
 	}
 
 	args = append(args, targets...)
