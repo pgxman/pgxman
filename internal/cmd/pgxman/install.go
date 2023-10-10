@@ -127,7 +127,7 @@ func (e errInvalidExtensionFormat) Error() string {
 }
 
 var (
-	extRegexp = regexp.MustCompile(`^(.+)=(.+)@(.+)$`)
+	extRegexp = regexp.MustCompile(`^([^=\s]+)(?:=([^@\s]+))?@([^@\s]+)$`)
 )
 
 func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
