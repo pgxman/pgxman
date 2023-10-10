@@ -21,6 +21,7 @@ RUN set -eux; \
     gnupg2 \
     libcurl4-openssl-dev \
     libssl-dev \
+    locales \
     lsb-release \
     make \
     ninja-build \
@@ -33,13 +34,25 @@ RUN set -eux; \
     ; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
     apt-get update; \
+    apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
+    postgresql-all \
     postgresql-server-dev-all \
     ; \
     apt-get clean
 
+RUN set -eux; \
+    locale-gen en_US.UTF-8; \
+    echo "LC_ALL=en_US.UTF-8" >> /etc/environment; \
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen; \
+    echo "LANG=en_US.UTF-8" > /etc/locale.conf
+
 # patch pg_buildext to use multiple processors
 COPY patch/make_pg_buildext_parallel.patch /tmp
 RUN patch `which pg_buildext` < /tmp/make_pg_buildext_parallel.patch
+
+# rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
+ENV PATH=/root/.cargo/bin:$PATH
 
 COPY --from=pgxman /go/bin/* /usr/local/bin/

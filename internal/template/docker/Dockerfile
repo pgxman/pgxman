@@ -5,10 +5,12 @@ FROM $BUILD_IMAGE as build
 
 ARG BUILD_SHA
 ARG PGXMAN_PACK_ARGS=""
+ARG WORKSPACE_DIR
 
-COPY source.tar.gz /workspace/source.tar.gz
-COPY extension.yaml /workspace/extension.yaml
-WORKDIR /workspace
+RUN mkdir ${WORKSPACE_DIR}
+WORKDIR ${WORKSPACE_DIR}
+COPY source.tar.gz ${WORKSPACE_DIR}/source.tar.gz
+COPY extension.yaml ${WORKSPACE_DIR}/extension.yaml
 
 RUN pgxman-pack init $PGXMAN_PACK_ARGS
 RUN pgxman-pack pre $PGXMAN_PACK_ARGS
