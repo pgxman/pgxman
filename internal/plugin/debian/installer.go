@@ -53,6 +53,12 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 				if !ok {
 					return fmt.Errorf("extension %q not found", extToInstall.Name)
 				}
+
+				// if version is not specified, use the latest version
+				if extToInstall.Version == "" || extToInstall.Version == "latest" {
+					extToInstall.Version = installableExt.Version
+				}
+
 				if installableExt.Version != extToInstall.Version {
 					// TODO(owenthereal): validate old version when api is ready
 					i.Logger.Debug("extension version does not match the latest", "extension", extToInstall.Name, "version", extToInstall.Version, "latest", installableExt.Version)

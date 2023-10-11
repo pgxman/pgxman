@@ -51,12 +51,6 @@ func (e InstallExtension) Validate() error {
 		return fmt.Errorf("name or path is required")
 	}
 
-	if e.Name != "" {
-		if e.Version == "" {
-			return fmt.Errorf("version is required")
-		}
-	}
-
 	return nil
 }
 
