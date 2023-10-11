@@ -7,38 +7,44 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    autoconf \
-    binutils \
     build-essential \
     ca-certificates \
-    clang-15 \
-    cmake \
-    curl \
-    debhelper \
-    devscripts \
-    dh-make \
-    git \
     gnupg2 \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    locales \
-    lsb-release \
-    make \
-    ninja-build \
-    pkg-config \
     postgresql-common \
-    python3.11 \
-    python3.11-dev \
-    python3.11-venv \
-    sudo \
-    wget \
     ; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
+    autoconf \
+    binutils \
+    clang-14 \
+    cmake \
+    curl \
+    debhelper \
+    devscripts \
+    dh-make \
+    gcc \
+    git \
+    libclang-14-dev \
+    libcurl4-openssl-dev \
+    libpq-dev \
+    libssl-dev \
+    libz-dev \
+    llvm-14-dev \
+    locales \
+    lsb-release \
+    make \
+    ninja-build \
+    pkg-config \
     postgresql-all \
     postgresql-server-dev-all \
+    python3.11 \
+    python3.11-dev \
+    python3.11-venv \
+    sudo \
+    wget \
+    zlib1g-dev \
     ; \
     apt-get clean
 
