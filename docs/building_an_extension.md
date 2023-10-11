@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-* Docker
+- Docker
 
 ## Initialize an extension manifest file
 

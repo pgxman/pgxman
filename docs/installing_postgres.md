@@ -1,0 +1,34 @@
+# Installing Postgres
+
+You must either manually install your desired version of Postgres or use the
+default version provided by your distribution when installing extensions with
+pgxman.
+
+## Default versions
+
+* Debian Bookworm: Postgres 15
+* Ubuntu Jammy: Postgres 14
+
+## Automatic installation
+
+Because pgxman declares the appropriate version of `postgresql` as a dependency,
+pgxman will automatically try to install the specified version of Postgres when
+installing an extension. For example:
+
+```console
+pgxman install pgvector@15
+```
+
+In this case, the pgvector package for PG 15 will have `postgresql-15` package
+as a dependency, so it will try to install it if it is not already installed.
+
+## Installing other versions
+
+We highly recommend using the Postgres Global Developer Group (`pgdg`)
+Apt repository to install other versions. To add this repository, run:
+
+```console
+apt install -y postgresql-common gnupg2
+
+/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+```

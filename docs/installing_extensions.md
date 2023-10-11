@@ -2,15 +2,21 @@
 
 ## Individual Extension
 
-Installing an extension, such as the `pgvector` version `0.5.0` for PostgreSQL
+Installing an extension, such as `pgvector` for PostgreSQL
 15, is as simple as running:
+
+```console
+pgxman install pgvector@15
+```
+
+You can also specify the desired version of the extension by using `=version`:
 
 ```console
 pgxman install pgvector=0.5.0@15
 ```
 
-Both the version number of the extension and Postgres version must be
-specified.
+The Postgres version must always be specified by using `@`. Currently, Postgres
+13-16 are supported.
 
 As `pgxman` harnesses system's package manager for extension management,
 admin privilleges might be required. To install extensions with `sudo`,
