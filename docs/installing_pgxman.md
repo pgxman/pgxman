@@ -8,8 +8,9 @@ PGXMan is compatible with the following Debian-based Linux distributions:
 ### Prerequisites
 
 - Apt Package Manager
-- PostgreSQL
-- Docker (for `build`)
+- [PostgreSQL](installing_postgres.md)
+- If you plan on [building an extension](building_an_extension.md):
+  - Docker
 
 ### Installer
 
