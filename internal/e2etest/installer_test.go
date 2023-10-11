@@ -9,8 +9,6 @@ import (
 )
 
 func TestDebianInstaller_CLI(t *testing.T) {
-	assert := assert.New(t)
-
 	exts := []struct {
 		Extension string
 		Version   string
@@ -47,6 +45,7 @@ func TestDebianInstaller_CLI(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			assert := assert.New(t)
 			cmd := exec.Command(
 				"docker",
 				"run",
@@ -69,7 +68,7 @@ apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-pgxman install %s
+pgxman install %s --yes
 `, installArg),
 			)
 
