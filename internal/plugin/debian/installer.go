@@ -128,7 +128,7 @@ func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		switch strings.ToLower(scanner.Text()) {
-		case "y", "yes":
+		case "y", "yes", "":
 			return nil
 		default:
 			return fmt.Errorf("installation aborted")
