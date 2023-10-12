@@ -15,8 +15,20 @@ You can also specify the desired version of the extension by using `=version`:
 pgxman install pgvector=0.5.0@15
 ```
 
-The Postgres version must always be specified by using `@`. Currently, Postgres
-13-16 are supported.
+Both the version number of the extension and Postgres version are optional:
+
+* **Version**: If not provided, pgxman defaults to installing the latest version of the specified extension.
+* **PostgreSQL Version**: The Postgres version must always be specified by using `@`. Currently, Postgres
+13-16 are supported. If not provided, pgxman detects the version using the `pg_config` command. Should that fail,
+it fallbacks to the latest PostgreSQL version supported by pgxman.
+
+For instance, running:
+
+```console
+pgxman install pgvector
+```
+
+will install the latest `pgvector` compatible with your installed Postgres, or the latest supported Postgres version if detection is unsuccessful.
 
 As `pgxman` harnesses system's package manager for extension management,
 admin privilleges might be required. To install extensions with `sudo`,
