@@ -3,8 +3,10 @@ package e2etest
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 	"testing"
 
+	"github.com/pgxman/pgxman"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,18 +31,34 @@ func TestDebianInstaller_CLI(t *testing.T) {
 			Version:   "latest",
 			PGVersion: "15",
 		},
+		{
+			Extension: "pgvector",
+		},
+		{
+			Extension: "pgvector",
+			Version:   "latest",
+		},
 	}
 
 	for _, ext := range exts {
 		ext := ext
 
-		name := fmt.Sprintf("%s-%s-%s", ext.Extension, ext.Version, ext.PGVersion)
-		var installArg string
-		if ext.Version == "" {
-			installArg = fmt.Sprintf("%s@%s", ext.Extension, ext.PGVersion)
-		} else {
-			installArg = fmt.Sprintf("%s=%s@%s", ext.Extension, ext.Version, ext.PGVersion)
+		installArg := ext.Extension
+		if ext.Version != "" {
+			installArg += "=" + ext.Version
 		}
+		if ext.PGVersion != "" {
+			installArg += "@" + ext.PGVersion
+		}
+
+		name := strings.ReplaceAll(installArg, "=", "_")
+		name = strings.ReplaceAll(name, "@", "_")
+
+		pgv := ext.PGVersion
+		if pgv == "" {
+			pgv = string(pgxman.SupportedLatestPGVersion)
+		}
+		image := fmt.Sprintf("postgres:%s", pgv)
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -56,7 +74,7 @@ func TestDebianInstaller_CLI(t *testing.T) {
 				"DEBIAN_FRONTEND=noninteractive",
 				"-v",
 				flagPGXManBin+":/usr/local/bin/pgxman",
-				fmt.Sprintf("postgres:%s", ext.PGVersion),
+				image,
 				"bash",
 				"--noprofile",
 				"--norc",

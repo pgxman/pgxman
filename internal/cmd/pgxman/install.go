@@ -46,6 +46,14 @@ format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of 
       - "15"
   EOF
 
+  # Install the latest pgvector for the installed PostgreSQL.
+  # PostgreSQL version is detected from pg_config if it exists,
+  # Otherwise, the latest supported PostgreSQL version is used.
+  pgxman install pgvector
+
+  # Install the latest pgvector for PostgreSQL 14
+  pgxman install pgvector@14
+
   # Install pgvector 0.5.0 for PostgreSQL 14
   pgxman install pgvector=0.5.0@14
 
@@ -127,7 +135,7 @@ func (e errInvalidExtensionFormat) Error() string {
 }
 
 var (
-	extRegexp = regexp.MustCompile(`^([^=\s]+)(?:=([^@\s]+))?@([^@\s]+)$`)
+	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?(?:@(\S+))?$`)
 )
 
 func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
@@ -142,6 +150,10 @@ func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
 
 		if len(pgversions) == 0 {
 			return nil, errInvalidExtensionFormat{Arg: arg}
+		}
+
+		if len(pgversions) == 1 && pgversions[0] == "" {
+			pgversions = []string{string(pgxman.PGVersionUnknown)}
 		}
 
 		var (

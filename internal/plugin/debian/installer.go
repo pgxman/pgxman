@@ -5,11 +5,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
+	"golang.org/x/exp/slices"
 )
 
 type DebianInstaller struct {
@@ -32,7 +35,8 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 	}
 
 	var (
-		aptPkgs []AptPackage
+		aptPkgs          []AptPackage
+		defaultPGVersion = defaultPGVersion(ctx)
 	)
 	for _, extFile := range extFiles {
 		for _, extToInstall := range extFile.Extensions {
@@ -65,6 +69,10 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 				}
 
 				for _, pgv := range extFile.PGVersions {
+					if pgv == pgxman.PGVersionUnknown {
+						pgv = defaultPGVersion
+					}
+
 					aptPkgs = append(
 						aptPkgs,
 						AptPackage{
@@ -136,4 +144,28 @@ func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
 	}
 
 	return nil
+}
+
+var (
+	regexpPGBinDir = regexp.MustCompile(`^\/usr\/lib\/postgresql\/(\d+)\/bin$`)
+)
+
+func defaultPGVersion(ctx context.Context) pgxman.PGVersion {
+	cmd := exec.CommandContext(ctx, "pg_config", "--bindir")
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		return pgxman.SupportedLatestPGVersion
+	}
+
+	matches := regexpPGBinDir.FindStringSubmatch(string(b))
+	if len(matches) == 0 {
+		return pgxman.SupportedLatestPGVersion
+	}
+
+	def := pgxman.PGVersion(matches[1])
+	if !slices.Contains(pgxman.SupportedPGVersions, def) {
+		return pgxman.SupportedLatestPGVersion
+	}
+
+	return def
 }

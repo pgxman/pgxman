@@ -87,6 +87,34 @@ func Test_parseInstallExtension(t *testing.T) {
 			},
 		},
 		{
+			Name: "valid with only name",
+			Arg:  "pgvector",
+			GotExt: &pgxman.PGXManfile{
+				APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "",
+					},
+				},
+				PGVersions: []pgxman.PGVersion{pgxman.PGVersionUnknown},
+			},
+		},
+		{
+			Name: "valid with name and version",
+			Arg:  "pgvector=0.4.4",
+			GotExt: &pgxman.PGXManfile{
+				APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "0.4.4",
+					},
+				},
+				PGVersions: []pgxman.PGVersion{pgxman.PGVersionUnknown},
+			},
+		},
+		{
 			Name: "invalid",
 			Arg:  "pgvector=0.5.0@",
 			Err:  errInvalidExtensionFormat{Arg: "pgvector=0.5.0@"},
