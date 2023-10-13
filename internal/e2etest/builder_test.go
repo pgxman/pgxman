@@ -169,7 +169,7 @@ apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-cat <<EOS | pgxman install -f -
+cat <<EOS | pgxman bundle -f -
 apiVersion: v1
 extensions:
 - name: "pg_ivm"
