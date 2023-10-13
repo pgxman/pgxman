@@ -12,7 +12,7 @@ target "debian-bookworm" {
 
     contexts = {
         pgxman = "target:pgxman"
-        debian_base = "docker-image://postgres:15-bookworm"
+        debian_base = "docker-image://postgres:16-bookworm"
     }
 
     dockerfile = "docker/Dockerfile.debian"

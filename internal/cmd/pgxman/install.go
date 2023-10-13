@@ -115,6 +115,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			}
 
 			// print warning
+
+			return nil
 		}
 
 		return i.Install(

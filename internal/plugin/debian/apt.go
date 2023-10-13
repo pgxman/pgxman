@@ -192,12 +192,12 @@ func (a *Apt) aptInstallOrUpgrade(ctx context.Context, pkgs []AptPackage, upgrad
 
 		var opts []string
 		if upgrade {
-			opts = []string{"upgrade"}
+			opts = []string{"upgrade", "--allow-downgrades"}
 		} else {
 			opts = []string{"install"}
 		}
 
-		opts = append(opts, "-y", "--no-install-recommends")
+		opts = append(opts, "--yes", "--no-install-recommends")
 		opts = append(opts, pkg.Opts...)
 		opts = append(opts, pkg.Pkg)
 
