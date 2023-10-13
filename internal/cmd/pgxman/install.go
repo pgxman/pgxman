@@ -1,108 +1,100 @@
 package pgxman
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var (
-	flagInstallPGXManfile string
-	flagInstallYes        bool
-	flagInstallSudo       bool
+	flagInstallerYes  bool
+	flagInstallerSudo bool
 )
 
-func newInstallCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install PostgreSQL extensions",
-		Long: `Install PostgreSQL extensions from a pgxman.yaml file or from commandline arguments. To install from arguments, the
-format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated list of PostgreSQL versions.`,
-		Example: `  # Install extensions from the pgxman.yaml file in the current directory
-  pgxman install
-
-  # Install extensions by surpressing prompts
-  pgxman install -y
-
-  # Install extensions from the pgxman.yaml in a specific directory
-  pgxman install -f /PATH_TO/pgxman.yaml
-
-  # Install extensions from STDIN with the pgxman.yaml format
-  cat <<EOF | pgxman install -f -
-    apiVersion: v1
-    extensions:
-      - name: "pgvector"
-        version: "0.5.0"
-      - path: "/local/path/to/extension"
-    pgVersions:
-      - "14"
-      - "15"
-  EOF
-
-  # Install the latest pgvector for the installed PostgreSQL.
-  # PostgreSQL version is detected from pg_config if it exists,
-  # Otherwise, the latest supported PostgreSQL version is used.
-  pgxman install pgvector
-
-  # Install the latest pgvector for PostgreSQL 14
-  pgxman install pgvector@14
-
-  # Install pgvector 0.5.0 for PostgreSQL 14
-  pgxman install pgvector=0.5.0@14
-
-  # Install pgvector 0.5.0 for PostgreSQL 14 with sudo
-  pgxman install pgvector=0.5.0@14 --sudo
-
-  # Install pgvector 0.5.0 for PostgreSQL 14 & 15
-  pgxman install pgvector=0.5.0@14,15
-
-  # Install pgvector 0.5.0 for PostgreSQL 14 & 15, and postgis 3.3.3 for PostgreSQL 14
-  pgxman install pgvector=0.5.0@14,15 postgis=3.3.3@14
-
-  # Install from a local Debian package
-  pgxman install /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`,
-		RunE: runInstall,
+func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
+	action := "install"
+	if upgrade {
+		action = "upgrade"
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagInstallPGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
-	cmd.PersistentFlags().BoolVar(&flagInstallSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
-	cmd.PersistentFlags().BoolVarP(&flagInstallYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
+	exampleTmpl := `  # {{ title .Action }} the latest pgvector for the installed PostgreSQL.
+  # PostgreSQL version is detected from pg_config if it exists,
+  # Otherwise, the latest supported PostgreSQL version is used.
+  pgxman {{ .Action }} pgvector
+
+  # {{ title .Action }} the latest pgvector for PostgreSQL 14
+  pgxman {{ .Action }} pgvector@14
+
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14
+  pgxman {{ .Action }} pgvector=0.5.0@14
+
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 with sudo
+  pgxman {{ .Action }} pgvector=0.5.0@14 --sudo
+
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 & 15
+  pgxman {{ .Action }} pgvector=0.5.0@14,15
+
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 & 15, and postgis 3.3.3 for PostgreSQL 14
+  pgxman {{ .Action }} pgvector=0.5.0@14,15 postgis=3.3.3@14
+
+  # {{ title .Action }} from a local Debian package
+  pgxman {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
+
+	type data struct {
+		Action string
+	}
+
+	c := cases.Title(language.AmericanEnglish)
+	funcMap := template.FuncMap{
+		"title": c.String,
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if err := template.Must(template.New("").Funcs(funcMap).Parse(exampleTmpl)).Execute(buf, data{Action: action}); err != nil {
+		// impossible
+		panic(err.Error())
+	}
+
+	cmd := &cobra.Command{
+		Use:   action,
+		Short: c.String(action) + " PostgreSQL extensions",
+		Long: c.String(action) + ` PostgreSQL extensions from commandline arguments. The argument
+format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated
+list of PostgreSQL versions.`,
+		Example: buf.String(),
+		RunE:    runInstallOrUpgrade(upgrade),
+		Args:    cobra.MinimumNArgs(1),
+	}
+
+	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
+	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
 }
 
-func runInstall(c *cobra.Command, args []string) error {
-	i, err := plugin.GetInstaller()
-	if err != nil {
-		return errorsx.Pretty(err)
-	}
-
-	var result []pgxman.PGXManfile
-
-	if len(args) == 0 {
-		if flagInstallPGXManfile == "" {
-			pwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-
-			flagInstallPGXManfile = filepath.Join(pwd, "pgxman.yaml")
-		}
-
-		pgxmf, err := pgxman.ReadPGXManfile(flagInstallPGXManfile)
+func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) error {
+	return func(c *cobra.Command, args []string) error {
+		i, err := plugin.GetInstaller()
 		if err != nil {
-			return err
+			return errorsx.Pretty(err)
 		}
 
-		result = append(result, *pgxmf)
-	} else {
+		if len(args) == 0 {
+			return fmt.Errorf("need at least one extension")
+		}
+
+		var result []pgxman.PGXManfile
 		for _, arg := range args {
 			exts, err := parseInstallExtensions(arg)
 			if err != nil {
@@ -111,19 +103,27 @@ func runInstall(c *cobra.Command, args []string) error {
 
 			result = append(result, *exts)
 		}
+
+		if upgrade {
+			if err := i.Upgrade(
+				c.Context(),
+				result,
+				pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
+				pgxman.InstallOptWithSudo(flagInstallerSudo),
+			); err != nil {
+				return err
+			}
+
+			// print warning
+		}
+
+		return i.Install(
+			c.Context(),
+			result,
+			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
+			pgxman.InstallOptWithSudo(flagInstallerSudo),
+		)
 	}
-
-	if err := i.Install(
-		c.Context(),
-		result,
-		pgxman.InstallOptWithIgnorePrompt(flagInstallYes),
-		pgxman.InstallOptWithSudo(flagInstallSudo),
-	); err != nil {
-
-		return err
-	}
-
-	return nil
 }
 
 type errInvalidExtensionFormat struct {

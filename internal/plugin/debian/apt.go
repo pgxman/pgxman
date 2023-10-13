@@ -139,11 +139,21 @@ func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepositor
 }
 
 func (a *Apt) Install(ctx context.Context, pkgs []AptPackage, sources []AptSource) error {
-	a.Logger.Debug("Installing debian packages", "packages", pkgs, "sources", sources)
+	return a.installOrUpgrade(ctx, pkgs, sources, false)
+}
+
+func (a *Apt) Upgrade(ctx context.Context, pkgs []AptPackage, sources []AptSource) error {
+	return a.installOrUpgrade(ctx, pkgs, sources, true)
+}
+
+func (a *Apt) installOrUpgrade(ctx context.Context, pkgs []AptPackage, sources []AptSource, upgrade bool) error {
+	a.Logger.Debug("Installing or upgrading debian packages", "packages", pkgs, "sources", sources, "upgrade", upgrade)
+
 	if err := a.addSources(ctx, sources); err != nil {
 		return err
 	}
-	if err := a.aptInstall(ctx, pkgs); err != nil {
+
+	if err := a.aptInstallOrUpgrade(ctx, pkgs, upgrade); err != nil {
 		return err
 	}
 
@@ -176,16 +186,23 @@ func (a *Apt) addSources(ctx context.Context, files []AptSource) error {
 	return a.aptUpdate(ctx)
 }
 
-func (a *Apt) aptInstall(ctx context.Context, pkgs []AptPackage) error {
+func (a *Apt) aptInstallOrUpgrade(ctx context.Context, pkgs []AptPackage, upgrade bool) error {
 	for _, pkg := range pkgs {
-		a.Logger.Debug("Running apt install", "package", pkg)
+		a.Logger.Debug("Running apt install or upgrade", "package", pkg, "upgrade", upgrade)
 
-		opts := []string{"install", "-y", "--no-install-recommends"}
+		var opts []string
+		if upgrade {
+			opts = []string{"upgrade"}
+		} else {
+			opts = []string{"install"}
+		}
+
+		opts = append(opts, "-y", "--no-install-recommends")
 		opts = append(opts, pkg.Opts...)
 		opts = append(opts, pkg.Pkg)
 
 		if err := a.runAptCmd(ctx, opts...); err != nil {
-			return fmt.Errorf("apt install: %w", err)
+			return fmt.Errorf("apt install or upgrade: %w", err)
 		}
 	}
 
