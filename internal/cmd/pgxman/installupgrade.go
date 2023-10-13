@@ -114,7 +114,9 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 				return err
 			}
 
-			// print warning
+			fmt.Println(`After restarting PostgreSQL, update extensions in each database by running:
+
+  ALTER EXTENSION name UPDATE`)
 
 			return nil
 		}
