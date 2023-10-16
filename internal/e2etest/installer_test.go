@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDebianInstaller_CLI(t *testing.T) {
+func TestDebianInstaller_Install(t *testing.T) {
 	exts := []struct {
 		Extension string
 		Version   string
@@ -94,5 +94,42 @@ pgxman install %s --yes
 			assert.NoError(err, string(b))
 		})
 	}
+
+}
+
+func TestDebianInstaller_Upgrade(t *testing.T) {
+	assert := assert.New(t)
+	cmd := exec.Command(
+		"docker",
+		"run",
+		"--rm",
+		"--name",
+		"pgxman-upgrade",
+		"-e",
+		"DEBIAN_FRONTEND=noninteractive",
+		"-v",
+		flagPGXManBin+":/usr/local/bin/pgxman",
+		"postgres:16",
+		"bash",
+		"--noprofile",
+		"--norc",
+		"-eo",
+		"pipefail",
+		"-c",
+		`export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install ca-certificates gnupg2 postgresql-common git -y
+# make sure all pg versions are available
+sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+pgxman install pgvector=0.5.0 --yes
+# upgrade
+pgxman upgrade pgvector=0.5.1 --yes
+# downgrade
+pgxman upgrade pgvector=0.5.0 --yes
+`,
+	)
+
+	b, err := cmd.CombinedOutput()
+	assert.NoError(err, string(b))
 
 }

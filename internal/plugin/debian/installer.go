@@ -19,7 +19,15 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
+func (i *DebianInstaller) Upgrade(ctx context.Context, extFiles []pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, extFiles, true, optFuncs...)
+}
+
 func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, extFiles, false, optFuncs...)
+}
+
+func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman.PGXManfile, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	opts := pgxman.NewInstallerOptions(optFuncs)
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", extFiles, "options", opts)
 
@@ -107,17 +115,26 @@ func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManf
 	}
 
 	if !opts.IgnorePrompt {
-		if err := promptInstall(aptPkgs, aptSources); err != nil {
+		if err := promptInstallOrUpgrade(aptPkgs, aptSources, upgrade); err != nil {
 			return err
 		}
+	}
+
+	if upgrade {
+		return apt.Upgrade(ctx, aptPkgs, aptSources)
 	}
 
 	return apt.Install(ctx, aptPkgs, aptSources)
 }
 
-func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
+func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
+	action := "installed"
+	if upgrade {
+		action = "upgraded"
+	}
+
 	out := []string{
-		"The following Debian packages will be installed:",
+		fmt.Sprintf("The following Debian packages will be %s:", action),
 	}
 	for _, debPkg := range debPkgs {
 		out = append(out, "  "+debPkg.Pkg)
@@ -139,7 +156,7 @@ func promptInstall(debPkgs []AptPackage, sources []AptSource) error {
 		case "y", "yes", "":
 			return nil
 		default:
-			return fmt.Errorf("installation aborted")
+			return fmt.Errorf(action + " aborted")
 		}
 	}
 
