@@ -197,16 +197,19 @@ func (a *Apt) aptInstallOrUpgrade(ctx context.Context, pkgs []AptPackage, upgrad
 	return nil
 }
 
-func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrade bool) error {
+func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrade bool) (err error) {
 	a.Logger.Debug("Running apt install or upgrade", "package", pkg, "upgrade", upgrade)
 
 	// apt-mark hold and unhold don't work for a local package
 	if !pkg.IsLocal {
-		if err := a.aptMarkUnhold(ctx, pkg); err != nil {
+		err = errors.Join(err, a.aptMarkUnhold(ctx, pkg))
+		if err != nil {
 			return err
 		}
 
-		defer a.aptMarkHold(ctx, pkg)
+		defer func() {
+			err = errors.Join(err, a.aptMarkHold(ctx, pkg))
+		}()
 	}
 
 	var opts []string
@@ -220,11 +223,9 @@ func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrad
 	opts = append(opts, pkg.Opts...)
 	opts = append(opts, pkg.Pkg)
 
-	if err := a.runAptCmd(ctx, "apt", opts...); err != nil {
-		return fmt.Errorf("apt install or upgrade: %w", err)
-	}
+	err = errors.Join(err, a.runAptCmd(ctx, "apt", opts...))
 
-	return nil
+	return err
 }
 
 func (a *Apt) aptUpdate(ctx context.Context) error {
