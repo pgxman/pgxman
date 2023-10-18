@@ -4,7 +4,7 @@ We welcome contributions to pgxman. Here's what you'll need to get started.
 
 ## Install prerequisites
 
-* Go 1.21.0 or later. Install from homebrew, asdf, <https://go.dev/dl/>, etc.
+* Go 1.21 or later. Install from homebrew, asdf, <https://go.dev/dl/>, etc.
 * make
 * git
 * docker
