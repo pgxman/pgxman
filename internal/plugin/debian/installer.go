@@ -56,8 +56,9 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 				aptPkgs = append(
 					aptPkgs,
 					AptPackage{
-						Pkg:  extToInstall.Path,
-						Opts: extToInstall.Options,
+						Pkg:     extToInstall.Path,
+						IsLocal: true,
+						Opts:    extToInstall.Options,
 					},
 				)
 			} else {

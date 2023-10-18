@@ -77,8 +77,9 @@ func (a AptSource) String() string {
 }
 
 type AptPackage struct {
-	Pkg  string
-	Opts []string
+	Pkg     string
+	IsLocal bool
+	Opts    []string
 }
 
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
@@ -188,37 +189,62 @@ func (a *Apt) addSources(ctx context.Context, files []AptSource) error {
 
 func (a *Apt) aptInstallOrUpgrade(ctx context.Context, pkgs []AptPackage, upgrade bool) error {
 	for _, pkg := range pkgs {
-		a.Logger.Debug("Running apt install or upgrade", "package", pkg, "upgrade", upgrade)
-
-		var opts []string
-		if upgrade {
-			opts = []string{"upgrade", "--allow-downgrades"}
-		} else {
-			opts = []string{"install"}
-		}
-
-		opts = append(opts, "--yes", "--no-install-recommends")
-		opts = append(opts, pkg.Opts...)
-		opts = append(opts, pkg.Pkg)
-
-		if err := a.runAptCmd(ctx, opts...); err != nil {
-			return fmt.Errorf("apt install or upgrade: %w", err)
+		if err := a.aptInstallOrUpgradeOne(ctx, pkg, upgrade); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (a *Apt) aptUpdate(ctx context.Context) error {
-	return a.runAptCmd(ctx, "update")
+func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrade bool) error {
+	a.Logger.Debug("Running apt install or upgrade", "package", pkg, "upgrade", upgrade)
+
+	// apt-mark hold and unhold don't work for a local package
+	if !pkg.IsLocal {
+		if err := a.aptMarkUnhold(ctx, pkg); err != nil {
+			return err
+		}
+
+		defer a.aptMarkHold(ctx, pkg)
+	}
+
+	var opts []string
+	if upgrade {
+		opts = []string{"upgrade", "--allow-downgrades"}
+	} else {
+		opts = []string{"install"}
+	}
+
+	opts = append(opts, "--yes", "--no-install-recommends")
+	opts = append(opts, pkg.Opts...)
+	opts = append(opts, pkg.Pkg)
+
+	if err := a.runAptCmd(ctx, "apt", opts...); err != nil {
+		return fmt.Errorf("apt install or upgrade: %w", err)
+	}
+
+	return nil
 }
 
-func (a *Apt) runAptCmd(ctx context.Context, args ...string) error {
+func (a *Apt) aptUpdate(ctx context.Context) error {
+	return a.runAptCmd(ctx, "apt", "update")
+}
+
+func (a *Apt) aptMarkHold(ctx context.Context, pkg AptPackage) error {
+	return a.runAptCmd(ctx, "apt-mark", "hold", pkg.Pkg)
+}
+
+func (a *Apt) aptMarkUnhold(ctx context.Context, pkg AptPackage) error {
+	return a.runAptCmd(ctx, "apt-mark", "unhold", pkg.Pkg)
+}
+
+func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) error {
 	var c []string
 	if a.Sudo {
-		c = append(c, "sudo", "apt")
+		c = append(c, "sudo", command)
 	} else {
-		c = append(c, "apt")
+		c = append(c, command)
 	}
 	c = append(c, args...)
 
