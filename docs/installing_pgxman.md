@@ -17,7 +17,7 @@ PGXMan is compatible with the following Debian-based Linux distributions:
 The simplest method to install `pgxman` is through the installer script:
 
 ```console
-curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
+curl -sfL https://pgxman.com/install | sh -
 ```
 
 ### Manual Download
