@@ -19,7 +19,7 @@ For more information about pgxman, see our [full documentation](docs/README.md).
 Run:
 
 ```console
-curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
+curl -sfL https://pgxman.com/install | sh -
 ```
 
 Or download the latest [compiled binaries](https://github.com/pgxman/release/releases/) and add them to your executable path.

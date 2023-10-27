@@ -87,7 +87,7 @@ FROM postgres:15-bookworm
 
 RUN apt-get update && \
   apt-get install -y curl && \
-  curl -sfL https://github.com/pgxman/release/releases/latest/download/install.sh | sh -
+  curl -sfL https://pgxman.com/install | sh -
 
 COPY out/ /pgxman/out/
 COPY pgxman.yaml /pgxman/pgxman.yaml
