@@ -17,7 +17,7 @@ func Test_exitingAptSourceURIs(t *testing.T) {
 		filepath.Join(sourceDir, "pgxman-core.sources"),
 		[]byte(`
 Types: deb
-URIs: https://pgxman-buildkit-debian.s3.amazonaws.com
+URIs: https://apt.pgxman.com
 Suites: stable
 Components: main
 Signed-By: /usr/share/keyrings/pgxman.gpg
