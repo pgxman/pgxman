@@ -23,7 +23,7 @@ const (
 	aptSourceDir   = "/etc/apt/sources.list.d"
 
 	coreAptSourceGPGKeyURL = "https://pgxman.github.io/buildkit/pgxman.gpg"
-	coreAptSourceURL       = "https://pgxman-buildkit-debian.s3.amazonaws.com"
+	coreAptSourceURL       = "https://apt.pgxman.com"
 )
 
 var (
