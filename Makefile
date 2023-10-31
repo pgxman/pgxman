@@ -3,10 +3,13 @@ SHELL=/bin/bash -eo pipefail
 BIN_DIR ?= $(CURDIR)/bin
 export PATH := $(BIN_DIR):$(PATH)
 
-all: build
+all: gen build
 
 .PHONY: tools
 tools:
+	rm -rf $(BIN_DIR) && mkdir -p $(BIN_DIR)
+	# go tools
+	GOBIN=$(TOOLS_DIR) go generate -tags tools tools.go
 	# goreleaser
 	GOBIN=$(BIN_DIR) go install github.com/goreleaser/goreleaser@latest
 
@@ -23,6 +26,14 @@ GO_TEST_FLAGS ?=
 .PHONY: test
 test:
 	go test $$(go list ./... | grep -v e2etest) $(GO_TEST_FLAGS) -count=1 -race -v
+
+.PHONY: gen
+gen:
+	go generate ./...
+
+.PHONY: cp_registry_spec
+cp_registry_spec:
+	cp ../registry/oapi/oapi.yaml ./oapi/oapi.yaml
 
 DEBIAN_BOOKWORM_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
 UBUNTU_JAMMY_IMAGE ?= ghcr.io/pgxman/builder/ubuntu/jammy:main
