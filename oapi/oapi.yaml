@@ -1,0 +1,565 @@
+openapi: 3.0.3
+info:
+  title: PGXMan Registry API
+  description: PGXMan Registry API
+  contact:
+    name: Owen Ou
+    email: o@hydra.so
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/v1
+    description: Local development server
+  - url: https://api.pgxman.com/v1
+    description: Production server
+paths:
+  /extensions:
+    get:
+      summary: List extensions by filtering with a given query
+      description: List extensions by filtering with a given query
+      operationId: list_extensions
+      parameters:
+        - name: term
+          in: query
+          description: name and description to filter by
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: featured
+          in: query
+          description: featured extensions
+          required: false
+          style: form
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description: maximum number of results to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Extensions"
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      summary: Publish an extension
+      description: Publish an extension
+      operationId: publish_extension
+      requestBody:
+        description: Extension to publish
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishExtension"
+      responses:
+        "200":
+          description: Published Extension response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Extension"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - basicAuth: []
+  /extensions/{slug}:
+    get:
+      summary: Find extension by slug
+      operationId: find_extension
+      parameters:
+        - name: slug
+          in: path
+          description: Slug of the extension. This can be the extension name or the extension uuid
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-zA-Z0-9-_]+$"
+            minLength: 1
+      responses:
+        "200":
+          description: Extension response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Extension"
+        "404":
+          description: Extension not found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /extensions/{slug}/versions:
+    get:
+      summary: List all versions for an extension
+      operationId: list_extension_versions
+      parameters:
+        - name: slug
+          in: path
+          description: Slug of the extension. This is the buildkit name
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-zA-Z0-9-]+$"
+            minLength: 0
+      responses:
+        "200":
+          description: Extension response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionVersions"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /providers:
+    get:
+      summary: List all providers
+      operationId: list_providers
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Providers"
+        "404":
+          description: Provider not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /providers/{slug}/extensions:
+    get:
+      summary: List extensions for a provider
+      operationId: list_provider_extensions
+      parameters:
+        - name: slug
+          in: path
+          description: Provider slug
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-zA-Z0-9-]+$"
+            minLength: 0
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Providers"
+        "404":
+          description: Providers not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    PublishExtension:
+      allOf:
+        - $ref: "#/components/schemas/CommonExtension"
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              $ref: "#/components/schemas/ExtensionName"
+            make_latest:
+              type: boolean
+              description: Whether to make this version the latest version of the extension
+              default: true
+              x-go-type-skip-optional-pointer: true
+            keywords:
+              $ref: "#/components/schemas/Keywords"
+    BaseExtension:
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: "#/components/schemas/uuid"
+        name:
+          type: string
+        keywords:
+          $ref: "#/components/schemas/Keywords"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    Extensions:
+      properties:
+        extensions:
+          type: array
+          description: a list of extensions
+          items:
+            $ref: "#/components/schemas/Extension"
+          minItems: 0
+          x-go-type-skip-optional-pointer: true
+    Extension:
+      allOf:
+        - $ref: "#/components/schemas/BaseExtension"
+        - $ref: "#/components/schemas/CommonExtension"
+    ExtensionVersions:
+      allOf:
+        - $ref: "#/components/schemas/BaseExtension"
+        - type: object
+          properties:
+            versions:
+              type: array
+              description: a list of versions for the extension sorted by created_at descending
+              items:
+                $ref: "#/components/schemas/Version"
+              minItems: 0
+    CommonExtension:
+      required:
+        - version
+        - source
+        - repository
+        - maintainers
+        - platforms
+      properties:
+        version:
+          $ref: "#/components/schemas/VersionCode"
+        maintainers:
+          $ref: "#/components/schemas/Maintainers"
+        source:
+          $ref: "#/components/schemas/Source"
+        repository:
+          $ref: "#/components/schemas/Repository"
+        license:
+          $ref: "#/components/schemas/License"
+        homepage:
+          $ref: "#/components/schemas/Homepage"
+        description:
+          $ref: "#/components/schemas/Description"
+        readme:
+          $ref: "#/components/schemas/Readme"
+        platforms:
+          $ref: "#/components/schemas/Platforms"
+    Version:
+      required:
+        - id
+        - created_at
+      allOf:
+        - $ref: "#/components/schemas/CommonExtension"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/uuid"
+            created_at:
+              $ref: "#/components/schemas/Timestamp"
+    uuid:
+      x-go-type: uuid.UUID
+      x-go-type-import:
+        path: github.com/google/uuid
+      example: 123e4567-e89b-12d3-a456-426614174000
+    Timestamp:
+      type: string
+      format: date-time
+      example: "2021-10-17T00:00:00Z"
+    ExtensionName:
+      type: string
+      pattern: "^[a-zA-Z0-9_-]+$"
+      example: pgvector
+      x-oapi-codegen-extra-tags:
+        validate: required,urlsafe
+    VersionCode:
+      type: string
+      example: 0.5.1
+      x-oapi-codegen-extra-tags:
+        validate: semver
+    Keywords:
+      type: array
+      description: keywords
+      items:
+        $ref: "#/components/schemas/Keyword"
+      minItems: 0
+      example: ["vector", "similarity", "search"]
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: gte=0,dive,required
+    Keyword:
+      type: string
+      x-oapi-codegen-extra-tags:
+        validate: required
+    Maintainers:
+      type: array
+      items:
+        $ref: "#/components/schemas/Maintainer"
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: gt=0,dive,required
+    Maintainer:
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          example: Owen
+          x-oapi-codegen-extra-tags:
+            validate: required
+        email:
+          type: string
+          format: email
+          example: owen@example.com
+          x-oapi-codegen-extra-tags:
+            validate: required,email
+    Homepage:
+      type: string
+      example: https://github.com/pgvector/pgvector
+      x-go-type-skip-optional-pointer: true
+    PgVersions:
+      type: array
+      minItems: 1
+      items:
+        $ref: "#/components/schemas/PgVersion"
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: required,dive,oneof=pg_13 pg_14 pg_15 pg_16
+    PgVersion:
+      type: string
+      enum: ["pg_13", "pg_14", "pg_15", "pg_16"]
+    License:
+      type: string
+      description: License under which the extension is distributed. The license must be a valid SPDX license identifier.
+      example: PostgreSQL
+      x-go-type-skip-optional-pointer: true
+    Description:
+      type: string
+      example: Open-source vector similarity search for Postgres.
+      x-go-type-skip-optional-pointer: true
+    Readme:
+      type: string
+      example: |
+        A README
+      x-go-type-skip-optional-pointer: true
+    Architectures:
+      type: array
+      items:
+        $ref: "#/components/schemas/Architecture"
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: required,dive,oneof=amd64 arm64
+    Architecture:
+      type: string
+      enum: ["amd64", "arm64"]
+    Source:
+      type: string
+      example: https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.1.tar.gz
+      x-oapi-codegen-extra-tags:
+        validate: required,url,extension_source
+    Repository:
+      type: string
+      example: https://github.com/pgvector/pgvector
+      x-oapi-codegen-extra-tags:
+        validate: required,url
+    AptRepositories:
+      type: array
+      items:
+        $ref: "#/components/schemas/AptRepository"
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: gte=0,dive
+    AptRepositoryType:
+      type: string
+      enum: ["deb", "deb_src"]
+      example: ["deb"]
+    AptRepository:
+      required:
+        - id
+        - types
+        - uris
+        - suites
+        - components
+        - signed_key
+      properties:
+        id:
+          type: string
+          example: "apache-arrow-debian-bookworm"
+          x-oapi-codegen-extra-tags:
+            validate: required
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/AptRepositoryType"
+          example: ["deb", "deb_src"]
+          x-oapi-codegen-extra-tags:
+            validate: required,dive,oneof=deb deb_src
+        uris:
+          type: array
+          items:
+            type: string
+            format: url
+          example: ["https://apache.jfrog.io/artifactory/arrow/debian/"]
+          x-oapi-codegen-extra-tags:
+            validate: required,dive,url
+        suites:
+          type: array
+          items:
+            type: string
+          example: ["bookworm"]
+          x-oapi-codegen-extra-tags:
+            validate: required,dive,required
+        components:
+          type: array
+          items:
+            type: string
+          example: ["main"]
+          x-oapi-codegen-extra-tags:
+            validate: required,dive,required
+        signed_key:
+          $ref: "#/components/schemas/SignedKey"
+    SignedKey:
+      required:
+        - url
+        - format
+      properties:
+        url:
+          type: string
+          format: url
+          example: "https://downloads.apache.org/arrow/KEYS"
+          x-oapi-codegen-extra-tags:
+            validate: required,url
+        format:
+          type: string
+          enum: ["gpg", "asc"]
+          example: "asc"
+          x-oapi-codegen-extra-tags:
+            validate: required,oneof=gpg asc
+    Platforms:
+      type: array
+      items:
+        $ref: "#/components/schemas/Platform"
+      x-oapi-codegen-extra-tags:
+        validate: required,min=1,dive
+    Platform:
+      required:
+        - os
+        - pg_versions
+        - architectures
+      properties:
+        os:
+          type: string
+          enum: ["debian_bookworm", "ubuntu_jammy"]
+          x-oapi-codegen-extra-tags:
+            validate: required,oneof=debian_bookworm ubuntu_jammy
+        run_dependencies:
+          $ref: "#/components/schemas/Dependencies"
+        build_dependencies:
+          $ref: "#/components/schemas/Dependencies"
+        apt_repositories:
+          $ref: "#/components/schemas/AptRepositories"
+        pg_versions:
+          $ref: "#/components/schemas/PgVersions"
+        architectures:
+          $ref: "#/components/schemas/Architectures"
+    Dependencies:
+      type: array
+      items:
+        $ref: "#/components/schemas/Dependency"
+      minItems: 0
+      x-go-type-skip-optional-pointer: true
+    Dependency:
+      type: string
+      example: "libcurl"
+    Providers:
+      properties:
+        providers:
+          type: array
+          description: a list of providers
+          items:
+            $ref: "#/components/schemas/Provider"
+    Provider:
+      properties:
+        id:
+          type: string
+          example: aws
+        name:
+          type: string
+          example: AWS
+        description:
+          type: string
+          example: Amazon Web Services
+        logo:
+          type: string
+          format: url
+          example: https://avatars.githubusercontent.com/u/2232217?s=200&v=4
+        homepage:
+          type: string
+          format: url
+          example: https://aws.amazon.com/
+        extensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Extension"
+          minItems: 0
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "ERROR_CODE"
+        message:
+          type: string
+          description: Error message
+          example: "An error message"
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic

@@ -52,6 +52,7 @@ type Extension struct {
 	APIVersion  string       `json:"apiVersion"`
 	Name        string       `json:"name"`
 	Source      string       `json:"source"`
+	Repository  string       `json:"repository"`
 	Version     string       `json:"version"`
 	PGVersions  []PGVersion  `json:"pgVersions"`
 	Build       Build        `json:"build"`
@@ -91,6 +92,10 @@ func (ext Extension) Validate() error {
 		return fmt.Errorf("name is required")
 	}
 
+	if ext.Repository == "" {
+		return fmt.Errorf("repository is required")
+	}
+
 	_, err := ext.ParseSource()
 	if err != nil {
 		return fmt.Errorf("invalid source: %w", err)
@@ -99,8 +104,7 @@ func (ext Extension) Validate() error {
 	if ext.Version == "" {
 		return fmt.Errorf("version is required")
 	}
-
-	_, err = semver.NewVersion(ext.Version)
+	_, err = semver.StrictNewVersion(ext.Version)
 	if err != nil {
 		return fmt.Errorf("invalid semantic version: %w", err)
 	}
@@ -172,7 +176,7 @@ type ExtensionSource interface {
 
 func (ext Extension) ParseSource() (ExtensionSource, error) {
 	if ext.Source == "" {
-		return &emptyExtensionSource{}, nil
+		return nil, fmt.Errorf("source is required")
 	}
 
 	u, err := url.ParseRequestURI(ext.Source)
@@ -561,18 +565,6 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 	}
 
 	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
-}
-
-type emptyExtensionSource struct {
-}
-
-func (s *emptyExtensionSource) Archive(dst string) error {
-	dir, err := os.MkdirTemp("", "source")
-	if err != nil {
-		return err
-	}
-
-	return archiver.Archive([]string{dir}, dst)
 }
 
 type fileExtensionSource struct {
