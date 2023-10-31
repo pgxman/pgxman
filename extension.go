@@ -176,7 +176,7 @@ type ExtensionSource interface {
 
 func (ext Extension) ParseSource() (ExtensionSource, error) {
 	if ext.Source == "" {
-		return &emptyExtensionSource{}, nil
+		return nil, fmt.Errorf("source is required")
 	}
 
 	u, err := url.ParseRequestURI(ext.Source)

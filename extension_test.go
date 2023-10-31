@@ -30,13 +30,6 @@ func TestExtension_ParseSource(t *testing.T) {
 			wantExt: &fileExtensionSource{Dir: "/tmp/test.tar.gz"},
 		},
 		{
-			name: "empty source",
-			ext: Extension{
-				Source: "",
-			},
-			wantExt: &emptyExtensionSource{},
-		},
-		{
 			name: "invalid source",
 			ext: Extension{
 				Source: "ftp://example.com/test.tar.gz",
