@@ -567,18 +567,6 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
 }
 
-type emptyExtensionSource struct {
-}
-
-func (s *emptyExtensionSource) Archive(dst string) error {
-	dir, err := os.MkdirTemp("", "source")
-	if err != nil {
-		return err
-	}
-
-	return archiver.Archive([]string{dir}, dst)
-}
-
 type fileExtensionSource struct {
 	Dir string
 }
