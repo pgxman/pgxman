@@ -52,7 +52,7 @@ func runPublish(c *cobra.Command, args []string) error {
 
 		pext := convertPublishExtension(ext)
 
-		logger.Debug("publishing extension start", "ext", pext)
+		logger.Debug("Publish extension start", "ext", pext)
 		resp, err := client.PublishExtensionWithResponse(
 			c.Context(),
 			pext,
@@ -60,17 +60,17 @@ func runPublish(c *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("publishing extension end", "response", resp.Body)
+		logger.Debug("Publish extension end", "response", resp.Body)
 
 		var errMsg string
+		if resp.HTTPResponse.StatusCode >= 300 {
+			errMsg = strings.TrimSpace(string(resp.Body))
+		}
 		if resp.JSON400 != nil {
 			errMsg = resp.JSON400.Message
 		}
 		if resp.JSON500 != nil {
 			errMsg = resp.JSON500.Message
-		}
-		if resp.HTTPResponse.StatusCode >= 300 {
-			errMsg = strings.TrimSpace(string(resp.Body))
 		}
 		if errMsg != "" {
 			return fmt.Errorf("error publishing %s: %s", ext.Name, errMsg)
