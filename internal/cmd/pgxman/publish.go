@@ -69,7 +69,7 @@ func runPublish(c *cobra.Command, args []string) error {
 		if resp.JSON500 != nil {
 			errMsg = resp.JSON500.Message
 		}
-		if resp.HTTPResponse.StatusCode == http.StatusUnauthorized {
+		if resp.HTTPResponse.StatusCode >= 300 {
 			errMsg = strings.TrimSpace(string(resp.Body))
 		}
 		if errMsg != "" {
@@ -124,7 +124,7 @@ func convertPublishExtension(ext pgxman.Extension) oapi.PublishExtension {
 		for _, r := range v.AptRepositories {
 			var types []oapi.AptRepositoryType
 			for _, t := range r.Types {
-				types = append(types, oapi.AptRepositoryType(t))
+				types = append(types, oapi.AptRepositoryType(strings.ReplaceAll(string(t), "-", "_")))
 			}
 
 			aptRepos = append(aptRepos, oapi.AptRepository{

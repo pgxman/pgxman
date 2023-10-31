@@ -353,10 +353,10 @@ func (e extensionData) expandDeps(deps []string) []string {
 	for _, dep := range deps {
 		if strings.HasPrefix(dep, extensionDepPrefix) {
 			dep = strings.TrimPrefix(dep, extensionDepPrefix)
-			expandedDeps = append(expandedDeps, extensionDebPkg("PGVERSION", dep))
-		} else {
-			expandedDeps = append(expandedDeps, dep)
+			dep = extensionDebPkg("PGVERSION", dep)
 		}
+
+		expandedDeps = append(expandedDeps, dep)
 	}
 
 	return expandedDeps
