@@ -27,10 +27,24 @@ install_pgxman() {
     local _url="${PGXMAN_DOWNLOAD_URL}/pgxman_linux_${_arch}.deb"
     local _file="/tmp/pgxman_linux_${_arch}.deb"
 
+    SUDO=""
+    if [ "$UID" != "0" ]; then
+        if
+            whereis sudo &
+            >/dev/null
+        then
+            SUDO="sudo"
+            exit
+        else
+            echo "Sudo not found. You will need to run this script as root."
+            exit
+        fi
+    fi
+
     echo "Installing PGXMan for ${_arch}..."
     ensure downloader "$_url" "$_file"
-    ensure apt update
-    ensure apt install -y "$_file"
+    ensure ${SUDO} apt update
+    ensure ${SUDO} apt install -y "$_file"
 }
 
 install_extensions() {
