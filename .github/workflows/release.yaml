@@ -22,7 +22,7 @@ jobs:
           # tag > commit
           echo "build_version=$(git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: v1.21.2
           args: release --clean
