@@ -64,7 +64,7 @@ jobs:
         with:
           driver-opts: network=host
       - name: Build and push to local registry
-        uses: docker/bake-action@v3
+        uses: docker/bake-action@v4
         with:
           push: true
           pull: true
