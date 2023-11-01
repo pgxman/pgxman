@@ -34,7 +34,6 @@ install_pgxman() {
             >/dev/null
         then
             SUDO="sudo"
-            exit
         else
             echo "Sudo not found. You will need to run this script as root."
             exit
