@@ -28,7 +28,7 @@ install_pgxman() {
     local _file="/tmp/pgxman_linux_${_arch}.deb"
 
     SUDO=""
-    if [ "$UID" != "0" ]; then
+    if [ "$(id -u)" != "0" ]; then
         if
             whereis sudo &
             >/dev/null
