@@ -30,7 +30,7 @@ jobs:
           echo "build_version=$(git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
           echo "image_name=$(echo "${{ matrix.target }}" | sed -r 's/[-]+/\//g')" >> "$GITHUB_ENV"
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Set up Docker QEMU
         uses: docker/setup-qemu-action@v2
         with:
