@@ -104,7 +104,7 @@ docker_push_runner: docker_build_runner
 installer_test: goreleaser
 	docker build \
 		--rm \
-		-f $(PWD)/docker/Dockerfile.installer_test \
+		-f $(PWD)/dockerfiles/test/Dockerfile.installer_test \
 		.
 
 .PHONY: goreleaser
