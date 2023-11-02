@@ -60,8 +60,8 @@ vet:
 		golangci-lint run --timeout 5m -v
 
 DOCKER_ARGS ?=
-.PHONY: docker_build
-docker_build:
+.PHONY: docker_build_builder
+docker_build_builder:
 	docker buildx bake builder \
 		-f $(PWD)/dockerfiles/docker-bake.hcl \
 		--set builder-debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
@@ -69,13 +69,13 @@ docker_build:
 		--pull \
 		$(DOCKER_ARGS)
 
-.PHONY: docker_load
-docker_load: DOCKER_ARGS=--load
-docker_load: docker_build
+.PHONY: docker_load_builder
+docker_load_builder: DOCKER_ARGS=--load
+docker_load_builder: docker_build_builder
 
-.PHONY: docker_push
-docker_push: DOCKER_ARGS=--push
-docker_push: docker_build
+.PHONY: docker_push_builder
+docker_push_builder: DOCKER_ARGS=--push
+docker_push_builder: docker_build_builder
 
 RUNNER_POSTGRES_16_IMAGE ?= ghcr.io/pgxman/runner/postgres/16:main
 RUNNER_POSTGRES_15_IMAGE ?= ghcr.io/pgxman/runner/postgres/15:main
