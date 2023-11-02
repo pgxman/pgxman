@@ -15,7 +15,7 @@ target "debian-bookworm" {
         debian_base = "docker-image://postgres:16-bookworm"
     }
 
-    dockerfile = "docker/Dockerfile.debian"
+    dockerfile = "dockerfiles/builder/Dockerfile.debian"
 }
 
 target "ubuntu-jammy" {
@@ -26,11 +26,11 @@ target "ubuntu-jammy" {
         debian_base = "docker-image://ubuntu:jammy"
     }
 
-    dockerfile = "docker/Dockerfile.debian"
+    dockerfile = "dockerfiles/builder/Dockerfile.debian"
 }
 
 target "pgxman" {
-    dockerfile = "docker/Dockerfile.pgxman"
+    dockerfile = "dockerfiles/shared/Dockerfile.pgxman"
     target = "gobuild"
 
     args = {

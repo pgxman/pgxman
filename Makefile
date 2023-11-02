@@ -77,6 +77,29 @@ docker_load: docker_build
 docker_push: DOCKER_ARGS=--push
 docker_push: docker_build
 
+RUNNER_16_IMAGE ?= ghcr.io/pgxman/runner/postgres:16
+RUNNER_15_IMAGE ?= ghcr.io/pgxman/runner/postgres:15
+RUNNER_14_IMAGE ?= ghcr.io/pgxman/runner/postgres:14
+RUNNER_13_IMAGE ?= ghcr.io/pgxman/runner/postgres:13
+.PHONY: docker_build_runner
+docker_build_runner:
+	docker buildx bake \
+		-f $(PWD)/dockerfiles/runner/docker-bake.hcl \
+		--set runner-16.tags=$(RUNNER_16_IMAGE) \
+		--set runner-15.tags=$(RUNNER_15_IMAGE) \
+		--set runner-14.tags=$(RUNNER_14_IMAGE) \
+		--set runner-13.tags=$(RUNNER_13_IMAGE) \
+		--pull \
+		$(DOCKER_ARGS)
+
+.PHONY: docker_load_runner
+docker_load_runner: DOCKER_ARGS=--load
+docker_load_runner: docker_build_runner
+
+.PHONY: docker_push_runner
+docker_push_runner: DOCKER_ARGS=--push
+docker_push_runner: docker_build_runner
+
 .PHONY: installer_test
 installer_test: goreleaser
 	docker build \
