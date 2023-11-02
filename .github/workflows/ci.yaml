@@ -69,15 +69,15 @@ jobs:
           push: true
           pull: true
           files: |
-            docker/docker-bake.hcl
+            dockerfiles/docker-bake.hcl
           targets: |
-            default
+            builder
           set: |
             *.platform=linux/amd64
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            debian-bookworm.tags=${{ env.DEBIAN_BOOKWORM_IMAGE }}
-            ubuntu-jammy.tags=${{ env.UBUNTU_JAMMY_IMAGE }}
+            builder-debian-bookworm.tags=${{ env.DEBIAN_BOOKWORM_IMAGE }}
+            builder-ubuntu-jammy.tags=${{ env.UBUNTU_JAMMY_IMAGE }}
       - name: Run e2etest
         run: |
           make e2etest

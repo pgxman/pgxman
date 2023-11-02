@@ -6,9 +6,14 @@ on:
     tags:
       - "v*"
 jobs:
+  docker:
+    name: Docker
+    uses: ./.github/workflows/docker.yaml
+    secrets: inherit
   goreleaser:
     name: GoReleaser
     runs-on: ubuntu-latest
+    needs: [docker]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -35,8 +40,4 @@ jobs:
           GITHUB_TOKEN: ${{secrets.CI_GITHUB_TOKEN}}
           GORELEASER_CURRENT_TAG: ${{ env.build_version }}
         run: |
-          gh release upload ${GORELEASER_CURRENT_TAG} $PWD/install.sh -R pgxman/release --clobber
-  docker:
-    name: Docker
-    uses: ./.github/workflows/docker.yaml
-    secrets: inherit
+          gh release upload "${GORELEASER_CURRENT_TAG}" "$PWD/install.sh" -R pgxman/release --clobber

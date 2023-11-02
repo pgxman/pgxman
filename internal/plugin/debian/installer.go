@@ -165,17 +165,17 @@ func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade b
 }
 
 var (
-	regexpPGBinDir = regexp.MustCompile(`^\/usr\/lib\/postgresql\/(\d+)\/bin$`)
+	regexpPGVersion = regexp.MustCompile(`^PostgreSQL (\d+)`)
 )
 
 func defaultPGVersion(ctx context.Context) pgxman.PGVersion {
-	cmd := exec.CommandContext(ctx, "pg_config", "--bindir")
+	cmd := exec.CommandContext(ctx, "pg_config", "--version")
 	b, err := cmd.CombinedOutput()
 	if err != nil {
 		return pgxman.SupportedLatestPGVersion
 	}
 
-	matches := regexpPGBinDir.FindStringSubmatch(string(b))
+	matches := regexpPGVersion.FindStringSubmatch(string(b))
 	if len(matches) == 0 {
 		return pgxman.SupportedLatestPGVersion
 	}
