@@ -4,10 +4,34 @@ variable "BUILD_VERSION" {
 }
 
 group "default" {
-    targets = ["runner-16", "runner-15", "runner-14", "runner-13"]
+    targets = ["builder", "runner"]
 }
 
-target "runner-16" {
+group "builder" {
+    targets = ["builder-debian-bookworm", "builder-ubuntu-jammy"]
+}
+
+group "runner" {
+    targets = ["runner-postgres-16", "runner-postgres-15", "runner-postgres-14", "runner-postgres-13"]
+}
+
+target "builder-debian-bookworm" {
+    inherits = ["docker-metadata-action", "base-builder-debian"]
+
+    contexts = {
+        debian_base = "docker-image://postgres:16-bookworm"
+    }
+}
+
+target "builder-ubuntu-jammy" {
+    inherits = ["docker-metadata-action", "base-builder-debian"]
+
+    contexts = {
+        debian_base = "docker-image://ubuntu:jammy"
+    }
+}
+
+target "runner-postgres-16" {
     inherits = ["docker-metadata-action", "base-runner"]
 
     contexts = {
@@ -15,7 +39,7 @@ target "runner-16" {
     }
 }
 
-target "runner-15" {
+target "runner-postgres-15" {
     inherits = ["docker-metadata-action", "base-runner"]
 
     contexts = {
@@ -23,7 +47,7 @@ target "runner-15" {
     }
 }
 
-target "runner-14" {
+target "runner-postgres-14" {
     inherits = ["docker-metadata-action", "base-runner"]
 
     contexts = {
@@ -31,7 +55,7 @@ target "runner-14" {
     }
 }
 
-target "runner-13" {
+target "runner-postgres-13" {
     inherits = ["docker-metadata-action", "base-runner"]
 
     contexts = {
@@ -48,12 +72,29 @@ target "pgxman" {
     }
 }
 
+target "base-builder-debian" {
+    contexts = {
+        pgxman = "target:pgxman"
+    }
+
+    dockerfile = "dockerfiles/builder/Dockerfile.debian"
+}
+
 target "base-runner" {
     contexts = {
         pgxman = "target:pgxman"
     }
 
     dockerfile = "dockerfiles/runner/Dockerfile.postgres"
+}
+
+target "pgxman" {
+    dockerfile = "dockerfiles/shared/Dockerfile.pgxman"
+    target = "gobuild"
+
+    args = {
+        BUILD_VERSION = "${BUILD_VERSION}"
+    }
 }
 
 # Inherit this target for CI use

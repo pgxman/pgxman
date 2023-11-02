@@ -62,10 +62,10 @@ vet:
 DOCKER_ARGS ?=
 .PHONY: docker_build
 docker_build:
-	docker buildx bake \
-		-f $(PWD)/dockerfiles/builder/docker-bake.hcl \
-		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
-		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
+	docker buildx bake builder \
+		-f $(PWD)/dockerfiles/docker-bake.hcl \
+		--set builder-debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
+		--set builder-ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
 		--pull \
 		$(DOCKER_ARGS)
 
@@ -77,18 +77,18 @@ docker_load: docker_build
 docker_push: DOCKER_ARGS=--push
 docker_push: docker_build
 
-RUNNER_16_IMAGE ?= ghcr.io/pgxman/runner/postgres:16
-RUNNER_15_IMAGE ?= ghcr.io/pgxman/runner/postgres:15
-RUNNER_14_IMAGE ?= ghcr.io/pgxman/runner/postgres:14
-RUNNER_13_IMAGE ?= ghcr.io/pgxman/runner/postgres:13
+RUNNER_POSTGRES_16_IMAGE ?= ghcr.io/pgxman/runner/postgres/16:main
+RUNNER_POSTGRES_15_IMAGE ?= ghcr.io/pgxman/runner/postgres/15:main
+RUNNER_POSTGRES_14_IMAGE ?= ghcr.io/pgxman/runner/postgres/14:main
+RUNNER_POSTGRES_13_IMAGE ?= ghcr.io/pgxman/runner/postgres/13:main
 .PHONY: docker_build_runner
 docker_build_runner:
-	docker buildx bake \
-		-f $(PWD)/dockerfiles/runner/docker-bake.hcl \
-		--set runner-16.tags=$(RUNNER_16_IMAGE) \
-		--set runner-15.tags=$(RUNNER_15_IMAGE) \
-		--set runner-14.tags=$(RUNNER_14_IMAGE) \
-		--set runner-13.tags=$(RUNNER_13_IMAGE) \
+	docker buildx bake runner \
+		-f $(PWD)/dockerfiles/docker-bake.hcl \
+		--set runner-postgres-16.tags=$(RUNNER_POSTGRES_16_IMAGE) \
+		--set runner-postgres-15.tags=$(RUNNER_POSTGRES_15_IMAGE) \
+		--set runner-postgres-14.tags=$(RUNNER_POSTGRES_14_IMAGE) \
+		--set runner-postgres-13.tags=$(RUNNER_POSTGRES_13_IMAGE) \
 		--pull \
 		$(DOCKER_ARGS)
 

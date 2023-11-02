@@ -7,13 +7,22 @@ jobs:
     name: Set Matrix
     runs-on: ubuntu-latest
     outputs:
+      docker_builder_bake_target: ${{ steps.set-matrix.outputs.docker_builder_bake_target }}
+      docker_runner_bake_target: ${{ steps.set-matrix.outputs.docker_runner_bake_target }}
       docker_bake_target: ${{ steps.set-matrix.outputs.docker_bake_target }}
     steps:
       - uses: actions/checkout@v3
       - id: set-matrix
         run: |
-          targets=$(docker buildx bake --print -f ./dockerfiles/docker/docker-bake.hcl | jq -rcM ".group.default.targets")
-          echo "docker_bake_target=$targets" >> "$GITHUB_OUTPUT"
+          builder_targets=$(docker buildx bake builder --print -f ./dockerfiles/docker-bake.hcl | jq -rcM ".group.builder.targets")
+          runner_targets=$(docker buildx bake runner --print -f ./dockerfiles/docker-bake.hcl | jq -rcM ".group.runner.targets")
+          all_targets=$(printf '%s\n%s' "$builder_targets" "$runner_targets" | jq -s "add")
+
+          {
+            echo "docker_bake_builder_target=$builder_targets"
+            echo "docker_bake_runner_target=$runner_targets"
+            echo "docker_bake_target=$all_targets"
+          } >> "$GITHUB_OUTPUT"
   docker:
     name: Docker
     runs-on: ubuntu-latest
@@ -47,14 +56,14 @@ jobs:
         with:
           bake-target: docker-metadata-action
           images: |
-            ghcr.io/pgxman/builder/${{ env.image_name }}
+            ghcr.io/pgxman/${{ env.image_name }}
       - name: Docker build and push
         uses: docker/bake-action@v4
         with:
           push: ${{ github.event_name != 'pull_request' }}
           pull: true
           files: |
-            dockerfiles/builder/docker-bake.hcl
+            dockerfiles/docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
           targets: |
             ${{ matrix.target }}
