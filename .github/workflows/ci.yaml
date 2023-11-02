@@ -69,7 +69,7 @@ jobs:
           push: true
           pull: true
           files: |
-            docker/docker-bake.hcl
+            dockerfiles/builder/docker-bake.hcl
           targets: |
             default
           set: |

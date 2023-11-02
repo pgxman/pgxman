@@ -63,7 +63,7 @@ DOCKER_ARGS ?=
 .PHONY: docker_build
 docker_build:
 	docker buildx bake \
-		-f $(PWD)/docker/docker-bake.hcl \
+		-f $(PWD)/dockerfiles/builder/docker-bake.hcl \
 		--set debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
 		--set ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
 		--pull \
