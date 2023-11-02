@@ -17,7 +17,7 @@ require (
 	github.com/otiai10/copy v1.14.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/zcalusic/sysinfo v1.0.1
+	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/text v0.13.0
 	sigs.k8s.io/yaml v1.4.0
