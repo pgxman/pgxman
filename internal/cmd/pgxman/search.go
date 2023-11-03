@@ -40,7 +40,7 @@ func runSearch(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	exts, err := buildkit.Extensions(c.Context())
+	exts, err := buildkit.Extensions()
 	if err != nil {
 		return err
 	}

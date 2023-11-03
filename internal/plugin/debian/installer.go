@@ -5,14 +5,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
-	"golang.org/x/exp/slices"
 )
 
 type DebianInstaller struct {
@@ -32,7 +29,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", extFiles, "options", opts)
 
 	i.Logger.Debug("Fetching installable extensions")
-	installableExts, err := buildkit.Extensions(ctx)
+	installableExts, err := buildkit.Extensions()
 	if err != nil {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
@@ -43,8 +40,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 	}
 
 	var (
-		aptPkgs          []AptPackage
-		defaultPGVersion = defaultPGVersion(ctx)
+		aptPkgs []AptPackage
 	)
 	for _, extFile := range extFiles {
 		for _, extToInstall := range extFile.Extensions {
@@ -67,21 +63,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 					return fmt.Errorf("extension %q not found", extToInstall.Name)
 				}
 
-				// if version is not specified, use the latest version
-				if extToInstall.Version == "" || extToInstall.Version == "latest" {
-					extToInstall.Version = installableExt.Version
-				}
-
-				if installableExt.Version != extToInstall.Version {
-					// TODO(owenthereal): validate old version when api is ready
-					i.Logger.Debug("extension version does not match the latest", "extension", extToInstall.Name, "version", extToInstall.Version, "latest", installableExt.Version)
-				}
-
 				for _, pgv := range extFile.PGVersions {
-					if pgv == pgxman.PGVersionUnknown {
-						pgv = defaultPGVersion
-					}
-
 					aptPkgs = append(
 						aptPkgs,
 						AptPackage{
@@ -162,28 +144,4 @@ func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade b
 	}
 
 	return nil
-}
-
-var (
-	regexpPGVersion = regexp.MustCompile(`^PostgreSQL (\d+)`)
-)
-
-func defaultPGVersion(ctx context.Context) pgxman.PGVersion {
-	cmd := exec.CommandContext(ctx, "pg_config", "--version")
-	b, err := cmd.CombinedOutput()
-	if err != nil {
-		return pgxman.SupportedLatestPGVersion
-	}
-
-	matches := regexpPGVersion.FindStringSubmatch(string(b))
-	if len(matches) == 0 {
-		return pgxman.SupportedLatestPGVersion
-	}
-
-	def := pgxman.PGVersion(matches[1])
-	if !slices.Contains(pgxman.SupportedPGVersions, def) {
-		return pgxman.SupportedLatestPGVersion
-	}
-
-	return def
 }

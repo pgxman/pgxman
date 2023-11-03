@@ -48,11 +48,11 @@ func TestDebianInstaller_Install(t *testing.T) {
 			installArg += "=" + ext.Version
 		}
 		if ext.PGVersion != "" {
-			installArg += "@" + ext.PGVersion
+			installArg += " --pg " + ext.PGVersion
 		}
 
 		name := strings.ReplaceAll(installArg, "=", "_")
-		name = strings.ReplaceAll(name, "@", "_")
+		name = strings.ReplaceAll(name, " --pg ", "_")
 
 		pgv := ext.PGVersion
 		if pgv == "" {
