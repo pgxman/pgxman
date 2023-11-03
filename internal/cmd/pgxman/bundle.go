@@ -6,6 +6,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
+	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 )
@@ -68,6 +69,9 @@ func runBundle(c *cobra.Command, args []string) error {
 
 	pgxmf, err := pgxman.ReadPGXManfile(flagBundlePGXManfile)
 	if err != nil {
+		return err
+	}
+	if err := LockPGXManfile(pgxmf, log.NewTextLogger()); err != nil {
 		return err
 	}
 

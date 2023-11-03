@@ -29,7 +29,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 	i.Logger.Debug("Installing extensions", "pgxman.yaml", extFiles, "options", opts)
 
 	i.Logger.Debug("Fetching installable extensions")
-	installableExts, err := buildkit.Extensions(ctx)
+	installableExts, err := buildkit.Extensions()
 	if err != nil {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
@@ -61,16 +61,6 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 				installableExt, ok := installableExts[extToInstall.Name]
 				if !ok {
 					return fmt.Errorf("extension %q not found", extToInstall.Name)
-				}
-
-				// if version is not specified, use the latest version
-				if extToInstall.Version == "" || extToInstall.Version == "latest" {
-					extToInstall.Version = installableExt.Version
-				}
-
-				if installableExt.Version != extToInstall.Version {
-					// TODO(owenthereal): validate old version when api is ready
-					i.Logger.Debug("extension version does not match the latest", "extension", extToInstall.Name, "version", extToInstall.Version, "latest", installableExt.Version)
 				}
 
 				for _, pgv := range extFile.PGVersions {

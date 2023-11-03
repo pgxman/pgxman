@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 
 	"github.com/pgxman/pgxman"
 	"sigs.k8s.io/yaml"
@@ -14,6 +15,7 @@ import (
 var (
 	configDir   string
 	buildkitDir string
+	extsOnce    = sync.OnceValues(extensions)
 )
 
 func init() {
@@ -24,10 +26,15 @@ func init() {
 
 	configDir = filepath.Join(userConfigDir, "pgxman")
 	buildkitDir = filepath.Join(configDir, "buildkit")
+
 }
 
-func Extensions(ctx context.Context) (map[string]pgxman.Extension, error) {
-	if err := downloadSource(ctx); err != nil {
+func Extensions() (map[string]pgxman.Extension, error) {
+	return extsOnce()
+}
+
+func extensions() (map[string]pgxman.Extension, error) {
+	if err := downloadSource(context.Background()); err != nil {
 		return nil, err
 	}
 

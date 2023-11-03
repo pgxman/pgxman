@@ -7,11 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"text/template"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/errorsx"
+	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
@@ -95,7 +96,11 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
-		f, err := parseFromCommandLine(args, pgxman.PGVersion(flagInstallerPGVersion))
+		p := &ArgsParser{
+			PGVer:  pgxman.PGVersion(flagInstallerPGVersion),
+			Logger: log.NewTextLogger(),
+		}
+		f, err := p.Parse(args)
 		if err != nil {
 			return err
 		}
@@ -134,15 +139,12 @@ func (e errInvalidExtensionFormat) Error() string {
 	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION@PGVERSION1,PGVERSION2...", e.Arg)
 }
 
-var (
-	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
-)
+type ArgsParser struct {
+	PGVer  pgxman.PGVersion
+	Logger *log.Logger
+}
 
-func parseFromCommandLine(args []string, pgVer pgxman.PGVersion) (*pgxman.PGXManfile, error) {
-	if !slices.Contains(pgxman.SupportedPGVersions, pgVer) {
-		return nil, fmt.Errorf("unsupported PostgreSQL version: %q", pgVer)
-	}
-
+func (p *ArgsParser) Parse(args []string) (*pgxman.PGXManfile, error) {
 	var exts []pgxman.InstallExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
@@ -153,12 +155,58 @@ func parseFromCommandLine(args []string, pgVer pgxman.PGVersion) (*pgxman.PGXMan
 		exts = append(exts, *ext)
 	}
 
-	return &pgxman.PGXManfile{
+	f := &pgxman.PGXManfile{
 		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 		Extensions: exts,
-		PGVersions: []pgxman.PGVersion{pgxman.PGVersion(pgVer)},
-	}, nil
+		PGVersions: []pgxman.PGVersion{p.PGVer},
+	}
+	if err := LockPGXManfile(f, p.Logger); err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }
+
+func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
+	if err := f.Validate(); err != nil {
+		return err
+	}
+
+	installableExts, err := buildkit.Extensions()
+	if err != nil {
+		return fmt.Errorf("fetch installable extensions: %w", err)
+	}
+
+	var exts []pgxman.InstallExtension
+	for _, ext := range f.Extensions {
+		if ext.Name != "" {
+			installableExt, ok := installableExts[ext.Name]
+			if !ok {
+				return fmt.Errorf("extension %q not found", ext.Name)
+			}
+
+			// if version is not specified, use the latest version
+			if ext.Version == "" || ext.Version == "latest" {
+				ext.Version = installableExt.Version
+			}
+
+			if installableExt.Version != ext.Version {
+				// TODO(owenthereal): validate old version when api is ready
+				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
+			}
+		}
+
+		exts = append(exts, ext)
+	}
+
+	f.Extensions = exts
+
+	return nil
+}
+
+var (
+	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
+)
 
 func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 	// install from local file
