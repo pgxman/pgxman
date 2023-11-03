@@ -32,28 +32,31 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 		action = "upgrade"
 	}
 
+	defPGVer := string(pg.DefaultVersion(context.Background()))
+
 	exampleTmpl := `  # {{ title .Action }} the latest pgvector for the installed PostgreSQL.
   # PostgreSQL version is detected from pg_config if it exists,
   # Otherwise, the latest supported PostgreSQL version is used.
   pgxman {{ .Action }} pgvector
 
-  # {{ title .Action }} the latest pgvector for PostgreSQL 14
-  pgxman {{ .Action }} pgvector --pg 14
+  # {{ title .Action }} the latest pgvector for PostgreSQL {{ .PGVer }}
+  pgxman {{ .Action }} pgvector --pg {{ .PGVer }}
 
-  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14
-  pgxman {{ .Action }} pgvector=0.5.0 --pg 14
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL {{ .PGVer }}
+  pgxman {{ .Action }} pgvector=0.5.0 --pg {{ .PGVer }}
 
-  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 with sudo
-  pgxman {{ .Action }} pgvector=0.5.0 --pg 14 --sudo
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL {{ .PGVer }} with sudo
+  pgxman {{ .Action }} pgvector=0.5.0 --pg {{ .PGVer }} --sudo
 
-  # {{ title .Action }} pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL 14
-  pgxman {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg 14
+  # {{ title .Action }} pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL {{ .PGVer }}
+  pgxman {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg {{ .PGVer }}
 
   # {{ title .Action }} from a local Debian package
   pgxman {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
 
 	type data struct {
 		Action string
+		PGVer  string
 	}
 
 	c := cases.Title(language.AmericanEnglish)
@@ -62,7 +65,15 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	if err := template.Must(template.New("").Funcs(funcMap).Parse(exampleTmpl)).Execute(buf, data{Action: action}); err != nil {
+	if err := template.Must(
+		template.New("").Funcs(funcMap).Parse(exampleTmpl),
+	).Execute(
+		buf,
+		data{
+			Action: action,
+			PGVer:  string(pgxman.SupportedLatestPGVersion),
+		},
+	); err != nil {
 		// impossible
 		panic(err.Error())
 	}
@@ -80,7 +91,7 @@ if it exists, or can be specified with the --pg flag.`,
 
 	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
 	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", string(pg.DefaultVersion(context.Background())), "Install the extension for the PostgreSQL version identified by pg_config, if it exists.")
+	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, "Install the extension for the PostgreSQL version identified by pg_config, if it exists.")
 
 	return cmd
 }
