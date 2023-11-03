@@ -2,15 +2,17 @@ package pgxman
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
+	"slices"
 	"text/template"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
+	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
@@ -18,8 +20,9 @@ import (
 )
 
 var (
-	flagInstallerYes  bool
-	flagInstallerSudo bool
+	flagInstallerYes       bool
+	flagInstallerSudo      bool
+	flagInstallerPGVersion string
 )
 
 func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
@@ -34,19 +37,16 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
   pgxman {{ .Action }} pgvector
 
   # {{ title .Action }} the latest pgvector for PostgreSQL 14
-  pgxman {{ .Action }} pgvector@14
+  pgxman {{ .Action }} pgvector --pg 14
 
   # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14
-  pgxman {{ .Action }} pgvector=0.5.0@14
+  pgxman {{ .Action }} pgvector=0.5.0 --pg 14
 
   # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 with sudo
-  pgxman {{ .Action }} pgvector=0.5.0@14 --sudo
+  pgxman {{ .Action }} pgvector=0.5.0 --pg 14 --sudo
 
-  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 & 15
-  pgxman {{ .Action }} pgvector=0.5.0@14,15
-
-  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL 14 & 15, and postgis 3.3.3 for PostgreSQL 14
-  pgxman {{ .Action }} pgvector=0.5.0@14,15 postgis=3.3.3@14
+  # {{ title .Action }} pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL 14
+  pgxman {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg 14
 
   # {{ title .Action }} from a local Debian package
   pgxman {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
@@ -70,8 +70,8 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 		Use:   action,
 		Short: c.String(action) + " PostgreSQL extensions",
 		Long: c.String(action) + ` PostgreSQL extensions from commandline arguments. The argument
-format is NAME=VERSION@PGVERSIONS where PGVERSIONS is a comma separated
-list of PostgreSQL versions.`,
+format is NAME=VERSION. The PostgreSQL version is detected from pg_config
+if it exists, or can be specified with the --pg flag.`,
 		Example: buf.String(),
 		RunE:    runInstallOrUpgrade(upgrade),
 		Args:    cobra.MinimumNArgs(1),
@@ -79,6 +79,7 @@ list of PostgreSQL versions.`,
 
 	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
 	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
+	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", string(pg.DefaultVersion(context.Background())), "Install the extension for the PostgreSQL version identified by pg_config, if it exists.")
 
 	return cmd
 }
@@ -94,20 +95,15 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
-		var result []pgxman.PGXManfile
-		for _, arg := range args {
-			exts, err := parseInstallExtensions(arg)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, *exts)
+		f, err := parseFromCommandLine(args, pgxman.PGVersion(flagInstallerPGVersion))
+		if err != nil {
+			return err
 		}
 
 		if upgrade {
 			if err := i.Upgrade(
 				c.Context(),
-				result,
+				[]pgxman.PGXManfile{*f},
 				pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 				pgxman.InstallOptWithSudo(flagInstallerSudo),
 			); err != nil {
@@ -123,7 +119,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 
 		return i.Install(
 			c.Context(),
-			result,
+			[]pgxman.PGXManfile{*f},
 			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 			pgxman.InstallOptWithSudo(flagInstallerSudo),
 		)
@@ -139,47 +135,32 @@ func (e errInvalidExtensionFormat) Error() string {
 }
 
 var (
-	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?(?:@(\S+))?$`)
+	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
 )
 
-func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
-	// install from apt
-	if extRegexp.MatchString(arg) {
-		match := extRegexp.FindStringSubmatch(arg)
-		var (
-			name       = match[1]
-			version    = match[2]
-			pgversions = strings.Split(match[3], ",")
-		)
-
-		if len(pgversions) == 0 {
-			return nil, errInvalidExtensionFormat{Arg: arg}
-		}
-
-		if len(pgversions) == 1 && pgversions[0] == "" {
-			pgversions = []string{string(pgxman.PGVersionUnknown)}
-		}
-
-		var (
-			pgvers []pgxman.PGVersion
-			exts   = []pgxman.InstallExtension{
-				{
-					Name:    name,
-					Version: version,
-				},
-			}
-		)
-		for _, pgversion := range pgversions {
-			pgvers = append(pgvers, pgxman.PGVersion(pgversion))
-		}
-
-		return &pgxman.PGXManfile{
-			APIVersion: pgxman.DefaultPGXManfileAPIVersion,
-			Extensions: exts,
-			PGVersions: pgvers,
-		}, nil
+func parseFromCommandLine(args []string, pgVer pgxman.PGVersion) (*pgxman.PGXManfile, error) {
+	if !slices.Contains(pgxman.SupportedPGVersions, pgVer) {
+		return nil, fmt.Errorf("unsupported PostgreSQL version: %q", pgVer)
 	}
 
+	var exts []pgxman.InstallExtension
+	for _, arg := range args {
+		ext, err := parseInstallExtension(arg)
+		if err != nil {
+			return nil, err
+		}
+
+		exts = append(exts, *ext)
+	}
+
+	return &pgxman.PGXManfile{
+		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+		Extensions: exts,
+		PGVersions: []pgxman.PGVersion{pgxman.PGVersion(pgVer)},
+	}, nil
+}
+
+func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 	// install from local file
 	if _, err := os.Stat(arg); err == nil {
 		path, err := filepath.Abs(arg)
@@ -187,14 +168,22 @@ func parseInstallExtensions(arg string) (*pgxman.PGXManfile, error) {
 			return nil, err
 		}
 
-		return &pgxman.PGXManfile{
-			APIVersion: pgxman.DefaultPGXManfileAPIVersion,
-			Extensions: []pgxman.InstallExtension{
-				{
-					Path: path,
-				},
-			},
-			PGVersions: pgxman.SupportedPGVersions,
+		return &pgxman.InstallExtension{
+			Path: path,
+		}, nil
+	}
+
+	// install from apt
+	if extRegexp.MatchString(arg) {
+		var (
+			match   = extRegexp.FindStringSubmatch(arg)
+			name    = match[1]
+			version = match[2]
+		)
+
+		return &pgxman.InstallExtension{
+			Name:    name,
+			Version: version,
 		}, nil
 	}
 
