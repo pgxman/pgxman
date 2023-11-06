@@ -24,12 +24,11 @@ func TestBuilder(t *testing.T) {
 	ext.Repository = "https://github.com/pgvector/pgvector"
 	ext.Version = "0.5.0"
 	ext.License = "PostgreSQL"
-	ext.BuildDependencies = []string{"libcurl4-openssl-dev", "pgxman/pgsql-http"}
 	ext.RunDependencies = []string{"libcurl4-openssl-dev"}
 	ext.Builders = &pgxman.ExtensionBuilders{
 		DebianBookworm: &pgxman.AptExtensionBuilder{
 			ExtensionBuilder: pgxman.ExtensionBuilder{
-				BuildDependencies: []string{"libarrow-dev"},
+				BuildDependencies: []string{"libarrow-dev", "pgxman/pgsql-http"},
 				Image:             flagDebianBookwormImage,
 			},
 			AptRepositories: []pgxman.AptRepository{
@@ -48,7 +47,7 @@ func TestBuilder(t *testing.T) {
 		},
 		UbuntuJammy: &pgxman.AptExtensionBuilder{
 			ExtensionBuilder: pgxman.ExtensionBuilder{
-				BuildDependencies: []string{"libarrow-dev"},
+				BuildDependencies: []string{"libarrow-dev", "pgxman/pgsql-http"},
 				Image:             flagUbuntuJammyImage,
 			},
 			AptRepositories: []pgxman.AptRepository{

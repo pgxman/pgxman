@@ -212,7 +212,12 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 		return err
 	}
 
-	sources, err := apt.ConvertSources(ctx, builder.AptRepositories)
+	repos, err := coreAptRepos()
+	if err != nil {
+		return err
+	}
+
+	sources, err := apt.ConvertSources(ctx, append(repos, builder.AptRepositories...))
 	if err != nil {
 		return err
 	}
