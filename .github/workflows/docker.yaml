@@ -9,7 +9,7 @@ jobs:
     outputs:
       docker_bake_target: ${{ steps.set-matrix.outputs.docker_bake_target }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: set-matrix
         run: |
           builder_targets=$(docker buildx bake builder --print -f ./dockerfiles/docker-bake.hcl | jq -rcM ".group.builder.targets")
@@ -25,7 +25,7 @@ jobs:
       matrix:
         target: ${{ fromJSON(needs.set_matrix.outputs.docker_bake_target) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate build meta
         run: |
           # tag > commit
