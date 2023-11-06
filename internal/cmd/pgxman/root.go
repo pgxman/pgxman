@@ -33,6 +33,7 @@ func Execute() error {
 	root.AddCommand(newInstallOrUpgradeCmd(true))
 	root.AddCommand(newBundleCmd())
 	root.AddCommand(newPublishCmd())
+	root.AddCommand(newContainerCmd())
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 

@@ -1,0 +1,18 @@
+version: '3'
+name: pgxman_playground_{{ .PGVersion }}
+services:
+  pgxman_playground_{{ .PGVersion }}:
+    container_name: pg_{{ .PGVersion }}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - {{ .HostPort }}:5432
+    environment:
+      - POSTGRES_USER=pgxman
+      - POSTGRES_PASSWORD=pgxman
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
