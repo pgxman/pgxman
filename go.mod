@@ -15,7 +15,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/oapi-codegen/runtime v1.0.0
 	github.com/otiai10/copy v1.14.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
