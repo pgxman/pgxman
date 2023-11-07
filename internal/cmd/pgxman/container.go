@@ -177,7 +177,7 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
 		}
 
-		fmt.Printf("Tearing down playground container for PostgreSQL %s...\n", pgVer)
+		fmt.Printf("Tearing down container for PostgreSQL %s...\n", pgVer)
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}
