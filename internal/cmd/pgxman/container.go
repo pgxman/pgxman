@@ -26,31 +26,38 @@ func newContainerCmd() *cobra.Command {
 		Aliases: []string{"c"},
 	}
 
-	root.AddCommand(newContainerInstallCmd())
+	root.AddCommand(newContainerInstallOrUpgradeCmd("pgxman container", false))
+	root.AddCommand(newContainerInstallOrUpgradeCmd("pgxman container", true))
 	root.AddCommand(newContainerTeardownCmd())
 
 	return root
 }
 
-func newContainerInstallCmd() *cobra.Command {
+func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Command {
+	action := "install"
+	if upgrade {
+		action = "upgrade"
+	}
+
 	exampleTmpl := `  # {{ title .Action }} the latest pgvector in a container.
-  pgxman container {{ .Action }} pgvector
+  {{ .Command }} {{ .Action }} pgvector
 
   # {{ title .Action }} the latest pgvector for PostgreSQL {{ .PGVer }} in a container.
-  pgxman container {{ .Action }} pgvector --pg {{ .PGVer }}
+  {{ .Command }} {{ .Action }} pgvector --pg {{ .PGVer }}
 
   # {{ title .Action }} pgvector 0.5.0 for PostgreSQL {{ .PGVer }} in a container.
-  pgxman container {{ .Action }} pgvector=0.5.0 --pg {{ .PGVer }}
+  {{ .Command }} {{ .Action }} pgvector=0.5.0 --pg {{ .PGVer }}
 
   # {{ title .Action }} pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL {{ .PGVer }} in a container
-  pgxman container {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg {{ .PGVer }}
+  {{ .Command }} {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg {{ .PGVer }}
 
   # {{ title .Action }} a local Debian package in a container
-  pgxman container {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
+  {{ .Command }} {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
 
 	type data struct {
-		Action string
-		PGVer  string
+		Command string
+		Action  string
+		PGVer   string
 	}
 
 	c := cases.Title(language.AmericanEnglish)
@@ -64,8 +71,9 @@ func newContainerInstallCmd() *cobra.Command {
 	).Execute(
 		buf,
 		data{
-			Action: "install",
-			PGVer:  string(pgxman.DefaultPGVersion),
+			Command: cmdPrefix,
+			Action:  action,
+			PGVer:   string(pgxman.DefaultPGVersion),
 		},
 	); err != nil {
 		// impossible
@@ -73,11 +81,11 @@ func newContainerInstallCmd() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install PostgreSQL extensions in a container",
-		Long: `Start a container with the specified PostgreSQL version and install
+		Use:   action,
+		Short: c.String(action) + "Install PostgreSQL extensions in a container",
+		Long: fmt.Sprintf(`Start a container with the specified PostgreSQL version and %s
 PostgreSQL extension from commandline arguments. The argument format
-is NAME=VERSION.`,
+is NAME=VERSION.`, action),
 		Example: buf.String(),
 		RunE:    runContainerInstall,
 		Args:    cobra.MinimumNArgs(1),
@@ -85,7 +93,7 @@ is NAME=VERSION.`,
 
 	defPGVer := string(pgxman.DefaultPGVersion)
 
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf(c.String(action)+" the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 	cmd.PersistentFlags().StringVar(&flagContainerInstallRunnerImage, "runner-image", "", "Override the default runner image")
 
 	return cmd

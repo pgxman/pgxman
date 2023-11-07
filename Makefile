@@ -15,7 +15,8 @@ tools:
 
 .PHONY: build
 build:
-	GOBIN=$(BIN_DIR) go build ./cmd/...
+	go build -o $(BIN_DIR)/pgxman ./cmd/pgxman
+	go build -o $(BIN_DIR)/pgxman-pack ./cmd/pgxman-pack
 
 .PHONY: install
 install:

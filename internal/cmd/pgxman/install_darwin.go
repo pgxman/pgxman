@@ -5,9 +5,9 @@ package pgxman
 import "github.com/spf13/cobra"
 
 func newInstallCmd() *cobra.Command {
-	return newContainerInstallCmd()
+	return newContainerInstallOrUpgradeCmd("pgxman", false)
 }
 
 func newUpgradeCmd() *cobra.Command {
-	return newContainerInstallCmd()
+	return newContainerInstallOrUpgradeCmd("pgxman", true)
 }
