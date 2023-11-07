@@ -99,7 +99,6 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		PGVersion:     string(pgVer),
 		Port:          fmt.Sprintf("%s432", pgVer),
 		RunnerDir:     runnerDir,
-		DataDir:       filepath.Join(runnerDir, "data"),
 		ContainerName: fmt.Sprintf("pgxman_runner_%s", pgVer),
 		PGUser:        "pgxman",
 		PGPassword:    "pgxman",
@@ -114,12 +113,6 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		},
 		runnerDir,
 	); err != nil {
-		return nil, err
-	}
-
-	dataDir := filepath.Join(runnerDir, "data")
-	c.Logger.Debug("Making data dir", "dir", dataDir)
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return nil, err
 	}
 
@@ -168,6 +161,7 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		"down",
 		"--remove-orphans",
 		"--timeout", "10",
+		"--volumes",
 	)
 	dockerCompose.Dir = runnerDir
 	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
@@ -285,7 +279,6 @@ type ContainerInfo struct {
 	RunnerImage   string
 	PGVersion     string
 	Port          string
-	DataDir       string
 	RunnerDir     string
 	ContainerName string
 	PGUser        string
