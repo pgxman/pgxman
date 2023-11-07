@@ -22,7 +22,7 @@ var (
 func newContainerCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "container",
-		Short:   "Run virtualized in a container",
+		Short:   "Run pgxman in a container",
 		Aliases: []string{"c"},
 	}
 
