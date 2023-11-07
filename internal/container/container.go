@@ -25,7 +25,12 @@ const (
 	defaultRunnerImageBase = "ghcr.io/pgxman/runner/postgres"
 )
 
-func NewContainer(cfg ContainerConfig) *Container {
+func NewContainer(opts ...ContainerOptFunc) *Container {
+	cfg := &ContainerOpt{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	return &Container{
 		Config: cfg,
 		Logger: log.NewTextLogger(),
@@ -33,12 +38,20 @@ func NewContainer(cfg ContainerConfig) *Container {
 }
 
 type Container struct {
-	Config ContainerConfig
+	Config *ContainerOpt
 	Logger *log.Logger
 }
 
-type ContainerConfig struct {
-	RunnerImage string
+type ContainerOpt struct {
+	runnerImage string
+}
+
+type ContainerOptFunc func(*ContainerOpt)
+
+func WithRunnerImage(image string) ContainerOptFunc {
+	return func(o *ContainerOpt) {
+		o.runnerImage = image
+	}
 }
 
 var (
@@ -74,7 +87,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		return nil, err
 	}
 
-	runnerImage := c.Config.RunnerImage
+	runnerImage := c.Config.runnerImage
 	if runnerImage == "" {
 		runnerImage = fmt.Sprintf("%s/%s", defaultRunnerImageBase, pgVer)
 	}

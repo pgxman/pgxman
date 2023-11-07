@@ -14,6 +14,10 @@ import (
 	"golang.org/x/text/language"
 )
 
+var (
+	flagContainerInstallRunnerImage string
+)
+
 func newContainerCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "container",
@@ -81,6 +85,7 @@ is NAME=VERSION.`,
 	defPGVer := string(pgxman.DefaultPGVersion)
 
 	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().StringVar(&flagContainerInstallRunnerImage, "runner-image", "", "Override the default runner image")
 
 	return cmd
 }
@@ -105,7 +110,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	info, err := container.NewContainer(
-		container.ContainerConfig{},
+		container.WithRunnerImage(flagContainerInstallRunnerImage),
 	).Install(cmd.Context(), f)
 	if err != nil {
 		return err
@@ -159,10 +164,7 @@ pgxman container remove 15 16
 }
 
 func runContainerRemove(cmd *cobra.Command, args []string) error {
-	c := container.NewContainer(
-		container.ContainerConfig{},
-	)
-
+	c := container.NewContainer()
 	for _, arg := range args {
 		pgVer := pgxman.PGVersion(arg)
 
