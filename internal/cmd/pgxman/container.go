@@ -3,6 +3,7 @@ package pgxman
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -109,7 +110,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("Installing extension %s...\n", strings.Join(exts, ", "))
+	fmt.Printf("Installing %q in a playground container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagInstallerPGVersion)
 	info, err := container.NewContainer(
 		container.WithRunnerImage(flagContainerInstallRunnerImage),
 	).Install(cmd.Context(), f)
@@ -117,7 +118,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf(`Extension %s installed successfully in container %s.
+	fmt.Printf(`%s was installed successfully in container %s.
 
 To connect, run:
 
@@ -130,12 +131,12 @@ To tear down the container, run:
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
 		strings.Join(exts, ", "),
-		info.ServiceName,
+		info.ContainerName,
 		info.PGUser,
 		info.PGPassword,
 		info.Port,
 		info.PGDatabase,
-		info.PGVersion,
+		info.ContainerName,
 	)
 
 	return nil
@@ -147,10 +148,10 @@ func newContainerTeardownCmd() *cobra.Command {
 		Short: "Tear down a playground container",
 		Long:  `Tear down a playground container and purge all data.`,
 		Example: ` # Tear down the PostgreSQL 15 playgrond container.
-pgxman container teardown 15
+pgxman container teardown pgxman_runner_15
 
 # Tear down the PostgreSQL 15 & 16 containers.
-pgxman container teardown 15 16
+pgxman container teardown pgxman_runner_15 pgxman_runner_16
 `,
 		RunE: runContainerTeardown,
 		Args: cobra.MinimumNArgs(1),
@@ -159,16 +160,24 @@ pgxman container teardown 15 16
 	return cmd
 }
 
+var (
+	regexpContainerName = regexp.MustCompile(`^pgxman_runner_(\d+)$`)
+)
+
 func runContainerTeardown(cmd *cobra.Command, args []string) error {
 	c := container.NewContainer()
 	for _, arg := range args {
-		pgVer := pgxman.PGVersion(arg)
+		match := regexpContainerName.FindStringSubmatch(arg)
+		if len(match) == 0 {
+			return fmt.Errorf("invalid container name: %s", arg)
+		}
 
+		pgVer := pgxman.PGVersion(match[1])
 		if !pgxman.IsSupportedPGVersion(pgVer) {
 			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
 		}
 
-		fmt.Printf("Tearing down container %s...\n", pgVer)
+		fmt.Printf("Tearing down playground container for PostgreSQL %s...\n", pgVer)
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}

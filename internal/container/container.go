@@ -95,15 +95,15 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	}
 
 	info := ContainerInfo{
-		RunnerImage: runnerImage,
-		PGVersion:   string(pgVer),
-		Port:        fmt.Sprintf("%s432", pgVer),
-		RunnerDir:   runnerDir,
-		DataDir:     filepath.Join(runnerDir, "data"),
-		ServiceName: fmt.Sprintf("pgxman_runner_%s", pgVer),
-		PGUser:      "pgxman",
-		PGPassword:  "pgxman",
-		PGDatabase:  "pgxman",
+		RunnerImage:   runnerImage,
+		PGVersion:     string(pgVer),
+		Port:          fmt.Sprintf("%s432", pgVer),
+		RunnerDir:     runnerDir,
+		DataDir:       filepath.Join(runnerDir, "data"),
+		ContainerName: fmt.Sprintf("pgxman_runner_%s", pgVer),
+		PGUser:        "pgxman",
+		PGPassword:    "pgxman",
+		PGDatabase:    "pgxman",
 	}
 
 	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pgVer)
@@ -158,7 +158,7 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 
 	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
 	if _, err := os.Stat(runnerDir); err != nil {
-		return err
+		return fmt.Errorf("runner configuration does not exist: %w", err)
 	}
 
 	dockerCompose := exec.CommandContext(
@@ -283,15 +283,15 @@ func writeBundleFile(f *pgxman.PGXManfile, dst string) error {
 }
 
 type ContainerInfo struct {
-	RunnerImage string
-	PGVersion   string
-	Port        string
-	DataDir     string
-	RunnerDir   string
-	ServiceName string
-	PGUser      string
-	PGPassword  string
-	PGDatabase  string
+	RunnerImage   string
+	PGVersion     string
+	Port          string
+	DataDir       string
+	RunnerDir     string
+	ContainerName string
+	PGUser        string
+	PGPassword    string
+	PGDatabase    string
 }
 
 type runnerTemplater struct {

@@ -1,8 +1,8 @@
 version: '3'
-name: {{ .ServiceName }}
+name: {{ .ContainerName }}
 services:
-  {{ .ServiceName }}:
-    container_name: pg_{{ .PGVersion }}
+  {{ .ContainerName }}:
+    container_name: {{ .ContainerName }}
     build:
       context: .
       dockerfile: Dockerfile
