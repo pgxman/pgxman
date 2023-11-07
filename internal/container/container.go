@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -116,6 +117,12 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		return nil, err
 	}
 
+	dataDir := filepath.Join(runnerDir, "data")
+	c.Logger.Debug("Making data dir", "dir", dataDir)
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		return nil, err
+	}
+
 	localFilesDir := filepath.Join(runnerDir, "files")
 	c.Logger.Debug("Copying local files", "dir", localFilesDir)
 	if err := copyLocalFiles(f, localFilesDir); err != nil {
@@ -138,8 +145,8 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		"--detach",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = os.Stdout
-	dockerCompose.Stderr = os.Stderr
+	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
 
 	return &info, dockerCompose.Run()
 }
@@ -164,8 +171,8 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		"--volumes",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = os.Stdout
-	dockerCompose.Stderr = os.Stderr
+	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
 	if err := dockerCompose.Run(); err != nil {
 		return err
 	}

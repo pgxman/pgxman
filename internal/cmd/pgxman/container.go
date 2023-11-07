@@ -109,6 +109,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	fmt.Printf("Installing extension %s...\n", strings.Join(exts, ", "))
 	info, err := container.NewContainer(
 		container.WithRunnerImage(flagContainerInstallRunnerImage),
 	).Install(cmd.Context(), f)
@@ -116,9 +117,9 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf(`%s installed successfully.
+	fmt.Printf(`Extension %s installed successfully in container %s.
 
-pgxman is running in a Docker container. To connect, run:
+To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
 
@@ -129,6 +130,7 @@ To tear down the container, run:
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
 		strings.Join(exts, ", "),
+		info.ServiceName,
 		info.PGUser,
 		info.PGPassword,
 		info.Port,
@@ -166,6 +168,7 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
 		}
 
+		fmt.Printf("Tearing down container %s...\n", pgVer)
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}
