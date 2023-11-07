@@ -1,13 +1,17 @@
 package pgxman
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func newContainerCmd() *cobra.Command {
@@ -23,17 +27,59 @@ func newContainerCmd() *cobra.Command {
 }
 
 func newContainerInstallCmd() *cobra.Command {
+	exampleTmpl := `  # {{ title .Action }} the latest pgvector in a container.
+  pgxman container {{ .Action }} pgvector
+
+  # {{ title .Action }} the latest pgvector for PostgreSQL {{ .PGVer }} in a container.
+  pgxman container {{ .Action }} pgvector --pg {{ .PGVer }}
+
+  # {{ title .Action }} pgvector 0.5.0 for PostgreSQL {{ .PGVer }} in a container.
+  pgxman container {{ .Action }} pgvector=0.5.0 --pg {{ .PGVer }}
+
+  # {{ title .Action }} pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL {{ .PGVer }} in a container
+  pgxman container {{ .Action }} pgvector=0.5.0 postgis=3.3.3 --pg {{ .PGVer }}
+
+  # {{ title .Action }} a local Debian package in a container
+  pgxman container {{ .Action }} /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb`
+
+	type data struct {
+		Action string
+		PGVer  string
+	}
+
+	c := cases.Title(language.AmericanEnglish)
+	funcMap := template.FuncMap{
+		"title": c.String,
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if err := template.Must(
+		template.New("").Funcs(funcMap).Parse(exampleTmpl),
+	).Execute(
+		buf,
+		data{
+			Action: "install",
+			PGVer:  string(pgxman.DefaultPGVersion),
+		},
+	); err != nil {
+		// impossible
+		panic(err.Error())
+	}
+
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install PostgreSQL extensions in a container",
 		Long: `Start a container with the specified PostgreSQL version and install
-specified PostgreSQL extension from commandline arguments.`,
-		Example: ` # Install the latest pgvector for the installed PostgreSQL.
-		`,
-		RunE: runContainerInstall,
+PostgreSQL extension from commandline arguments. The argument format
+is NAME=VERSION.`,
+		Example: buf.String(),
+		RunE:    runContainerInstall,
+		Args:    cobra.MinimumNArgs(1),
 	}
 
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", string(pgxman.SupportedLatestPGVersion), "Install the extension for the PostgreSQL version.")
+	defPGVer := string(pgxman.DefaultPGVersion)
+
+	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 
 	return cmd
 }
@@ -74,6 +120,10 @@ To stop the container, run:
 
     $ cd "%s" && docker compose down && cd -
 
+To remove cached configuration, run:
+
+    $ rm -rf "%s"
+
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
 		strings.Join(exts, ", "),
@@ -81,6 +131,7 @@ For more information on the docker environment, please see: https://docs.pgxman.
 		info.PGPassword,
 		info.Port,
 		info.PGDatabase,
+		info.RunnerDir,
 		info.RunnerDir,
 	)
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/pgxman/pgxman"
@@ -32,7 +33,7 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 		action = "upgrade"
 	}
 
-	defPGVer := string(pg.DefaultVersion(context.Background()))
+	defPGVer := string(pg.DetectVersion(context.Background()))
 
 	exampleTmpl := `  # {{ title .Action }} the latest pgvector for the installed PostgreSQL.
   # PostgreSQL version is detected from pg_config if it exists,
@@ -71,7 +72,7 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 		buf,
 		data{
 			Action: action,
-			PGVer:  string(pgxman.SupportedLatestPGVersion),
+			PGVer:  string(pgxman.DefaultPGVersion),
 		},
 	); err != nil {
 		// impossible
@@ -91,7 +92,7 @@ if it exists, or can be specified with the --pg flag.`,
 
 	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
 	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, "Install the extension for the PostgreSQL version identified by pg_config, if it exists.")
+	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 
 	return cmd
 }
@@ -247,4 +248,13 @@ func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 	}
 
 	return nil, errInvalidExtensionFormat{Arg: arg}
+}
+
+func supportedPGVersions() []string {
+	var pgVers []string
+	for _, v := range pgxman.SupportedPGVersions {
+		pgVers = append(pgVers, string(v))
+	}
+
+	return pgVers
 }
