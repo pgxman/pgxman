@@ -12,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 
+	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/log"
@@ -56,12 +57,13 @@ var (
 // --------- Dockerfile
 // --------- pgxman.yaml
 // --------- compose.yaml
+// --------- files
 func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
 	if err := c.checkDocker(); err != nil {
 		return nil, err
 	}
 
-	// TODO: consider allowing only one pg version for pgxman.yaml
+	// TODO: allow only one pg version for pgxman.yaml
 	if len(f.PGVersions) > 1 {
 		return nil, fmt.Errorf("multiple PostgreSQL versions are not supported in container")
 	}
@@ -97,6 +99,12 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		},
 		runnerDir,
 	); err != nil {
+		return nil, err
+	}
+
+	localFilesDir := filepath.Join(runnerDir, "files")
+	c.Logger.Debug("Copying local files", "dir", localFilesDir)
+	if err := copyLocalFiles(f, localFilesDir); err != nil {
 		return nil, err
 	}
 
@@ -145,6 +153,31 @@ func (c *Container) checkDocker() error {
 	if _, ok := outMap["Server"]; !ok {
 		return errDockerNotRunning
 	}
+
+	return nil
+}
+
+func copyLocalFiles(f *pgxman.PGXManfile, dstDir string) error {
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return err
+	}
+
+	var exts []pgxman.InstallExtension
+	for _, ext := range f.Extensions {
+		if src := ext.Path; src != "" {
+			dst := filepath.Join(dstDir, filepath.Base(src))
+			if err := cp.Copy(src, dst); err != nil {
+				return err
+			}
+
+			// rewrite path in the container
+			ext.Path = fmt.Sprintf("/pgxman/files/%s", filepath.Base(src))
+		}
+
+		exts = append(exts, ext)
+	}
+
+	f.Extensions = exts
 
 	return nil
 }

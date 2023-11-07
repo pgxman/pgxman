@@ -94,6 +94,33 @@ func Test_mergeBundleFile(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "merge extension with paths",
+			ExistingBundleFile: &pgxman.PGXManfile{
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name: "pgvector",
+						Path: "path1",
+					},
+				},
+			},
+			NewBundleFile: &pgxman.PGXManfile{
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "path2",
+					},
+				},
+			},
+			WantBundleFile: &pgxman.PGXManfile{
+				Extensions: []pgxman.InstallExtension{
+					{
+						Name:    "pgvector",
+						Version: "path2",
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

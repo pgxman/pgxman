@@ -1,4 +1,5 @@
 FROM {{ .RunnerImage }}
 
-COPY pgxman.yaml /tmp/pgxman.yaml
-RUN pgxman bundle -f /tmp/pgxman.yaml
+COPY pgxman.yaml /pgxman/pgxman.yaml
+COPY files /pgxman/files
+RUN pgxman bundle -f /pgxman/pgxman.yaml

@@ -96,11 +96,11 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 
 	var exts []string
 	for _, ext := range f.Extensions {
-		if ext.Path != "" {
-			return fmt.Errorf("cannot install extension %s from path in container", ext.Name)
+		if ext.Name != "" {
+			exts = append(exts, ext.Name)
+		} else if ext.Path != "" {
+			exts = append(exts, ext.Path)
 		}
-
-		exts = append(exts, ext.Name)
 	}
 
 	info, err := container.NewContainer(
