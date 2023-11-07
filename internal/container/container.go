@@ -144,7 +144,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	return &info, dockerCompose.Run()
 }
 
-func (c *Container) Remove(ctx context.Context, pgVer pgxman.PGVersion) error {
+func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error {
 	if err := c.checkDocker(); err != nil {
 		return err
 	}

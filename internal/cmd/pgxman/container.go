@@ -26,7 +26,7 @@ func newContainerCmd() *cobra.Command {
 	}
 
 	root.AddCommand(newContainerInstallCmd())
-	root.AddCommand(newContainerRemoveCmd())
+	root.AddCommand(newContainerTeardownCmd())
 
 	return root
 }
@@ -122,13 +122,9 @@ pgxman is running in a Docker container. To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
 
-To stop the container, run:
+To tear down the container, run:
 
-    $ cd "%s" && docker compose down && cd -
-
-To remove cached configuration, run:
-
-    $ rm -rf "%s"
+    $ pgxman container teardown %s
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
@@ -137,33 +133,31 @@ For more information on the docker environment, please see: https://docs.pgxman.
 		info.PGPassword,
 		info.Port,
 		info.PGDatabase,
-		info.RunnerDir,
-		info.RunnerDir,
+		info.PGVersion,
 	)
 
 	return nil
 }
 
-func newContainerRemoveCmd() *cobra.Command {
+func newContainerTeardownCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "remove",
-		Aliases: []string{"rm"},
-		Short:   "Remove a playground container",
-		Long:    `Remove a playground container and purge all data.`,
-		Example: ` # Remove the PostgreSQL 15 playgrond container.
-pgxman container remove 15
+		Use:   "teardown",
+		Short: "Tear down a playground container",
+		Long:  `Tear down a playground container and purge all data.`,
+		Example: ` # Tear down the PostgreSQL 15 playgrond container.
+pgxman container teardown 15
 
-# Remove the PostgreSQL 15 & 16 containers.
-pgxman container remove 15 16
+# Tear down the PostgreSQL 15 & 16 containers.
+pgxman container teardown 15 16
 `,
-		RunE: runContainerRemove,
+		RunE: runContainerTeardown,
 		Args: cobra.MinimumNArgs(1),
 	}
 
 	return cmd
 }
 
-func runContainerRemove(cmd *cobra.Command, args []string) error {
+func runContainerTeardown(cmd *cobra.Command, args []string) error {
 	c := container.NewContainer()
 	for _, arg := range args {
 		pgVer := pgxman.PGVersion(arg)
@@ -172,7 +166,7 @@ func runContainerRemove(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
 		}
 
-		if err := c.Remove(cmd.Context(), pgVer); err != nil {
+		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}
 	}

@@ -38,6 +38,6 @@ func TestContainer(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(wantFile, &gotFile)
 
-	err = c.Remove(context.TODO(), pgxman.PGVersion15)
+	err = c.Teardown(context.TODO(), pgxman.PGVersion15)
 	assert.NoError(err)
 }
