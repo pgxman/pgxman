@@ -74,7 +74,7 @@ To stop the container, run:
 
     $ cd "%s" && docker compose down && cd -
 
-For more information on the docker environment, please see: https://docs.pgxman.com/container
+For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
 		strings.Join(exts, ", "),
 		info.PGUser,

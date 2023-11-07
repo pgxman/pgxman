@@ -2,12 +2,14 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/pgxman/pgxman"
@@ -16,6 +18,10 @@ import (
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/runner"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	defaultRunnerImageBase = "ghcr.io/pgxman/runner/postgres"
 )
 
 func NewContainer(cfg ContainerConfig) *Container {
@@ -34,6 +40,11 @@ type ContainerConfig struct {
 	RunnerImage string
 }
 
+var (
+	errDockerNotRunning = errors.New("Docker daemon not running")
+	errDockerNotFound   = errors.New("Docker client not found")
+)
+
 // Install installs extensions specified in a pgxman.yaml file into a container.
 //
 // The folder structure of the configuration files is as follows:
@@ -46,6 +57,10 @@ type ContainerConfig struct {
 // --------- pgxman.yaml
 // --------- compose.yaml
 func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
+	if err := c.checkDocker(); err != nil {
+		return nil, err
+	}
+
 	// TODO: consider allowing only one pg version for pgxman.yaml
 	if len(f.PGVersions) > 1 {
 		return nil, fmt.Errorf("multiple PostgreSQL versions are not supported in container")
@@ -59,7 +74,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 
 	runnerImage := c.Config.RunnerImage
 	if runnerImage == "" {
-		runnerImage = fmt.Sprintf("ghcr.io/pgxman/runner/postgres/%s:latest", pgVer)
+		runnerImage = fmt.Sprintf("%s/%s", defaultRunnerImageBase, pgVer)
 	}
 
 	info := ContainerInfo{
@@ -105,6 +120,33 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	dockerCompose.Stderr = os.Stderr
 
 	return &info, dockerCompose.Run()
+}
+
+func (c *Container) checkDocker() error {
+	cmd := exec.Command("docker", "version", "--format", "json")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return errDockerNotFound
+		}
+
+		if strings.Contains(string(out), "Cannot connect to the Docker daemon") {
+			return errDockerNotRunning
+		}
+
+		return fmt.Errorf("docker error: %s %w", out, err)
+	}
+
+	outMap := make(map[string]any)
+	if err := json.Unmarshal(out, &outMap); err != nil {
+		return errDockerNotRunning
+	}
+
+	if _, ok := outMap["Server"]; !ok {
+		return errDockerNotRunning
+	}
+
+	return nil
 }
 
 func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
