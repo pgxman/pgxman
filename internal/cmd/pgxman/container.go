@@ -110,7 +110,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("Installing %q in a playground container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagInstallerPGVersion)
+	fmt.Printf("Installing %q in a container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagInstallerPGVersion)
 	info, err := container.NewContainer(
 		container.WithRunnerImage(flagContainerInstallRunnerImage),
 	).Install(cmd.Context(), f)
