@@ -168,7 +168,6 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		"down",
 		"--remove-orphans",
 		"--timeout", "10",
-		"--volumes",
 	)
 	dockerCompose.Dir = runnerDir
 	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
