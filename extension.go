@@ -255,6 +255,10 @@ var (
 	DefaultPGVersion    = PGVersion15
 )
 
+func IsSupportedPGVersion(v PGVersion) bool {
+	return slices.Contains(SupportedPGVersions, v)
+}
+
 type Maintainer struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`

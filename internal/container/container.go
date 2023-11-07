@@ -130,6 +130,31 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	return &info, dockerCompose.Run()
 }
 
+func (c *Container) Remove(ctx context.Context, pgVer pgxman.PGVersion) error {
+	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
+	if _, err := os.Stat(runnerDir); err != nil {
+		return err
+	}
+
+	dockerCompose := exec.CommandContext(
+		ctx,
+		"docker",
+		"compose",
+		"down",
+		"--remove-orphans",
+		"--timeout", "10",
+		"--volumes",
+	)
+	dockerCompose.Dir = runnerDir
+	dockerCompose.Stdout = os.Stdout
+	dockerCompose.Stderr = os.Stderr
+	if err := dockerCompose.Run(); err != nil {
+		return err
+	}
+
+	return os.RemoveAll(runnerDir)
+}
+
 func (c *Container) checkDocker() error {
 	cmd := exec.Command("docker", "version", "--format", "json")
 	out, err := cmd.CombinedOutput()

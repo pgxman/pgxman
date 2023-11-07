@@ -22,6 +22,7 @@ func newContainerCmd() *cobra.Command {
 	}
 
 	root.AddCommand(newContainerInstallCmd())
+	root.AddCommand(newContainerRemoveCmd())
 
 	return root
 }
@@ -134,6 +135,45 @@ For more information on the docker environment, please see: https://docs.pgxman.
 		info.RunnerDir,
 		info.RunnerDir,
 	)
+
+	return nil
+}
+
+func newContainerRemoveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "remove",
+		Aliases: []string{"rm"},
+		Short:   "Remove a playground container",
+		Long:    `Remove a playground container and purge all data.`,
+		Example: ` # Remove the PostgreSQL 15 playgrond container.
+pgxman container remove 15
+
+# Remove the PostgreSQL 15 & 16 containers.
+pgxman container remove 15 16
+`,
+		RunE: runContainerRemove,
+		Args: cobra.MinimumNArgs(1),
+	}
+
+	return cmd
+}
+
+func runContainerRemove(cmd *cobra.Command, args []string) error {
+	c := container.NewContainer(
+		container.ContainerConfig{},
+	)
+
+	for _, arg := range args {
+		pgVer := pgxman.PGVersion(arg)
+
+		if !pgxman.IsSupportedPGVersion(pgVer) {
+			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
+		}
+
+		if err := c.Remove(cmd.Context(), pgVer); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
