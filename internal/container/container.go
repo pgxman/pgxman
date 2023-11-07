@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -246,6 +247,11 @@ func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
 	for _, ext := range extsMap {
 		result = append(result, ext)
 	}
+
+	// output extensions by name asc
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
 
 	new.Extensions = result
 

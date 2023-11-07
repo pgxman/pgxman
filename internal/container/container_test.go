@@ -57,11 +57,11 @@ func Test_mergeBundleFile(t *testing.T) {
 			WantBundleFile: &pgxman.PGXManfile{
 				Extensions: []pgxman.InstallExtension{
 					{
-						Name:    "pgvector",
+						Name:    "pg_ivm",
 						Version: "1.0.0",
 					},
 					{
-						Name:    "pg_ivm",
+						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
