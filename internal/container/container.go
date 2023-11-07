@@ -145,6 +145,10 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 }
 
 func (c *Container) Remove(ctx context.Context, pgVer pgxman.PGVersion) error {
+	if err := c.checkDocker(); err != nil {
+		return err
+	}
+
 	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
 	if _, err := os.Stat(runnerDir); err != nil {
 		return err
