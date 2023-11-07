@@ -1,18 +1,21 @@
 version: '3'
-name: pgxman_playground_{{ .PGVersion }}
+name: {{ .ServiceName }}
 services:
-  pgxman_playground_{{ .PGVersion }}:
+  {{ .ServiceName }}:
     container_name: pg_{{ .PGVersion }}
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - {{ .HostPort }}:5432
+      - {{ .Port }}:5432
     environment:
-      - POSTGRES_USER=pgxman
-      - POSTGRES_PASSWORD=pgxman
+      - POSTGRES_USER={{ .PGUser }}
+      - POSTGRES_PASSWORD={{ .PGPassword }}
+      - POSTGRES_DB={{ .PGDatabase }}
+    volumes:
+      - {{ .DataDir }}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U {{ .PGUser }}"]
       interval: 5s
       timeout: 5s
       retries: 5

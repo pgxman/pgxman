@@ -25,16 +25,6 @@ func NewContainer(cfg ContainerConfig) *Container {
 	}
 }
 
-// runner
-// - 16
-//   - Dockerfile
-//   - pgxman.yaml
-//   - compose.yaml
-//
-// - 15
-//   - Dockerfile
-//   - pgxman.yaml
-//   - compose.yaml
 type Container struct {
 	Config ContainerConfig
 	Logger *log.Logger
@@ -44,16 +34,27 @@ type ContainerConfig struct {
 	RunnerImage string
 }
 
-func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) error {
+// Install installs extensions specified in a pgxman.yaml file into a container.
+//
+// The folder structure of the configuration files is as follows:
+//
+// - USER_CONFIG_DIR
+// --- pgxman
+// ----- runner
+// ------- {{ .PG_VERSION }}
+// --------- Dockerfile
+// --------- pgxman.yaml
+// --------- compose.yaml
+func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
 	// TODO: consider allowing only one pg version for pgxman.yaml
 	if len(f.PGVersions) > 1 {
-		return fmt.Errorf("multiple PostgreSQL versions are not supported in container")
+		return nil, fmt.Errorf("multiple PostgreSQL versions are not supported in container")
 	}
 	pgVer := f.PGVersions[0]
 
 	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
-		return err
+		return nil, err
 	}
 
 	runnerImage := c.Config.RunnerImage
@@ -61,22 +62,31 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) error {
 		runnerImage = fmt.Sprintf("ghcr.io/pgxman/runner/postgres/%s:latest", pgVer)
 	}
 
+	info := ContainerInfo{
+		RunnerImage: runnerImage,
+		PGVersion:   string(pgVer),
+		Port:        fmt.Sprintf("%s432", pgVer),
+		RunnerDir:   runnerDir,
+		DataDir:     filepath.Join(runnerDir, "data"),
+		ServiceName: fmt.Sprintf("pgxman_runner_%s", pgVer),
+		PGUser:      "pgxman",
+		PGPassword:  "pgxman",
+		PGDatabase:  "pgxman",
+	}
+
 	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pgVer)
 	if err := tmpl.ExportFS(
 		runner.FS,
 		runnerTemplater{
-			data: runnerData{
-				RunnerImage: runnerImage,
-				PGVersion:   string(pgVer),
-				HostPort:    fmt.Sprintf("%s432", pgVer),
-			}},
+			info: info,
+		},
 		runnerDir,
 	); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := mergeBundleFile(f, runnerDir); err != nil {
-		return err
+		return nil, err
 	}
 
 	dockerCompose := exec.CommandContext(
@@ -94,7 +104,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) error {
 	dockerCompose.Stdout = os.Stdout
 	dockerCompose.Stderr = os.Stderr
 
-	return dockerCompose.Run()
+	return &info, dockerCompose.Run()
 }
 
 func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
@@ -142,14 +152,20 @@ func writeBundleFile(f *pgxman.PGXManfile, dst string) error {
 	return nil
 }
 
-type runnerData struct {
+type ContainerInfo struct {
 	RunnerImage string
 	PGVersion   string
-	HostPort    string
+	Port        string
+	DataDir     string
+	RunnerDir   string
+	ServiceName string
+	PGUser      string
+	PGPassword  string
+	PGDatabase  string
 }
 
 type runnerTemplater struct {
-	data runnerData
+	info ContainerInfo
 }
 
 func (r runnerTemplater) Render(content []byte, out io.Writer) error {
@@ -158,7 +174,7 @@ func (r runnerTemplater) Render(content []byte, out io.Writer) error {
 		return fmt.Errorf("parse template: %w", err)
 	}
 
-	if err := t.Execute(out, r.data); err != nil {
+	if err := t.Execute(out, r.info); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 

@@ -2,6 +2,7 @@ package pgxman
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/container"
@@ -47,13 +48,41 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var exts []string
 	for _, ext := range f.Extensions {
 		if ext.Path != "" {
 			return fmt.Errorf("cannot install extension %s from path in container", ext.Name)
 		}
+
+		exts = append(exts, ext.Name)
 	}
 
-	return container.NewContainer(
+	info, err := container.NewContainer(
 		container.ContainerConfig{},
 	).Install(cmd.Context(), f)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(`%s installed successfully.
+
+pgxman is running in a Docker container. To connect, run:
+
+    $ psql postgres://%s:%s@127.0.0.1:%s/%s
+
+To stop the container, run:
+
+    $ cd "%s" && docker compose down && cd -
+
+For more information on the docker environment, please see: https://docs.pgxman.com/container
+`,
+		strings.Join(exts, ", "),
+		info.PGUser,
+		info.PGPassword,
+		info.Port,
+		info.PGDatabase,
+		info.RunnerDir,
+	)
+
+	return nil
 }
