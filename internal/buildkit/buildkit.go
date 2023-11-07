@@ -9,23 +9,17 @@ import (
 	"sync"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/config"
 	"sigs.k8s.io/yaml"
 )
 
 var (
-	configDir   string
 	buildkitDir string
 	extsOnce    = sync.OnceValues(extensions)
 )
 
 func init() {
-	userConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	configDir = filepath.Join(userConfigDir, "pgxman")
-	buildkitDir = filepath.Join(configDir, "buildkit")
+	buildkitDir = filepath.Join(config.ConfigDir(), "buildkit")
 
 }
 
@@ -62,10 +56,6 @@ func extensions() (map[string]pgxman.Extension, error) {
 }
 
 func downloadSource(ctx context.Context) error {
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return err
-	}
-
 	if _, err := os.Stat(buildkitDir); err == nil {
 		gitFetchCmd := exec.CommandContext(ctx, "git", "fetch", "origin")
 		gitFetchCmd.Dir = buildkitDir
@@ -83,8 +73,12 @@ func downloadSource(ctx context.Context) error {
 
 		return nil
 	} else {
+		if err := os.MkdirAll(config.ConfigDir(), 0755); err != nil {
+			return err
+		}
+
 		gitCloneCmd := exec.CommandContext(ctx, "git", "clone", "--single-branch", "https://github.com/pgxman/buildkit.git")
-		gitCloneCmd.Dir = configDir
+		gitCloneCmd.Dir = config.ConfigDir()
 
 		if out, err := gitCloneCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("git clone: %w\n%s", err, out)

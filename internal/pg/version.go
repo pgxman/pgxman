@@ -13,21 +13,21 @@ var (
 	regexpPGVersion = regexp.MustCompile(`^PostgreSQL (\d+)`)
 )
 
-func DefaultVersion(ctx context.Context) pgxman.PGVersion {
+func DetectVersion(ctx context.Context) pgxman.PGVersion {
 	cmd := exec.CommandContext(ctx, "pg_config", "--version")
 	b, err := cmd.CombinedOutput()
 	if err != nil {
-		return pgxman.SupportedLatestPGVersion
+		return pgxman.DefaultPGVersion
 	}
 
 	matches := regexpPGVersion.FindStringSubmatch(string(b))
 	if len(matches) == 0 {
-		return pgxman.SupportedLatestPGVersion
+		return pgxman.DefaultPGVersion
 	}
 
 	def := pgxman.PGVersion(matches[1])
 	if !slices.Contains(pgxman.SupportedPGVersions, def) {
-		return pgxman.SupportedLatestPGVersion
+		return pgxman.DefaultPGVersion
 	}
 
 	return def

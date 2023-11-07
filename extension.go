@@ -251,9 +251,13 @@ const (
 )
 
 var (
-	SupportedPGVersions      = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
-	SupportedLatestPGVersion = PGVersion16
+	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
+	DefaultPGVersion    = PGVersion15
 )
+
+func IsSupportedPGVersion(v PGVersion) bool {
+	return slices.Contains(SupportedPGVersions, v)
+}
 
 type Maintainer struct {
 	Name  string `json:"name"`

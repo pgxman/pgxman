@@ -94,7 +94,7 @@ func (b *dockerBuilder) generateDockerFile(ext Extension, dstDir string) error {
 	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Debug("Generating Dockerfile")
 
-	return tmpl.Export(docker.FS, dockerFileTemplater{ext}, dstDir)
+	return tmpl.ExportFS(docker.FS, dockerFileTemplater{ext}, dstDir)
 }
 
 func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) error {

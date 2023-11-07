@@ -171,7 +171,7 @@ func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, buildDir s
 	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
 	logger.Info("Generating debian package")
 
-	return tmpl.Export(debian.FS, debianPackageTemplater{ext}, buildDir)
+	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext}, buildDir)
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {

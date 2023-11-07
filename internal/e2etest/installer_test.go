@@ -56,7 +56,7 @@ func TestDebianInstaller_Install(t *testing.T) {
 
 		pgv := ext.PGVersion
 		if pgv == "" {
-			pgv = string(pgxman.SupportedLatestPGVersion)
+			pgv = string(pgxman.DefaultPGVersion)
 		}
 		image := fmt.Sprintf("postgres:%s", pgv)
 

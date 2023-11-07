@@ -13,7 +13,7 @@ type Template interface {
 	Render(content []byte, out io.Writer) error
 }
 
-func Export(f fs.ReadFileFS, t Template, dstDir string) error {
+func ExportFS(f fs.ReadFileFS, t Template, dstDir string) error {
 	return fs.WalkDir(f, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fs.SkipDir
