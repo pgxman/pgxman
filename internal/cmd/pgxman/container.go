@@ -146,7 +146,7 @@ func newContainerTeardownCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "teardown",
 		Short: "Tear down a container",
-		Long:  `Tear down a playground container and purge all data.`,
+		Long:  `Tear down a container and purge all data.`,
 		Example: ` # Tear down the PostgreSQL 15 playgrond container.
 pgxman container teardown pgxman_runner_15
 
