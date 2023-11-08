@@ -148,7 +148,7 @@ type errInvalidExtensionFormat struct {
 }
 
 func (e errInvalidExtensionFormat) Error() string {
-	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION@PGVERSION1,PGVERSION2...", e.Arg)
+	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION...", e.Arg)
 }
 
 type ArgsParser struct {
