@@ -12,25 +12,32 @@ const DefaultPGXManfileAPIVersion = "v1"
 type PGXManfile struct {
 	APIVersion string             `json:"apiVersion"`
 	Extensions []InstallExtension `json:"extensions"`
-	PGVersions []PGVersion        `json:"pgVersions"`
+	Postgres   Postgres           `json:"postgres"`
+
+	// DEPRECATED: use Postgres.Version instead
+	PGVersions []PGVersion `json:"pgVersions"`
 }
 
-func (exts PGXManfile) Validate() error {
-	if exts.APIVersion != DefaultPGXManfileAPIVersion {
-		return fmt.Errorf("invalid api version: %s", exts.APIVersion)
+func (file PGXManfile) Validate() error {
+	if file.APIVersion != DefaultPGXManfileAPIVersion {
+		return fmt.Errorf("invalid api version: %s", file.APIVersion)
 	}
 
-	if len(exts.Extensions) > 0 && len(exts.PGVersions) == 0 {
+	if len(file.Extensions) > 0 && len(file.PGVersions) == 0 {
 		return fmt.Errorf("pgVersions is required")
 	}
 
-	for _, ext := range exts.Extensions {
+	for _, ext := range file.Extensions {
 		if err := ext.Validate(); err != nil {
 			return err
 		}
 	}
 
-	for _, pgv := range exts.PGVersions {
+	if err := file.Postgres.Validate(); err != nil {
+		return err
+	}
+
+	for _, pgv := range file.PGVersions {
 		if !slices.Contains(SupportedPGVersions, pgv) {
 			return fmt.Errorf("unsupported pg version: %s", pgv)
 		}
@@ -52,6 +59,17 @@ func (e InstallExtension) Validate() error {
 	}
 
 	return nil
+}
+
+type Postgres struct {
+	Version  PGVersion `json:"version"`
+	Username string    `json:"username,omitempty"`
+	Password string    `json:"password,omitempty"`
+	DBName   string    `json:"dbname,omitempty"`
+}
+
+func (p Postgres) Validate() error {
+	return ValidatePGVersion(p.Version)
 }
 
 func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {

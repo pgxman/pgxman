@@ -255,8 +255,12 @@ var (
 	DefaultPGVersion    = PGVersion15
 )
 
-func IsSupportedPGVersion(v PGVersion) bool {
-	return slices.Contains(SupportedPGVersions, v)
+func ValidatePGVersion(v PGVersion) error {
+	if slices.Contains(SupportedPGVersions, v) {
+		return nil
+	}
+
+	return fmt.Errorf("unsupported PostgreSQL version: %s", v)
 }
 
 type Maintainer struct {

@@ -181,8 +181,8 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 		}
 
 		pgVer := pgxman.PGVersion(match[1])
-		if !pgxman.IsSupportedPGVersion(pgVer) {
-			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
+		if err := pgxman.ValidatePGVersion(pgVer); err != nil {
+			return err
 		}
 
 		fmt.Printf("Tearing down container for PostgreSQL %s...\n", pgVer)
