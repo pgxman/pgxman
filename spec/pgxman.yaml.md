@@ -4,7 +4,6 @@ A `pgxman.yaml` is a YAML configuration file used to declare a collection of Pos
 It serves as an input file for the command `pgxman install -f /PATH_TO/pgxman.yaml`, defining the required extensions, their versions,
 and the targeting PostgreSQL versions.
 
-
 ## Example
 
 ```yaml
@@ -15,8 +14,8 @@ extensions:
   - name: "pg_ivm"
     version: "1.5.1"
   - path: "/local/path/to/extension"
-pgVersions:
-  - "15"
+postgres:
+  version: "15"
 ```
 
 ## Fields
@@ -51,9 +50,30 @@ pgVersions:
     - **Type**: List of strings
     - **Required**: No
 
-### `pgVersions`
+### `postgres`
 
-- **Description**: Specifies the PostgreSQL versions that the extensions are targeting.
-- **Type**: List of strings
-- **Required**: No
-- **Supported Values**: `"13"`, `"14"`, `"15"`
+- **Description**: Specifies the PostgreSQL configuration that the extensions are targeting.
+- **Type**: Object
+- **Required**: Yes
+- **Object Fields**:
+  - `version`:
+    - **Description**: Specifies the PostgreSQL version. This field is mandatory.
+    - **Type**: String
+    - **Required**: Yes
+    - **Supported Values**: `"13"`, `"14"`, `"15"`, `"16"`
+  - `username`
+    - **Description**: Specifies the database username to connect to a PostgreSQL instance. This field is optional.
+    - **Type**: String
+    - **Required**: No
+  - `password`
+    - **Description**: Specifies the database password to connect to a PostgreSQL instance. This field is optional.
+    - **Type**: String
+    - **Required**: No
+  - `dbname`
+    - **Description**: Specifies the database name to connect to a PostgreSQL instance. This field is optional.
+    - **Type**: String
+    - **Required**: No
+  - `port`
+    - **Description**: Specifies the database port to connect to a PostgreSQL instance. This field is optional.
+    - **Type**: String
+    - **Required**: No
