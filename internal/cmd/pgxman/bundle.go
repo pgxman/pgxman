@@ -37,9 +37,8 @@ This ensures consistency across extensions by synchronizing them with the defini
       - name: "pgvector"
         version: "0.5.0"
       - path: "/local/path/to/extension"
-    pgVersions:
-      - "14"
-      - "15"
+    postgres:
+      version: "14"
   EOF
   `,
 		RunE: runBundle,

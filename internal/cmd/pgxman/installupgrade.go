@@ -170,7 +170,9 @@ func (p *ArgsParser) Parse(args []string) (*pgxman.PGXManfile, error) {
 	f := &pgxman.PGXManfile{
 		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 		Extensions: exts,
-		PGVersions: []pgxman.PGVersion{p.PGVer},
+		Postgres: pgxman.Postgres{
+			Version: p.PGVer,
+		},
 	}
 	if err := LockPGXManfile(f, p.Logger); err != nil {
 		return nil, err

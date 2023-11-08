@@ -63,15 +63,13 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 					return fmt.Errorf("extension %q not found", extToInstall.Name)
 				}
 
-				for _, pgv := range extFile.PGVersions {
-					aptPkgs = append(
-						aptPkgs,
-						AptPackage{
-							Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", pgv, debNormalizedName(extToInstall.Name), extToInstall.Version),
-							Opts: extToInstall.Options,
-						},
-					)
-				}
+				aptPkgs = append(
+					aptPkgs,
+					AptPackage{
+						Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", extFile.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
+						Opts: extToInstall.Options,
+					},
+				)
 
 				if builders := installableExt.Builders; builders != nil {
 					builder := builders.Current()

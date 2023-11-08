@@ -175,8 +175,8 @@ extensions:
 - name: "pg_ivm"
   version: "1.5.1"
 - path: "/out/%s"
-pgVersions:
-- "14"
+postgres:
+  version: "14"
 EOS
 `, filepath.Join(pathPrefix, debFile)),
 			)

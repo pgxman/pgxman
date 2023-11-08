@@ -78,12 +78,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		return nil, err
 	}
 
-	// TODO: allow only one pg version for pgxman.yaml
-	if len(f.PGVersions) > 1 {
-		return nil, fmt.Errorf("multiple PostgreSQL versions are not supported in container")
-	}
-	pgVer := f.PGVersions[0]
-
+	pgVer := f.Postgres.Version
 	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err

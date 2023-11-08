@@ -3,8 +3,6 @@ package pgxman
 import (
 	"context"
 	"fmt"
-
-	"golang.org/x/exp/slices"
 )
 
 const DefaultPGXManfileAPIVersion = "v1"
@@ -13,18 +11,11 @@ type PGXManfile struct {
 	APIVersion string             `json:"apiVersion"`
 	Extensions []InstallExtension `json:"extensions"`
 	Postgres   Postgres           `json:"postgres"`
-
-	// DEPRECATED: use Postgres.Version instead
-	PGVersions []PGVersion `json:"pgVersions"`
 }
 
 func (file PGXManfile) Validate() error {
 	if file.APIVersion != DefaultPGXManfileAPIVersion {
 		return fmt.Errorf("invalid api version: %s", file.APIVersion)
-	}
-
-	if len(file.Extensions) > 0 && len(file.PGVersions) == 0 {
-		return fmt.Errorf("pgVersions is required")
 	}
 
 	for _, ext := range file.Extensions {
@@ -35,12 +26,6 @@ func (file PGXManfile) Validate() error {
 
 	if err := file.Postgres.Validate(); err != nil {
 		return err
-	}
-
-	for _, pgv := range file.PGVersions {
-		if !slices.Contains(SupportedPGVersions, pgv) {
-			return fmt.Errorf("unsupported pg version: %s", pgv)
-		}
 	}
 
 	return nil

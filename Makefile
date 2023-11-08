@@ -48,6 +48,7 @@ e2etest:
 		-e2e \
 		-debian-bookworm-image $(DEBIAN_BOOKWORM_IMAGE) \
 		-ubuntu-jammy-image $(UBUNTU_JAMMY_IMAGE) \
+		-runner-postgres-15-image $(RUNNER_POSTGRES_15_IMAGE) \
 		-pgxman-bin $(BIN_DIR)/pgxman_linux_$$(go env GOARCH)
 
 .PHONY: vet
@@ -78,13 +79,14 @@ docker_load_builder: docker_build_builder
 docker_push_builder: DOCKER_ARGS=--push
 docker_push_builder: docker_build_builder
 
+RUNNER_TARGET ?= runner
 RUNNER_POSTGRES_16_IMAGE ?= ghcr.io/pgxman/runner/postgres/16:main
 RUNNER_POSTGRES_15_IMAGE ?= ghcr.io/pgxman/runner/postgres/15:main
 RUNNER_POSTGRES_14_IMAGE ?= ghcr.io/pgxman/runner/postgres/14:main
 RUNNER_POSTGRES_13_IMAGE ?= ghcr.io/pgxman/runner/postgres/13:main
 .PHONY: docker_build_runner
 docker_build_runner:
-	docker buildx bake runner \
+	docker buildx bake $(RUNNER_TARGET) \
 		-f $(PWD)/dockerfiles/docker-bake.hcl \
 		--set runner-postgres-16.tags=$(RUNNER_POSTGRES_16_IMAGE) \
 		--set runner-postgres-15.tags=$(RUNNER_POSTGRES_15_IMAGE) \

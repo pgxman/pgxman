@@ -15,10 +15,14 @@ import (
 func TestContainer(t *testing.T) {
 	assert := assert.New(t)
 
-	c := container.NewContainer()
+	c := container.NewContainer(
+		container.WithRunnerImage(flagRunnerPostgres15Image),
+	)
 	wantFile := &pgxman.PGXManfile{
 		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
-		PGVersions: []pgxman.PGVersion{pgxman.PGVersion15},
+		Postgres: pgxman.Postgres{
+			Version: pgxman.PGVersion15,
+		},
 		Extensions: []pgxman.InstallExtension{
 			{
 				Name:    "pgvector",
