@@ -4,20 +4,20 @@
       "light": "/logo/light.png",
       "dark": "/logo/dark.png"
     },
-    "favicon": "/favicon.png",
+    "favicon": "/logo/favicon.svg",
     "colors": {
       "primary": "#FC7D1D",
       "light": "#FF9443",
       "dark": "#FC7D1D"
     },
     "topbarCtaButton": {
-      "type": "github",
-      "url": "https://github.com/hydradatabase/hydra"
+      "type": "Github",
+      "url": "https://github.com/pgxman/pgxman"
     },
     "topbarLinks": [
       {
-        "name": "Log in",
-        "url": "https://hydra-dashboard.us.auth0.com/u/login?state=hKFo2SB2YlhCc2wwQlRqMVM3R1EtZU1rcEtLR1BCYWRYckxUQaFur3VuaXZlcnNhbC1sb2dpbqN0aWTZIDlURW4tQlRQaGN6N2liUEtjVS1yODhwWWVCVnBIRUR6o2NpZNkgbDZNRmw2b1dHcmdQWFdHS2JCeGdSa3BsOFZlcUQxYno"
+        "name": "Home",
+        "url": "https://pgxman.com/"
       }
     ],
     "anchors": [
@@ -25,11 +25,6 @@
         "name": "Discord",
         "icon": "discord",
         "url": "https://discord.com/invite/SQrwnAxtDw"
-      },
-      {
-        "name": "Blog",
-        "icon": "newspaper",
-        "url": "https://www.hydra.so/blog"
       }
     ],
     "navigation": [
@@ -50,6 +45,6 @@
     "footerSocials":
       {
           "discord": "https://discord.com/invite/SQrwnAxtDw",
-          "github": "https://github.com/hydradatabase/hydra"
+          "github": "https://github.com/pgxman/pgxman"
       }
   }
