@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if flagRunnerPostgres15Image == "" {
-		logger.Info("-runner-15-image is required")
+		logger.Info("-runner-postgres-15-image is required")
 		os.Exit(0)
 	}
 
