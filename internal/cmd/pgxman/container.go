@@ -140,10 +140,10 @@ For more information on the docker environment, please see: https://docs.pgxman.
 `,
 		strings.Join(exts, ", "),
 		info.ContainerName,
-		info.PGUser,
-		info.PGPassword,
-		info.Port,
-		info.PGDatabase,
+		info.Postgres.Username,
+		info.Postgres.Password,
+		info.Postgres.Port,
+		info.Postgres.DBName,
 		info.ContainerName,
 	)
 
@@ -181,8 +181,8 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 		}
 
 		pgVer := pgxman.PGVersion(match[1])
-		if !pgxman.IsSupportedPGVersion(pgVer) {
-			return fmt.Errorf("unsupported PostgreSQL version: %s", pgVer)
+		if err := pgxman.ValidatePGVersion(pgVer); err != nil {
+			return err
 		}
 
 		fmt.Printf("Tearing down container for PostgreSQL %s...\n", pgVer)

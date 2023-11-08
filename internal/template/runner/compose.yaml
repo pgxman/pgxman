@@ -7,15 +7,15 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - {{ .Port }}:5432
+      - {{ .Postgres.Port }}:5432
     environment:
-      - POSTGRES_USER={{ .PGUser }}
-      - POSTGRES_PASSWORD={{ .PGPassword }}
-      - POSTGRES_DB={{ .PGDatabase }}
+      - POSTGRES_USER={{ .Postgres.Username }}
+      - POSTGRES_PASSWORD={{ .Postgres.Password }}
+      - POSTGRES_DB={{ .Postgres.DBName }}
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U {{ .PGUser }}"]
+      test: ["CMD-SHELL", "pg_isready -U {{ .Postgres.Username }}"]
       interval: 5s
       timeout: 5s
       retries: 5
