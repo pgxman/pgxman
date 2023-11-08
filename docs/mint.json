@@ -1,0 +1,55 @@
+{
+    "name": "pgxman",
+    "logo": {
+      "light": "/logo/light.png",
+      "dark": "/logo/dark.png"
+    },
+    "favicon": "/favicon.png",
+    "colors": {
+      "primary": "#FC7D1D",
+      "light": "#FF9443",
+      "dark": "#FC7D1D"
+    },
+    "topbarCtaButton": {
+      "type": "github",
+      "url": "https://github.com/hydradatabase/hydra"
+    },
+    "topbarLinks": [
+      {
+        "name": "Log in",
+        "url": "https://hydra-dashboard.us.auth0.com/u/login?state=hKFo2SB2YlhCc2wwQlRqMVM3R1EtZU1rcEtLR1BCYWRYckxUQaFur3VuaXZlcnNhbC1sb2dpbqN0aWTZIDlURW4tQlRQaGN6N2liUEtjVS1yODhwWWVCVnBIRUR6o2NpZNkgbDZNRmw2b1dHcmdQWFdHS2JCeGdSa3BsOFZlcUQxYno"
+      }
+    ],
+    "anchors": [
+      {
+        "name": "Discord",
+        "icon": "discord",
+        "url": "https://discord.com/invite/SQrwnAxtDw"
+      },
+      {
+        "name": "Blog",
+        "icon": "newspaper",
+        "url": "https://www.hydra.so/blog"
+      }
+    ],
+    "navigation": [
+      {
+        "group": "Welcome to pgxman",
+        "pages": [
+          "readme",
+          "installing-pgxman",
+          "uninstalling-pgxman",
+          "installing-extensions",
+          "how-it-works",
+          "installing-postgres",
+          "building-an-extension",
+          "pgxman-yaml"
+        ]
+      }
+    ],
+    "footerSocials":
+      {
+          "discord": "https://discord.com/invite/SQrwnAxtDw",
+          "github": "https://github.com/hydradatabase/hydra"
+      }
+  }
