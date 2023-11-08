@@ -51,6 +51,7 @@ type Postgres struct {
 	Username string    `json:"username,omitempty"`
 	Password string    `json:"password,omitempty"`
 	DBName   string    `json:"dbname,omitempty"`
+	Port     string    `json:"port,omitempty"`
 }
 
 func (p Postgres) Validate() error {

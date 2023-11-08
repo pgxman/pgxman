@@ -140,10 +140,10 @@ For more information on the docker environment, please see: https://docs.pgxman.
 `,
 		strings.Join(exts, ", "),
 		info.ContainerName,
-		info.PGUser,
-		info.PGPassword,
-		info.Port,
-		info.PGDatabase,
+		info.Postgres.Username,
+		info.Postgres.Password,
+		info.Postgres.Port,
+		info.Postgres.DBName,
 		info.ContainerName,
 	)
 

@@ -79,6 +79,14 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	}
 
 	pgVer := f.Postgres.Version
+
+	// Set default values
+	// TODO: randomize password
+	f.Postgres.Username = "pgxman"
+	f.Postgres.Password = "pgxman"
+	f.Postgres.DBName = "pgxman"
+	f.Postgres.Port = fmt.Sprintf("%s432", pgVer)
+
 	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err
@@ -91,13 +99,9 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 
 	info := ContainerInfo{
 		RunnerImage:   runnerImage,
-		PGVersion:     string(pgVer),
-		Port:          fmt.Sprintf("%s432", pgVer),
 		RunnerDir:     runnerDir,
 		ContainerName: fmt.Sprintf("pgxman_runner_%s", pgVer),
-		PGUser:        "pgxman",
-		PGPassword:    "pgxman",
-		PGDatabase:    "pgxman",
+		Postgres:      f.Postgres,
 	}
 
 	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pgVer)
@@ -253,6 +257,7 @@ func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
 	})
 
 	new.Extensions = result
+	new.Postgres = existing.Postgres // always preserve existing postgres config
 
 	return writeBundleFile(new, bundleFile)
 }
@@ -272,13 +277,9 @@ func writeBundleFile(f *pgxman.PGXManfile, dst string) error {
 
 type ContainerInfo struct {
 	RunnerImage   string
-	PGVersion     string
-	Port          string
 	RunnerDir     string
 	ContainerName string
-	PGUser        string
-	PGPassword    string
-	PGDatabase    string
+	Postgres      pgxman.Postgres
 }
 
 type runnerTemplater struct {
