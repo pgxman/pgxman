@@ -31,14 +31,14 @@
       {
         "group": "Welcome to pgxman",
         "pages": [
-          "readme",
+          "README",
           "installing-pgxman",
           "uninstalling-pgxman",
           "installing-extensions",
           "how-it-works",
           "installing-postgres",
           "building-an-extension",
-          "pgxman-yaml"
+          "spec/pgxman.yaml"
         ]
       }
     ],
