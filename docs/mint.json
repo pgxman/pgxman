@@ -4,14 +4,14 @@
       "light": "/logo/light.png",
       "dark": "/logo/dark.png"
     },
-    "favicon": "/logo/favicon.svg",
+    "favicon": "/logo/icon.svg",
     "colors": {
       "primary": "#FC7D1D",
       "light": "#FF9443",
       "dark": "#FC7D1D"
     },
     "topbarCtaButton": {
-      "type": "Github",
+      "type": "github",
       "url": "https://github.com/pgxman/pgxman"
     },
     "topbarLinks": [
@@ -31,13 +31,13 @@
       {
         "group": "Welcome to pgxman",
         "pages": [
-          "README",
-          "installing-pgxman",
-          "uninstalling-pgxman",
-          "installing-extensions",
-          "how-it-works",
-          "installing-postgres",
-          "building-an-extension",
+          "overview",
+          "installing_pgxman",
+          "uninstalling_pgxman",
+          "installing_extensions",
+          "how_it_works",
+          "installing_postgres",
+          "building_an_extension",
           "spec/pgxman.yaml"
         ]
       }
