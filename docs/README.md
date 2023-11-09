@@ -1,14 +1,35 @@
-# Table of Contents
+# PGXMan Documentation
 
-## User Guide
+This README is meta-documentation; it is not part of the pgxman documentation.
 
-* [Installing pgxman](installing_pgxman.md)
-* [Installing Postgres](installing_postgres.md)
-* [`pgxman install`: Installing Extensions](installing_extensions.md)
-  * [Installing extensions using a `pgxman.yaml` file](../spec/pgxman.yaml.md)
-* [How pgxman Works](how_it_works.md)
-* [Uninstalling pgxman](uninstalling_pgxman.md)
+## Using mintlify locally
 
-## Developer Guide
+```sh
+asdf install
+npm i -g mintlify
+mintlify dev
+```
 
-* [`init` and `build`: Building an Extension](building_an_extension.md)
+For more, see: https://mintlify.com/docs/development
+
+## Adding a page
+
+You need to add it to the navigation section in `mint.json`.
+
+For more, see: https://mintlify.com/docs/settings/navigation#sidebar
+
+## Formatting
+
+* use `.mdx`, `.md` is not recognized
+* add yaml metadata at the top between `---` bars
+  * `title` will be displayed as an `h1`, so do not repeat the title in the document
+  * use `sidebarTitle` to have a shorter title displayed in the navigation
+
+In addition to standard markdown, there are some mintlify-specific extensions
+you can opt to use (custom XML that you can add to your file).
+
+For more, see: https://mintlify.com/docs/content/page
+
+## Deployment
+
+Docs automatically update when a PR is merged, this is done by the mintlify Github app.

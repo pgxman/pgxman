@@ -1,0 +1,69 @@
+{
+    "name": "pgxman",
+    "logo": {
+      "light": "/logo/light.png",
+      "dark": "/logo/dark.png"
+    },
+    "favicon": "/logo/icon.png",
+    "colors": {
+      "primary": "#FC7D1D",
+      "light": "#FF9443",
+      "dark": "#FC7D1D",
+      "background": {
+        "light": "#F4F4F5",
+        "dark": "#0D0D0E"
+      }
+    },
+    "topbarCtaButton": {
+      "type": "github",
+      "url": "https://github.com/pgxman/pgxman"
+    },
+    "topbarLinks": [
+      {
+        "name": "Home",
+        "url": "https://pgxman.com/"
+      }
+    ],
+    "anchors": [
+      {
+        "name": "Discord",
+        "icon": "discord",
+        "url": "https://discord.com/invite/SQrwnAxtDw"
+      }
+    ],
+    "navigation": [
+      {
+        "group": "Welcome to pgxman",
+        "pages": [
+          "overview"
+        ]
+      },
+      {
+        "group": "Getting Started",
+        "pages": [
+          "installing_pgxman",
+          "installing_postgres",
+          "installing_extensions",
+          "uninstalling_pgxman"
+        ]
+      },
+      {
+        "group": "Developer Guide",
+        "pages": [
+          "building_an_extension",
+          "how_it_works"
+        ]
+      },
+      {
+        "group": "Specifications",
+        "pages": [
+          "spec/pgxman.yaml"
+        ]
+      }
+    ],
+    "footerSocials":
+      {
+          "discord": "https://discord.com/invite/SQrwnAxtDw",
+          "github": "https://github.com/pgxman/pgxman"
+      }
+  }
