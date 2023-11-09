@@ -31,13 +31,28 @@
       {
         "group": "Welcome to pgxman",
         "pages": [
-          "overview",
+          "overview"
+        ]
+      },
+      {
+        "group": "Getting Started",
+        "pages": [
           "installing_pgxman",
-          "uninstalling_pgxman",
-          "installing_extensions",
-          "how_it_works",
           "installing_postgres",
+          "installing_extensions",
+          "uninstalling_pgxman"
+        ]
+      },
+      {
+        "group": "Developer Guide",
+        "pages": [
           "building_an_extension",
+          "how_it_works"
+        ]
+      },
+      {
+        "group": "Specifications",
+        "pages": [
           "spec/pgxman.yaml"
         ]
       }
