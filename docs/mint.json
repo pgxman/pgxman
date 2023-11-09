@@ -8,7 +8,11 @@
     "colors": {
       "primary": "#FC7D1D",
       "light": "#FF9443",
-      "dark": "#FC7D1D"
+      "dark": "#FC7D1D",
+      "background": {
+        "light": "#F4F4F5",
+        "dark": "#0D0D0E"
+      }
     },
     "topbarCtaButton": {
       "type": "github",
