@@ -109,9 +109,13 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 }
 
 func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
-	action := "installed"
+	var (
+		action   = "installed"
+		abortMsg = "installation aborted"
+	)
 	if upgrade {
 		action = "upgraded"
+		abortMsg = "upgrade aborted"
 	}
 
 	out := []string{
@@ -137,7 +141,7 @@ func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade b
 		case "y", "yes", "":
 			return nil
 		default:
-			return fmt.Errorf(action + " aborted")
+			return fmt.Errorf(abortMsg)
 		}
 	}
 
