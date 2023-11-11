@@ -2,7 +2,7 @@
 title: "pgxman.yaml"
 ---
 
-A `pgxman.yaml` is a YAML configuration file used to declare a collection of PostgreSQL extensions for installation via PGXMan.
+A `pgxman.yaml` is a YAML configuration file used to declare a collection of PostgreSQL extensions for installation via pgxman.
 It serves as an input file for the command `pgxman install -f /PATH_TO/pgxman.yaml`, defining the required extensions, their versions,
 and the targeting PostgreSQL versions.
 
@@ -24,7 +24,7 @@ postgres:
 
 ### `apiVersion`
 
-- **Description**: Defines the API version to ensure compatibility with PGXMan.
+- **Description**: Defines the API version to ensure compatibility with pgxman.
 - **Type**: String
 - **Required**: Yes
 - **Supported Values**: As of now, only `v1` is supported.

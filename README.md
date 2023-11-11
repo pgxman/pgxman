@@ -1,13 +1,13 @@
-# PGXMan - PostgreSQL Extension Manager
+# pgxman - PostgreSQL Extension Manager
 
-Welcome to PGXMan, the solution for managing PostgreSQL extensions!
+Welcome to pgxman, the solution for managing PostgreSQL extensions!
 
 PostgreSQL extensions enhance the database's capabilities by introducing new
 features, data types, functions, and performance optimizations without altering
-the core code. PGXMan streamlines using these extensions by simplifying the
+the core code. pgxman streamlines using these extensions by simplifying the
 tasks of building, packaging, and installing them.
 
-PGXMan is currently compatible with the following Linux distributions:
+pgxman is currently compatible with the following Linux distributions:
 
 - [Debian Bookworm](https://www.debian.org/releases/bookworm)
 - [Ubuntu Jammy](https://releases.ubuntu.com/jammy)
@@ -19,7 +19,7 @@ For more information about pgxman, see our [full documentation](docs/README.md).
 Run:
 
 ```console
-curl -sfL https://pgxman.com/install | sh -
+curl -sfL https://install.pgx.sh | sh -
 ```
 
 Or download the latest [compiled binaries](https://github.com/pgxman/release/releases/) and add them to your executable path.
