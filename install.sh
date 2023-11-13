@@ -14,8 +14,11 @@ PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/release/re
 main() {
     downloader --check
     need_cmd uname
+    need_cmd echo
+    need_cmd cat
 
     install_pgxman
+    say_success
     install_extensions "$@"
 }
 
@@ -177,6 +180,21 @@ say() {
 err() {
     say "$1" >&2
     exit 1
+}
+
+say_success() {
+    cat <<EOS
+@@@@@@@@    @@@@@@@@ @@@      @@@  @@@@@@ @@@@@   @@@@@@    @@@@@@
+@@@   @@@  @@@    @@@  @@@@  @@@@   @@  @@@@  @@@ @@@  @@@  @@@  @@@
+@@      @@ @@@     @@    @@@@@@     @@   @@    @@ @@@@@@@@  @@    @@
+@@@    @@@ @@@     @@   @@@  @@@    @@   @@    @@ @@    @@  @@    @@
+@@@@@@@@@   @@@@@@@@@ @@@      @@@  @@   @@    @@ @@    @@  @@    @@
+@@                 @@
+@@          @@@@@@@@@
+
+👏🎉 pgxman successfully installed.
+If this is your first time using pgxman check out our docs at https://pgxman.com/docs.
+EOS
 }
 
 main "$@" || exit 1
