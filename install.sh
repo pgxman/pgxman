@@ -14,36 +14,30 @@ PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/release/re
 main() {
     downloader --check
     need_cmd uname
-    need_cmd apt
+    need_cmd echo
+    need_cmd cat
 
     install_pgxman
+    say_success
     install_extensions "$@"
 }
 
 install_pgxman() {
     get_architecture || return 1
 
-    local _arch="$RETVAL"
-    local _url="${PGXMAN_DOWNLOAD_URL}/pgxman_linux_${_arch}.deb"
-    local _file="/tmp/pgxman_linux_${_arch}.deb"
+    case "$OS_TYPE" in
+    linux)
+        install_pgxman_linux "$CPU_TYPE"
+        ;;
 
-    SUDO=""
-    if [ "$(id -u)" != "0" ]; then
-        if
-            whereis sudo &
-            >/dev/null
-        then
-            SUDO="sudo"
-        else
-            echo "Sudo not found. You will need to run this script as root."
-            exit
-        fi
-    fi
+    darwin)
+        install_pgxman_darwin
+        ;;
 
-    echo "Installing PGXMan for ${_arch}..."
-    ensure downloader "$_url" "$_file"
-    ensure ${SUDO} apt update
-    ensure ${SUDO} apt install -y "$_file"
+    *)
+        err "unsupported OS: $OS_TYPE"
+        ;;
+    esac
 }
 
 install_extensions() {
@@ -56,8 +50,22 @@ install_extensions() {
 }
 
 get_architecture() {
-    local _cputype
+    local _ostype _cputype
+    _ostype="$(uname -s)"
     _cputype="$(uname -m)"
+
+    case "$_ostype" in
+    Linux)
+        _ostype=linux
+        ;;
+
+    Darwin)
+        _ostype=darwin
+        ;;
+    *)
+        err "unrecognized OS type: $_ostype"
+        ;;
+    esac
 
     case "$_cputype" in
     i386 | i486 | i686 | i786 | x86)
@@ -81,7 +89,45 @@ get_architecture() {
         ;;
     esac
 
-    RETVAL="$_cputype"
+    CPU_TYPE="$_cputype"
+    OS_TYPE="$_ostype"
+}
+
+install_pgxman_linux() {
+    need_cmd apt
+
+    local _arch="$1"
+    local _url="${PGXMAN_DOWNLOAD_URL}/pgxman_linux_${_arch}.deb"
+    local _file="/tmp/pgxman_linux_${_arch}.deb"
+
+    SUDO=""
+    if [ "$(id -u)" != "0" ]; then
+        if
+            which sudo >/dev/null 2>&1
+        then
+            SUDO="sudo"
+        else
+            echo "Sudo not found. You will need to run this script as root."
+            exit
+        fi
+    fi
+
+    echo "Installing pgxman for Linux ${_arch}..."
+    ensure downloader "$_url" "$_file"
+    ensure ${SUDO} apt update
+    ensure ${SUDO} apt install -y "$_file"
+}
+
+install_pgxman_darwin() {
+    need_cmd brew
+
+    if brew ls pgxman >/dev/null 2>&1; then
+        echo "Upgrading pgxman for macOS..."
+        ensure brew upgrade pgxman/tap/pgxman
+    else
+        echo "Installing pgxman for macOS..."
+        ensure brew install pgxman/tap/pgxman
+    fi
 }
 
 ensure() {
@@ -134,6 +180,21 @@ say() {
 err() {
     say "$1" >&2
     exit 1
+}
+
+say_success() {
+    cat <<EOS
+@@@@@@@@    @@@@@@@@ @@@      @@@  @@@@@@ @@@@@   @@@@@@    @@@@@@
+@@@   @@@  @@@    @@@  @@@@  @@@@   @@  @@@@  @@@ @@@  @@@  @@@  @@@
+@@      @@ @@@     @@    @@@@@@     @@   @@    @@ @@@@@@@@  @@    @@
+@@@    @@@ @@@     @@   @@@  @@@    @@   @@    @@ @@    @@  @@    @@
+@@@@@@@@@   @@@@@@@@@ @@@      @@@  @@   @@    @@ @@    @@  @@    @@
+@@                 @@
+@@          @@@@@@@@@
+
+👏🎉 pgxman successfully installed.
+If this is your first time using pgxman check out our docs at https://docs.pgxman.com/
+EOS
 }
 
 main "$@" || exit 1
