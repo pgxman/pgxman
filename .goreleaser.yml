@@ -27,7 +27,7 @@ snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
 release:
   prerelease: auto
-  name_template: "PGXMan {{.Version}}"
+  name_template: "pgxman {{.Version}}"
   github:
     owner: pgxman
     name: release

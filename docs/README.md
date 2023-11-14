@@ -1,4 +1,4 @@
-# PGXMan Documentation
+# pgxman Documentation
 
 This README is meta-documentation; it is not part of the pgxman documentation.
 
