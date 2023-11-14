@@ -121,11 +121,11 @@ apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-pgxman install pgvector=0.5.0 --yes
+pgxman install pgvector=0.5.0 --pg 16 --yes
 # upgrade
-pgxman upgrade pgvector=0.5.1 --yes
+pgxman upgrade pgvector=0.5.1 --pg 16 --yes
 # downgrade
-pgxman upgrade pgvector=0.5.0 --yes
+pgxman upgrade pgvector=0.5.0 --pg 16 --yes
 `,
 	)
 

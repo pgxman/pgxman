@@ -2,7 +2,6 @@ package container
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,12 +10,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strings"
 	"text/template"
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
+	"github.com/pgxman/pgxman/internal/doctor"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/runner"
@@ -56,11 +55,6 @@ func WithRunnerImage(image string) ContainerOptFunc {
 	}
 }
 
-var (
-	errDockerNotRunning = errors.New("Docker daemon not running")
-	errDockerNotFound   = errors.New("Docker client not found")
-)
-
 // Install installs extensions specified in a pgxman.yaml file into a container.
 //
 // The folder structure of the configuration files is as follows:
@@ -74,7 +68,7 @@ var (
 // --------- compose.yaml
 // --------- files
 func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
-	if err := c.checkDocker(); err != nil {
+	if err := c.checkDocker(ctx); err != nil {
 		return nil, err
 	}
 
@@ -144,7 +138,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 }
 
 func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error {
-	if err := c.checkDocker(); err != nil {
+	if err := c.checkDocker(ctx); err != nil {
 		return err
 	}
 
@@ -172,31 +166,8 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 	return os.RemoveAll(runnerDir)
 }
 
-func (c *Container) checkDocker() error {
-	cmd := exec.Command("docker", "version", "--format", "json")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
-			return errDockerNotFound
-		}
-
-		if strings.Contains(string(out), "Cannot connect to the Docker daemon") {
-			return errDockerNotRunning
-		}
-
-		return fmt.Errorf("docker error: %s %w", out, err)
-	}
-
-	outMap := make(map[string]any)
-	if err := json.Unmarshal(out, &outMap); err != nil {
-		return errDockerNotRunning
-	}
-
-	if _, ok := outMap["Server"]; !ok {
-		return errDockerNotRunning
-	}
-
-	return nil
+func (c *Container) checkDocker(ctx context.Context) error {
+	return doctor.CheckDocker(ctx)
 }
 
 func copyLocalFiles(f *pgxman.PGXManfile, dstDir string) error {
