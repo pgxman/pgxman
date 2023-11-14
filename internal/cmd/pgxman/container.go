@@ -104,7 +104,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		PGVer:  pgxman.PGVersion(flagInstallerPGVersion),
 		Logger: log.NewTextLogger(),
 	}
-	f, err := p.Parse(args)
+	f, err := p.Parse(cmd.Context(), args)
 	if err != nil {
 		return err
 	}

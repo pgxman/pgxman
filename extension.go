@@ -122,8 +122,8 @@ func (ext Extension) Validate() error {
 	}
 
 	for _, pgv := range ext.PGVersions {
-		if !slices.Contains(SupportedPGVersions, pgv) {
-			return fmt.Errorf("unsupported pg version: %s", pgv)
+		if err := ValidatePGVersion(pgv); err != nil {
+			return err
 		}
 	}
 
@@ -244,10 +244,11 @@ var (
 type PGVersion string
 
 const (
-	PGVersion13 PGVersion = "13"
-	PGVersion14 PGVersion = "14"
-	PGVersion15 PGVersion = "15"
-	PGVersion16 PGVersion = "16"
+	PGVersionUnknown PGVersion = "unknown"
+	PGVersion13      PGVersion = "13"
+	PGVersion14      PGVersion = "14"
+	PGVersion15      PGVersion = "15"
+	PGVersion16      PGVersion = "16"
 )
 
 var (
