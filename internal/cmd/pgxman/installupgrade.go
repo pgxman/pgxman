@@ -35,7 +35,7 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 
 	var defPGVer string
 	pgVer, err := pg.DetectVersion(context.Background())
-	if err != nil {
+	if err == nil {
 		defPGVer = string(pgVer)
 	}
 
