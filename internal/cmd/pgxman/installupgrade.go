@@ -165,7 +165,7 @@ func (e errInvalidPGVersion) Error() string {
 		msg = fmt.Sprintf("could not detect an installation of Postgres %s", e.Version)
 	}
 
-	return fmt.Sprintf("%s. For information on installing Postgres, see: https://docs.pgxman.com/installing_postgres", msg)
+	return fmt.Sprintf("%s. For information on installing Postgres, see: https://docs.pgxman.com/installing_postgres.", msg)
 }
 
 type ArgsParser struct {
