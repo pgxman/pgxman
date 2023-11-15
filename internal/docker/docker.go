@@ -19,7 +19,7 @@ func CheckInstall(ctx context.Context) error {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
-			return ErrDockerNotFound
+			return errors.Join(ErrDockerNotFound, ErrDockerNotRunning)
 		}
 
 		if strings.Contains(string(out), "Cannot connect to the Docker daemon") {

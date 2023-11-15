@@ -55,7 +55,7 @@ func (v *dockerValidator) Validate(ctx context.Context) []ValidationResult {
 		}
 		dockerIsRunning = ValidationResult{
 			Type:    ValidationSuccess,
-			Message: `Docker deamon is running`,
+			Message: `Docker daemon is running`,
 		}
 	)
 

@@ -46,9 +46,9 @@ func runDoctor(cmd *cobra.Command, args []string) {
 
 		switch result.Type {
 		case doctor.ValidationSuccess:
-			line = fmt.Sprintf("%s %s", checkMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", checkMark, result.Message)
 		case doctor.ValiationError:
-			line = fmt.Sprintf("%s %s", crossMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", crossMark, result.Message)
 			failureCount++
 		default:
 			panic(fmt.Sprintf("unknown validation result type: %s", result.Type))
@@ -57,10 +57,11 @@ func runDoctor(cmd *cobra.Command, args []string) {
 		lines = append(lines, line)
 	}
 
+	lines = append([]string{"Doctor summary:"}, lines...)
 	if failureCount == 0 {
-		lines = append([]string{"Your system is ready to use pgxman:"}, lines...)
+		lines = append(lines, "\nYour system is ready to use pgxman!")
 	} else {
-		lines = append([]string{"Your system is not ready to use pgxman:"}, lines...)
+		lines = append(lines, fmt.Sprintf("\nDoctor found %d issues.", failureCount))
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))
