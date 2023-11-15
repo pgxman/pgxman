@@ -19,6 +19,8 @@ main() {
 
     install_pgxman
     say_success
+    ensure pgxman doctor
+
     install_extensions "$@"
 }
 
@@ -193,7 +195,7 @@ say_success() {
 @@          @@@@@@@@@
 
 👏🎉 pgxman successfully installed.
-If this is your first time using pgxman check out our docs at https://docs.pgxman.com/
+If this is your first time using pgxman, check out our docs at https://docs.pgxman.com/
 EOS
 }
 
