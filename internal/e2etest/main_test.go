@@ -67,22 +67,22 @@ func TestMain(m *testing.M) {
 
 	if !e2etest {
 		logger.Info("e2e tests are skipped")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	if flagDebianBookwormImage == "" {
 		logger.Info("-debian-bookworm-image is required")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	if flagUbuntuJammyImage == "" {
 		logger.Info("-ubuntu-jammy-image is required")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	if flagRunnerPostgres15Image == "" {
 		logger.Info("-runner-postgres-15-image is required")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	if flagPGXManBin == "" {

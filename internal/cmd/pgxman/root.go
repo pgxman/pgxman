@@ -14,7 +14,7 @@ var (
 	flagDebug bool
 )
 
-func Execute() error {
+func Command() *cobra.Command {
 	root := &cobra.Command{
 		Use:          "pgxman",
 		Short:        "PostgreSQL Extension Manager",
@@ -39,5 +39,9 @@ func Execute() error {
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 
-	return root.Execute()
+	return root
+}
+
+func Execute() error {
+	return Command().Execute()
 }

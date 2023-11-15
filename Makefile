@@ -61,6 +61,11 @@ vet:
 		golangci/golangci-lint:v1.54.2 \
 		golangci-lint run --timeout 5m -v
 
+.PHONY: docs
+docs:
+	rm -rf docs/cli && rm -rf etc
+	docker run --rm -ti -v $(CURDIR):/src -w /src golang:latest go run /src/cmd/gendoc/main.go -docs docs/cli -man etc
+
 DOCKER_ARGS ?=
 .PHONY: docker_build_builder
 docker_build_builder:
