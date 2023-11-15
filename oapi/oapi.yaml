@@ -490,6 +490,8 @@ components:
         - os
         - pg_versions
         - architectures
+        - run_dependencies
+        - build_dependencies
       properties:
         os:
           type: string
