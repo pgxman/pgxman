@@ -63,7 +63,7 @@ vet:
 
 .PHONY: docs
 docs:
-	rm -rf docs/cli && rm -rf docs/man
+	rm -rf docs/cli docs/man
 	docker run --rm -ti -v $(CURDIR):/src -w /src golang:latest go run /src/cmd/gendoc/main.go -markdown docs/cli -man docs/man
 
 DOCKER_ARGS ?=
