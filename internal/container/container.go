@@ -15,7 +15,7 @@ import (
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
-	"github.com/pgxman/pgxman/internal/doctor"
+	"github.com/pgxman/pgxman/internal/docker"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/runner"
@@ -167,7 +167,7 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 }
 
 func (c *Container) checkDocker(ctx context.Context) error {
-	return doctor.CheckDocker(ctx)
+	return docker.CheckInstall(ctx)
 }
 
 func copyLocalFiles(f *pgxman.PGXManfile, dstDir string) error {

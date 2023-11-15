@@ -2,45 +2,161 @@ package doctor
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
+	"runtime"
 	"strings"
+
+	"github.com/pgxman/pgxman/internal/docker"
+	"github.com/pgxman/pgxman/internal/pg"
 )
 
-var (
-	ErrDockerNotRunning = errors.New("Docker daemon not running")
-	ErrDockerNotFound   = errors.New("Docker client not found")
-)
+func Validate(ctx context.Context) []ValidationResult {
+	var results []ValidationResult
+	for _, v := range []Validator{&dockerValidator{}, &postgresValidator{}} {
+		results = append(results, v.Validate(ctx)...)
+	}
 
-func Check(ctx context.Context) error {
-	return nil
+	return results
 }
 
-func CheckDocker(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "docker", "version", "--format", "json")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
-			return ErrDockerNotFound
+const (
+	ValidationSuccess ValidationType = "success"
+	ValiationError    ValidationType = "error"
+)
+
+type ValidationType string
+
+type ValidationResult struct {
+	Type    ValidationType
+	Message string
+}
+
+type Validator interface {
+	Validate(context.Context) []ValidationResult
+}
+
+type dockerValidator struct {
+}
+
+func (v *dockerValidator) Validate(ctx context.Context) []ValidationResult {
+	var (
+		results           []ValidationResult
+		dockerIsInstalled = ValidationResult{
+			Type:    ValidationSuccess,
+			Message: "Docker is installed.",
 		}
-
-		if strings.Contains(string(out), "Cannot connect to the Docker daemon") {
-			return ErrDockerNotRunning
+		dockerIsRunning = ValidationResult{
+			Type:    ValidationSuccess,
+			Message: `Docker deamon is running.`,
 		}
+	)
 
-		return fmt.Errorf("docker error: %s %w", out, err)
+	dockerErr := docker.CheckInstall(ctx)
+	if dockerErr != nil {
+		if errors.Is(dockerErr, docker.ErrDockerNotRunning) || errors.Is(dockerErr, docker.ErrDockerNotFound) {
+			if errors.Is(dockerErr, docker.ErrDockerNotFound) {
+				var lines []string
+				if runtime.GOOS == "linux" {
+					lines = []string{
+						"To use the `pgxman container` commands, you'll need to install Docker.",
+						"Visit https://docs.docker.com/engine/install for more info.",
+					}
+				} else if runtime.GOOS == "darwin" {
+					lines = []string{
+						"pgxman emulates the production experience on macOS.",
+						"To use the `pgxman install` & `pgxman container` commands, you'll need to install Docker.",
+						"Visit https://docs.docker.com/engine/install for more info.",
+					}
+				} else {
+					lines = []string{
+						"Visit https://docs.docker.com/engine/install for more info.",
+					}
+				}
+
+				results = append(results, ValidationResult{
+					Type:    ValiationError,
+					Message: "Docker is missing.\n" + addPrefixSpaces(lines, 4),
+				})
+			} else {
+				results = append(results, dockerIsInstalled)
+			}
+
+			if errors.Is(dockerErr, docker.ErrDockerNotRunning) {
+				var lines []string
+				if runtime.GOOS == "linux" {
+					lines = []string{
+						"To use the `pgxman container` commands, you'll need to start the Docker daemon.",
+						"Visit https://docs.docker.com/config/daemon/start for more info.",
+					}
+				} else if runtime.GOOS == "darwin" {
+					lines = []string{
+						"pgxman emulates the production experience on macOS.",
+						"To use the `pgxman install` & `pgxman container` commands, you'll need to start the Docker daemon.",
+						"Visit https://docs.docker.com/config/daemon/start for more info.",
+					}
+				} else {
+					lines = []string{
+						"Visit https://docs.docker.com/config/daemon/start for more info.",
+					}
+				}
+
+				results = append(results, ValidationResult{
+					Type:    ValiationError,
+					Message: "Docker daemon is not running\n" + addPrefixSpaces(lines, 4),
+				})
+			} else {
+				results = append(results, dockerIsRunning)
+			}
+		} else {
+			results = append(results, ValidationResult{
+				Type:    ValiationError,
+				Message: fmt.Sprintf("Docker error: %s", dockerErr.Error()),
+			})
+		}
+	} else {
+		results = append(
+			results,
+			dockerIsInstalled,
+			dockerIsRunning,
+		)
 	}
 
-	outMap := make(map[string]any)
-	if err := json.Unmarshal(out, &outMap); err != nil {
-		return ErrDockerNotRunning
+	return results
+}
+
+type postgresValidator struct {
+}
+
+func (v *postgresValidator) Validate(ctx context.Context) []ValidationResult {
+	var (
+		results []ValidationResult
+	)
+
+	pgVer, e := pg.DetectVersion(ctx)
+	if e != nil {
+		lines := []string{
+			"Visit https://www.postgresql.org/download for more info.",
+		}
+		results = append(results, ValidationResult{
+			Type:    ValiationError,
+			Message: "PostgreSQL is not installed\n" + addPrefixSpaces(lines, 4),
+		})
+	} else {
+		results = append(results, ValidationResult{
+			Type:    ValidationSuccess,
+			Message: fmt.Sprintf("PostgreSQL %s is installed", pgVer),
+		})
 	}
 
-	if _, ok := outMap["Server"]; !ok {
-		return ErrDockerNotRunning
+	return results
+}
+
+func addPrefixSpaces(lines []string, spaces int) string {
+	var result []string
+	for _, line := range lines {
+		result = append(result, fmt.Sprintf("%s%s", strings.Repeat(" ", spaces), line))
 	}
 
-	return nil
+	return strings.Join(result, "\n")
 }
