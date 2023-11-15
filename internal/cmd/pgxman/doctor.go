@@ -2,6 +2,7 @@ package pgxman
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -65,4 +66,8 @@ func runDoctor(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))
+
+	if failureCount > 0 {
+		os.Exit(1)
+	}
 }

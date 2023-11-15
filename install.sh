@@ -19,7 +19,7 @@ main() {
 
     install_pgxman
     say_success
-    ensure pgxman doctor
+    pgxman doctor
 
     install_extensions "$@"
 }
