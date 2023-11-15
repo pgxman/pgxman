@@ -33,7 +33,11 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 		action = "upgrade"
 	}
 
-	defPGVer := string(pg.DetectVersion(context.Background()))
+	var defPGVer string
+	pgVer, err := pg.DetectVersion(context.Background())
+	if err == nil {
+		defPGVer = string(pgVer)
+	}
 
 	exampleTmpl := `  # {{ title .Action }} the latest pgvector for the installed PostgreSQL.
   # PostgreSQL version is detected from pg_config if it exists,
@@ -112,7 +116,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			PGVer:  pgxman.PGVersion(flagInstallerPGVersion),
 			Logger: log.NewTextLogger(),
 		}
-		f, err := p.Parse(args)
+		f, err := p.Parse(c.Context(), args)
 		if err != nil {
 			return err
 		}
@@ -151,12 +155,29 @@ func (e errInvalidExtensionFormat) Error() string {
 	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION...", e.Arg)
 }
 
+type errInvalidPGVersion struct {
+	Version pgxman.PGVersion
+}
+
+func (e errInvalidPGVersion) Error() string {
+	msg := "could not detect an installation of Postgres"
+	if e.Version != pgxman.PGVersionUnknown {
+		msg = fmt.Sprintf("could not detect an installation of Postgres %s", e.Version)
+	}
+
+	return fmt.Sprintf("%s. For information on installing Postgres, see: https://docs.pgxman.com/installing_postgres.", msg)
+}
+
 type ArgsParser struct {
 	PGVer  pgxman.PGVersion
 	Logger *log.Logger
 }
 
-func (p *ArgsParser) Parse(args []string) (*pgxman.PGXManfile, error) {
+func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfile, error) {
+	if p.PGVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, p.PGVer) {
+		return nil, errInvalidPGVersion{Version: p.PGVer}
+	}
+
 	var exts []pgxman.InstallExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
