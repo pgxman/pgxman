@@ -17,6 +17,7 @@ import (
 
 var (
 	flagContainerInstallRunnerImage string
+	flagContainerInstallPGVersion   string
 )
 
 func newContainerCmd() *cobra.Command {
@@ -93,7 +94,7 @@ is NAME=VERSION.`, action),
 
 	defPGVer := string(pgxman.DefaultPGVersion)
 
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf(c.String(action)+" the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().StringVar(&flagContainerInstallPGVersion, "pg", defPGVer, fmt.Sprintf(c.String(action)+" the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 	cmd.PersistentFlags().StringVar(&flagContainerInstallRunnerImage, "runner-image", "", "Override the default runner image")
 
 	return cmd
