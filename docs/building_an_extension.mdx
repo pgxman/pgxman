@@ -90,7 +90,7 @@ FROM postgres:15-bookworm
 
 RUN apt-get update && \
   apt-get install -y curl && \
-  curl -sfL https://pgxman.com/install | sh -
+  curl -sfL https://install.pgx.sh | sh -
 
 COPY out/ /pgxman/out/
 COPY pgxman.yaml /pgxman/pgxman.yaml
@@ -104,7 +104,7 @@ Here's an example `pgxman.yaml` file for this setup:
 ```yaml
 apiVersion: v1
 extensions:
-- path: "/out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
+- path: "./out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
 pgVersions:
 - "15"
 ```
