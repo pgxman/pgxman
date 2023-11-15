@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pgxman/pgxman"
 	cmd "github.com/pgxman/pgxman/internal/cmd/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
@@ -35,7 +34,7 @@ func main() {
 
 	rootCmd := cmd.Command()
 
-	if err := genDocs(rootCmd, markdown); err != nil {
+	if err := genMarkdown(rootCmd, markdown); err != nil {
 		logger.Error("error generating docs", "err", err)
 		os.Exit(1)
 	}
@@ -46,7 +45,7 @@ func main() {
 	}
 }
 
-func genDocs(cmd *cobra.Command, dir string) error {
+func genMarkdown(cmd *cobra.Command, dir string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func genManPages(cmd *cobra.Command, dir string) error {
 	header := &doc.GenManHeader{
 		Title:   "pgxman",
 		Section: "1",
-		Source:  "pgxman " + pgxman.Version,
+		Source:  "pgxman",
 		Manual:  "PostgreSQL Extension Manager",
 	}
 
