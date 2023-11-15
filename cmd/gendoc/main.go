@@ -33,6 +33,7 @@ func main() {
 	}
 
 	rootCmd := cmd.Command()
+	rootCmd.DisableAutoGenTag = true
 
 	if err := genMarkdown(rootCmd, markdown); err != nil {
 		logger.Error("error generating docs", "err", err)
