@@ -2,7 +2,6 @@ package pgxman
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -59,13 +58,10 @@ func runDoctor(cmd *cobra.Command, args []string) {
 	}
 
 	if failureCount == 0 {
-		lines = append([]string{"Your system is ready to use pgxman"}, lines...)
+		lines = append([]string{"Your system is ready to use pgxman:"}, lines...)
 	} else {
-		lines = append([]string{"Your system is not ready to use pgxman"}, lines...)
+		lines = append([]string{"Your system is not ready to use pgxman:"}, lines...)
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))
-	if failureCount > 0 {
-		os.Exit(1)
-	}
 }

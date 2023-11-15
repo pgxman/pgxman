@@ -12,8 +12,15 @@ import (
 )
 
 func Validate(ctx context.Context) []ValidationResult {
-	var results []ValidationResult
-	for _, v := range []Validator{&dockerValidator{}, &postgresValidator{}} {
+	var (
+		results    []ValidationResult
+		validators = []Validator{&dockerValidator{}}
+	)
+	if runtime.GOOS == "linux" {
+		validators = append(validators, &postgresValidator{})
+	}
+
+	for _, v := range validators {
 		results = append(results, v.Validate(ctx)...)
 	}
 
@@ -44,11 +51,11 @@ func (v *dockerValidator) Validate(ctx context.Context) []ValidationResult {
 		results           []ValidationResult
 		dockerIsInstalled = ValidationResult{
 			Type:    ValidationSuccess,
-			Message: "Docker is installed.",
+			Message: "Docker is installed",
 		}
 		dockerIsRunning = ValidationResult{
 			Type:    ValidationSuccess,
-			Message: `Docker deamon is running.`,
+			Message: `Docker deamon is running`,
 		}
 	)
 
@@ -76,7 +83,7 @@ func (v *dockerValidator) Validate(ctx context.Context) []ValidationResult {
 
 				results = append(results, ValidationResult{
 					Type:    ValiationError,
-					Message: "Docker is missing.\n" + addPrefixSpaces(lines, 4),
+					Message: "Docker is not installed\n" + addPrefixSpaces(lines, 4),
 				})
 			} else {
 				results = append(results, dockerIsInstalled)
@@ -136,6 +143,7 @@ func (v *postgresValidator) Validate(ctx context.Context) []ValidationResult {
 	pgVer, e := pg.DetectVersion(ctx)
 	if e != nil {
 		lines := []string{
+			"To install a PostgreSQL extension, you'll need install PostgreSQL.",
 			"Visit https://www.postgresql.org/download for more info.",
 		}
 		results = append(results, ValidationResult{
