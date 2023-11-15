@@ -110,12 +110,18 @@ func convertPublishExtension(ext pgxman.Extension) oapi.PublishExtension {
 			pgVers = append(pgVers, convertPgVer(pgVer))
 		}
 
-		buildDeps := ext.BuildDependencies
+		buildDeps := []oapi.Dependency{}
+		if len(ext.BuildDependencies) > 0 {
+			buildDeps = ext.BuildDependencies
+		}
 		if len(v.BuildDependencies) > 0 {
 			buildDeps = v.BuildDependencies
 		}
 
-		runDeps := ext.RunDependencies
+		runDeps := []oapi.Dependency{}
+		if len(ext.RunDependencies) > 0 {
+			runDeps = ext.RunDependencies
+		}
 		if len(v.RunDependencies) > 0 {
 			runDeps = v.RunDependencies
 		}

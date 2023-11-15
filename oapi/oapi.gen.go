@@ -197,10 +197,10 @@ type PgVersions = []PgVersion
 type Platform struct {
 	AptRepositories   AptRepositories `json:"apt_repositories,omitempty" validate:"gte=0,dive"`
 	Architectures     Architectures   `json:"architectures" validate:"required,dive,oneof=amd64 arm64"`
-	BuildDependencies Dependencies    `json:"build_dependencies,omitempty"`
+	BuildDependencies Dependencies    `json:"build_dependencies"`
 	Os                PlatformOs      `json:"os" validate:"required,oneof=debian_bookworm ubuntu_jammy"`
 	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=pg_13 pg_14 pg_15 pg_16"`
-	RunDependencies   Dependencies    `json:"run_dependencies,omitempty"`
+	RunDependencies   Dependencies    `json:"run_dependencies"`
 }
 
 // PlatformOs defines model for Platform.Os.
