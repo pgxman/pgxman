@@ -14,18 +14,18 @@ import (
 
 func main() {
 	var (
-		docs string
-		man  string
+		markdown string
+		man      string
 	)
 
-	flag.StringVar(&docs, "docs", "", "Path to output docs")
+	flag.StringVar(&markdown, "markdown", "", "Path to output markdown docs")
 	flag.StringVar(&man, "man", "", "Path to output man pages")
 	flag.Parse()
 
 	logger := log.NewTextLogger()
 
-	if docs == "" {
-		logger.Error("-docs is required")
+	if markdown == "" {
+		logger.Error("-markdown is required")
 		os.Exit(1)
 	}
 	if man == "" {
@@ -35,7 +35,7 @@ func main() {
 
 	rootCmd := cmd.Command()
 
-	if err := genDocs(rootCmd, docs); err != nil {
+	if err := genDocs(rootCmd, markdown); err != nil {
 		logger.Error("error generating docs", "err", err)
 		os.Exit(1)
 	}
