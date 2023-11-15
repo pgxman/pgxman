@@ -40,16 +40,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := genManPages(rootCmd, filepath.Join(man, "man", "man1")); err != nil {
+	if err := genManPages(rootCmd, filepath.Join(man, "man1")); err != nil {
 		logger.Error("error generating man pages", "err", err)
 		os.Exit(1)
 	}
-
-	if err := genCompletionScripts(rootCmd, filepath.Join(man, "completion")); err != nil {
-		logger.Error("error generating completion scripts", "err", err)
-		os.Exit(1)
-	}
-
 }
 
 func genDocs(cmd *cobra.Command, dir string) error {
@@ -73,20 +67,4 @@ func genManPages(cmd *cobra.Command, dir string) error {
 	}
 
 	return doc.GenManTree(cmd, header, dir)
-}
-
-func genCompletionScripts(cmd *cobra.Command, dir string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
-	if err := cmd.GenBashCompletionFile(filepath.Join(dir, "pgxman.bash_completion.sh")); err != nil {
-		return err
-	}
-
-	if err := cmd.GenZshCompletionFile(filepath.Join(dir, "pgxman.zsh_completion")); err != nil {
-		return err
-	}
-
-	return nil
 }
