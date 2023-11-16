@@ -1,69 +1,95 @@
 {
-    "name": "pgxman",
-    "logo": {
-      "light": "/logo/light.png",
-      "dark": "/logo/dark.png"
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "pgxman",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "favicon": "/logo/icon.png",
+  "colors": {
+    "primary": "#FC7D1D",
+    "light": "#FF9443",
+    "dark": "#FC7D1D",
+    "background": {
+      "light": "#F4F4F5",
+      "dark": "#0D0D0E"
+    }
+  },
+  "topbarCtaButton": {
+    "type": "github",
+    "url": "https://github.com/pgxman/pgxman"
+  },
+  "topbarLinks": [
+    {
+      "name": "Home",
+      "url": "https://pgxman.com/"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Discord",
+      "icon": "discord",
+      "url": "https://hydra.so/discord"
+    }
+  ],
+  "tabs": [
+    {
+      "name": "Command Reference",
+      "url": "cli"
+    }
+  ],
+  "primaryTab": {
+    "name": "Documentation"
+  },
+  "navigation": [
+    {
+      "group": "Welcome to pgxman",
+      "pages": [
+        "overview"
+      ]
     },
-    "favicon": "/logo/icon.png",
-    "colors": {
-      "primary": "#FC7D1D",
-      "light": "#FF9443",
-      "dark": "#FC7D1D",
-      "background": {
-        "light": "#F4F4F5",
-        "dark": "#0D0D0E"
-      }
+    {
+      "group": "Getting Started",
+      "pages": [
+        "installing_pgxman",
+        "installing_postgres",
+        "installing_extensions",
+        "uninstalling_pgxman"
+      ]
     },
-    "topbarCtaButton": {
-      "type": "github",
-      "url": "https://github.com/pgxman/pgxman"
+    {
+      "group": "Developer Guide",
+      "pages": [
+        "building_an_extension",
+        "how_it_works"
+      ]
     },
-    "topbarLinks": [
-      {
-        "name": "Home",
-        "url": "https://pgxman.com/"
-      }
-    ],
-    "anchors": [
-      {
-        "name": "Discord",
-        "icon": "discord",
-        "url": "https://discord.com/invite/SQrwnAxtDw"
-      }
-    ],
-    "navigation": [
-      {
-        "group": "Welcome to pgxman",
-        "pages": [
-          "overview"
-        ]
-      },
-      {
-        "group": "Getting Started",
-        "pages": [
-          "installing_pgxman",
-          "installing_postgres",
-          "installing_extensions",
-          "uninstalling_pgxman"
-        ]
-      },
-      {
-        "group": "Developer Guide",
-        "pages": [
-          "building_an_extension",
-          "how_it_works"
-        ]
-      },
-      {
-        "group": "Specifications",
-        "pages": [
-          "spec/pgxman.yaml"
-        ]
-      }
-    ],
-    "footerSocials":
-      {
-          "discord": "https://discord.com/invite/SQrwnAxtDw",
-          "github": "https://github.com/pgxman/pgxman"
-      }
+    {
+      "group": "Specifications",
+      "pages": [
+        "spec/pgxman.yaml"
+      ]
+    },
+    {
+      "group": "Commands",
+      "pages": [
+        "cli/pgxman",
+        "cli/pgxman_build",
+        "cli/pgxman_bundle",
+        "cli/pgxman_container_install",
+        "cli/pgxman_container_teardown",
+        "cli/pgxman_container_upgrade",
+        "cli/pgxman_container",
+        "cli/pgxman_doctor",
+        "cli/pgxman_init",
+        "cli/pgxman_install",
+        "cli/pgxman_search",
+        "cli/pgxman_upgrade"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "discord": "https://hydra.so/discord",
+    "github": "https://github.com/pgxman/pgxman"
   }
+}

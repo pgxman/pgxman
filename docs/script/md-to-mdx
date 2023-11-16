@@ -1,0 +1,14 @@
+#!/bin/bash
+
+for f in $@
+do
+  filename=$(basename -s .md $f)
+  command=$(echo $filename | tr _ ' ')
+  cat <<EOF >${f}x
+---
+title: $command
+---
+
+EOF
+  tail +3 $f | sed 's/\.md)/)/g' >> ${f}x
+done
