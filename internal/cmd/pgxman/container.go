@@ -102,7 +102,7 @@ is NAME=VERSION.`, action),
 
 func runContainerInstall(cmd *cobra.Command, args []string) error {
 	p := &ArgsParser{
-		PGVer:  pgxman.PGVersion(flagInstallerPGVersion),
+		PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
 		Logger: log.NewTextLogger(),
 	}
 	f, err := p.Parse(cmd.Context(), args)
@@ -119,7 +119,7 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("Installing %q in a container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagInstallerPGVersion)
+	fmt.Printf("Installing %q in a container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagContainerInstallPGVersion)
 	info, err := container.NewContainer(
 		container.WithRunnerImage(flagContainerInstallRunnerImage),
 	).Install(cmd.Context(), f)
