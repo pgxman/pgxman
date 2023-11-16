@@ -65,6 +65,7 @@ vet:
 docs:
 	rm -rf docs/cli docs/man
 	docker run --rm -ti -v $(CURDIR):/src -w /src golang:latest go run /src/cmd/gendoc/main.go -markdown docs/cli -man docs/man
+	bash -c 'for f in docs/cli/*.md; do mv $${f} $${f}x; done'
 
 DOCKER_ARGS ?=
 .PHONY: docker_build_builder
