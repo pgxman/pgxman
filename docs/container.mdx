@@ -37,6 +37,12 @@ any Postgres client, like `psql` or your favorite GUI client.
 psql postgres://pgxman:pgxman@127.0.0.1:15432/pgxman
 ```
 
+Alternatively, you can use `psql` from inside the container:
+
+```
+docker exec -it pgxman_runner_15 psql -U pgxman
+```
+
 ## Managing running containers
 
 Each version has its own named container, named `pgxman_runner_PGVERSION`, refered to as NAME below:
