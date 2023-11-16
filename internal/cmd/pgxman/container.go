@@ -110,24 +110,16 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var exts []string
-	for _, ext := range f.Extensions {
-		if ext.Name != "" {
-			exts = append(exts, ext.Name)
-		} else if ext.Path != "" {
-			exts = append(exts, ext.Path)
-		}
-	}
-
-	fmt.Printf("Installing %q in a container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagContainerInstallPGVersion)
+	exts := extNames(f.Extensions)
+	fmt.Printf("Installing %s in a container for PostgreSQL %s...\n", exts, flagContainerInstallPGVersion)
 	info, err := container.NewContainer(
 		container.WithRunnerImage(flagContainerInstallRunnerImage),
-	).Install(cmd.Context(), f)
+	).Install(cmd.Context(), *f)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf(`%s was installed successfully in container %s.
+	fmt.Printf(`%s
 
 To connect, run:
 
@@ -139,8 +131,7 @@ To tear down the container, run:
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
-		strings.Join(exts, ", "),
-		info.ContainerName,
+		installedExt(f, false, info.ContainerName),
 		info.Postgres.Username,
 		info.Postgres.Password,
 		info.Postgres.Port,

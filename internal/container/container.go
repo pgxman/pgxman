@@ -67,7 +67,7 @@ func WithRunnerImage(image string) ContainerOptFunc {
 // --------- pgxman.yaml
 // --------- compose.yaml
 // --------- files
-func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
+func (c *Container) Install(ctx context.Context, f pgxman.PGXManfile) (*ContainerInfo, error) {
 	if err := c.checkDocker(ctx); err != nil {
 		return nil, err
 	}
@@ -115,10 +115,11 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		return nil, err
 	}
 
-	if err := mergeBundleFile(f, runnerDir); err != nil {
+	if err := mergeBundleFile(&f, runnerDir); err != nil {
 		return nil, err
 	}
 
+	w := c.Logger.Writer(slog.LevelDebug)
 	dockerCompose := exec.CommandContext(
 		ctx,
 		"docker",
@@ -131,8 +132,8 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		"--detach",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
-	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stdout = w
+	dockerCompose.Stderr = w
 
 	return &info, dockerCompose.Run()
 }
@@ -147,6 +148,7 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		return fmt.Errorf("runner configuration does not exist: %w", err)
 	}
 
+	w := c.Logger.Writer(slog.LevelDebug)
 	dockerCompose := exec.CommandContext(
 		ctx,
 		"docker",
@@ -157,8 +159,8 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		"--volumes",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
-	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stdout = w
+	dockerCompose.Stderr = w
 	if err := dockerCompose.Run(); err != nil {
 		return err
 	}
@@ -170,7 +172,7 @@ func (c *Container) checkDocker(ctx context.Context) error {
 	return docker.CheckInstall(ctx)
 }
 
-func copyLocalFiles(f *pgxman.PGXManfile, dstDir string) error {
+func copyLocalFiles(f pgxman.PGXManfile, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}

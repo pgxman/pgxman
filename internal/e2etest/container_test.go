@@ -18,7 +18,7 @@ func TestContainer(t *testing.T) {
 	c := container.NewContainer(
 		container.WithRunnerImage(flagRunnerPostgres15Image),
 	)
-	wantFile := &pgxman.PGXManfile{
+	wantFile := pgxman.PGXManfile{
 		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 		Postgres: pgxman.Postgres{
 			Version: pgxman.PGVersion15,

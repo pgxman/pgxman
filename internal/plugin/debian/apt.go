@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -249,10 +250,11 @@ func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) err
 	}
 	c = append(c, args...)
 
+	w := a.Logger.Writer(slog.LevelDebug)
 	cmd := exec.CommandContext(ctx, c[0], c[1:]...)
 	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = w
+	cmd.Stderr = w
 
 	a.Logger.Debug("Running apt command", "command", cmd.String())
 	return cmd.Run()

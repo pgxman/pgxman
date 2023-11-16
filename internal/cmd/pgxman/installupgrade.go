@@ -126,7 +126,10 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
+		exts := extNames(f.Extensions)
+
 		if upgrade {
+			fmt.Printf("Upgrading %q for PostgreSQL %s...\n", exts, pgVer)
 			if err := i.Upgrade(
 				c.Context(),
 				[]pgxman.PGXManfile{*f},
@@ -136,19 +139,29 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 				return err
 			}
 
-			fmt.Println(`After restarting PostgreSQL, update extensions in each database by running:
+			fmt.Printf(`%s was upgraded successfully.
 
-  ALTER EXTENSION name UPDATE`)
+After restarting PostgreSQL, update extensions in each database by running in the psql shell:
+
+	ALTER EXTENSION name UPDATE
+`, exts)
 
 			return nil
 		}
 
-		return i.Install(
+		fmt.Printf("Installing %q for PostgreSQL %s...\n", exts, pgVer)
+		if err := i.Install(
 			c.Context(),
 			[]pgxman.PGXManfile{*f},
 			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 			pgxman.InstallOptWithSudo(flagInstallerSudo),
-		)
+		); err != nil {
+			return err
+		}
+
+		fmt.Println(installedExt(f, false, ""))
+
+		return nil
 	}
 }
 
@@ -284,4 +297,47 @@ func supportedPGVersions() []string {
 	}
 
 	return pgVers
+}
+
+func installedExt(f *pgxman.PGXManfile, upgrade bool, containerName string) string {
+	action := "installed successfully"
+	if upgrade {
+		action = "upgraded successfully"
+	}
+	if containerName != "" {
+		action += fmt.Sprintf(" in container %q", containerName)
+	}
+
+	if len(f.Extensions) == 1 {
+		return fmt.Sprintf("%q was %s.\nMore info %s", extName(f.Extensions[0]), action, extLink(f.Extensions[0]))
+	}
+
+	var lines []string
+	for _, ext := range f.Extensions {
+		lines = append(lines, fmt.Sprintf("* %s\n  More info %s", extName(ext), extLink(ext)))
+	}
+
+	return fmt.Sprintf(`The following extensions were %s:
+%s`, action, strings.Join(lines, "\n"))
+}
+
+func extNames(exts []pgxman.InstallExtension) string {
+	var names []string
+	for _, ext := range exts {
+		names = append(names, extName(ext))
+	}
+
+	return strings.Join(names, ", ")
+}
+
+func extName(ext pgxman.InstallExtension) string {
+	if ext.Name != "" {
+		return ext.Name
+	}
+
+	return ext.Path
+}
+
+func extLink(ext pgxman.InstallExtension) string {
+	return fmt.Sprintf("https://pgx.sh/%s", ext.Name)
 }
