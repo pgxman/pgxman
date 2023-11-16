@@ -23,10 +23,10 @@ pgxman install pgvector
 ### Connect to Postgres
 
 ```sh
-# mac
+# mac - connect to the container pgxman creates
 $ psql postgres://postgres:pgxman@127.0.0.1/postgres
 
-# linux
+# linux - restart postgres so it picks up newly installed extensions, then connect
 $ sudo service postgresql restart
 $ sudo -u postgres psql
 ```
@@ -34,6 +34,8 @@ $ sudo -u postgres psql
 ### Give it a try
 
 ```
+postgres=# select * from pg_available_extensions;
+...
 postgres=# create extension vector;
 CREATE EXTENSION
 ```
