@@ -1,6 +1,6 @@
 ---
-title: Building a PostgreSQL extension with pgxman
-sidebarTitle: Building an extension
+title: Add a PostgreSQL extension to pgxman
+sidebarTitle: Adding an extension
 ---
 
 ## Prerequisites
@@ -9,7 +9,7 @@ sidebarTitle: Building an extension
 
 ## Initialize an buildkit file
 
-```console
+```sh
 pgxman init
 ```
 
@@ -36,13 +36,13 @@ instructions and any required dependencies.
 Once you have a buildkit written, use pgxman to build the extension locally.
 pgxman uses Docker to build the packages.
 
-```console
+```sh
 pgxman build -f extension.yaml
 ```
 
 This will package the extension files in the `out` directory:
 
-```console
+```
 $ tree out
 out
 ├── linux_amd64
@@ -73,7 +73,7 @@ out
 
 ## Test the extension
 
-⚠️ We plan on making it easier to test extensions in the near future.
+<Note>We plan on making it easier to test extensions in the near future.</Note>
 
 Our recommendation is to test the built extension using Docker. You could use a
 Dockerfile to build an image, or run the commands manually from inside of the
