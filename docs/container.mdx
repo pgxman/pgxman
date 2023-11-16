@@ -3,8 +3,17 @@ title: "Using containers"
 description: pgxman has container support in order to facilitate testing on any operating system
 ---
 
-On Mac, pgxman automatically aliases `pgxman install` to `pgxman container install`.
+Implementation notes:
+
+* On Mac, pgxman automatically aliases `pgxman install` to `pgxman container install`.
+* Containers use Postgres 15 by default. To use a different version, use `--pg`.
+* Each version of Postgres is independent.
+* Installation is persistent; you can install multiple extensions in sequence. Each one will build a new image
+  with the extensions installed in the image.
+* The configuration for the image is stored in $USER_CONFIG_DIR/pgxmanrunner/PG_VERSION.
+  * On Linux, USER_CONFIG_DIR is `~/.config/pgxman`
+  * On Mac, USER_CONFIG_DIR is `~/Library/Application Support/pgxman`
+* Data stored in the container database, including which extensions are installed, will persist outside of the
+  container.
 
 ## container install
-
-...

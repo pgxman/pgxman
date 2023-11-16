@@ -20,15 +20,21 @@ remove the `pgxman` CLI.
 
 This will depend on how you installed pgxman.
 
-* If you used the shell script, it installs pgxman via an apt package. To
-  remove the package, use `apt remove pgxman`.
-* If you installed the binary manually into your path, use `which pgxman` to
+- If you used the shell script, it installs pgxman via your package manager.
+  - Linux: `apt remove pgxman`
+  - Mac: `brew remove pgxman`
+- If you installed pgxman via homebrew: `brew remove pgxman`
+- If you installed the binary manually into your path, use `which pgxman` to
   locate the binary, then `rm` it.
 
 ## Remove pgxman config directory
 
-This directory is located in your [user config directory][]. Typically on
-Linux, this is located at `~/.config/pgxman`:
+This directory is located in your [user config directory][].
+
+* Linux: `~/.config/pgxman`
+* Mac: `~/Library/Application Support/pgxman`
+
+You can remove the directory using `rm -r`:
 
 ```sh
 rm -r ~/.config/pgxman

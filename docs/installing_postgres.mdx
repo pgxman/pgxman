@@ -9,9 +9,14 @@ more information, please see [the container docs](container).
 
 ## Linux
 
-You must manually install your desired version of Postgres; pgxman will not install Postgres for you.
-You can either use the default version included with the distro, or use the Postgres Global Developer
-Group (`pgdg`) repository. Postgres can also be installed from source.
+<Note>At this time, only Ubuntu Jammy and Debian Bookworm are supported.</Note>
+
+pgxman assumes you likely already have Postgres installed, and because there are many ways to install
+Postgres, it does not try to install it for you. pgxman will detect your version of Postgres by looking
+for `pg_config`.
+
+If you do not have Postgres installed, we recommend either using the default version included with the distro,
+or use the Postgres Global Developer Group (`pgdg`) repository.
 
 ### Included versions
 
@@ -23,8 +28,8 @@ Group (`pgdg`) repository. Postgres can also be installed from source.
 
 ### Other versions
 
-We highly recommend using the Postgres Global Developer Group (`pgdg`)
-Apt repository to install other versions. To add this repository, run:
+We highly recommend using the Postgres Global Developer Group (PGDG)
+apt repository to install other versions. To add this repository, run:
 
 ```sh
 apt install -y postgresql-common gnupg2

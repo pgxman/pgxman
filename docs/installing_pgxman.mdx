@@ -11,24 +11,24 @@ curl -sfL https://install.pgx.sh | sh -
 
 After installation, pgxman will advise you on further requirements:
 
-- [PostgreSQL](installing_postgres)
+- Linux: [PostgreSQL](installing_postgres)
 - Docker
   - on MacOS, Docker is used for our [container support](container)
   - if you plan on contributing extensions, Docker is used to build extensions locally with `pgxman build`
 
-You can run `pgxman doctor` at any time to check if you have everything you need to use `pgxman`.
+You can run `pgxman doctor` at any time to check if you have everything you need to use pgxman.
 
 ## MacOS: Homebrew
 
-Install pgxman from homebrew:
+Use the homebrew tap to install pgxman:
 
 ```sh
 brew install pgxman/tap/pgxman
 ```
 
-### Linux: Manual Download
+## Linux: Manual Download
 
-You can download the latest [compiled Linux binaries][binaries] and add them to your system's executable path.
+You can download the [latest compiled Linux binaries][binaries] and add them to your system's executable path.
 
 [binaries]: https://github.com/pgxman/release/releases/
 
