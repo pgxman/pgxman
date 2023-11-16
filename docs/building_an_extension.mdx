@@ -103,8 +103,8 @@ Here's an example `pgxman.yaml` file for this setup:
 apiVersion: v1
 extensions:
 - path: "./out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
-pgVersions:
-- "15"
+postgres:
+  version: 15
 ```
 
 ## Adding the extension to pgxman
