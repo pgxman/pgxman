@@ -114,12 +114,13 @@ jobs:
           check-latest: true
       - name: Run tests
         run: |
-          brew install docker docker-compose colima
+          brew install docker docker-compose docker-buildx colima
           mkdir -p ~/.docker/cli-plugins
           ln -sfn $(brew --prefix docker-compose)/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+          ln -sfn $(brew --prefix docker-buildx)/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx
           colima start
 
-          make build
+          make build docker_load_runner
           bin/pgxman doctor
           bin/pgxman install pgvector --debug
   docker:

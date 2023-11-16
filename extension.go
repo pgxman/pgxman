@@ -19,11 +19,6 @@ import (
 )
 
 func NewDefaultExtension() Extension {
-	buildImageVersion := "latest"
-	if Version != "dev" {
-		buildImageVersion = fmt.Sprintf("v%s", Version)
-	}
-
 	return Extension{
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
@@ -34,13 +29,13 @@ func NewDefaultExtension() Extension {
 			DebianBookworm: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{
 					Type:  ExtensionBuilderDebianBookworm,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], buildImageVersion),
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], ImageTag()),
 				},
 			},
 			UbuntuJammy: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{
 					Type:  ExtensionBuilderUbuntuJammy,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], buildImageVersion),
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], ImageTag()),
 				},
 			},
 		},

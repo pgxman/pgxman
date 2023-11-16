@@ -88,7 +88,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 
 	runnerImage := c.Config.runnerImage
 	if runnerImage == "" {
-		runnerImage = fmt.Sprintf("%s/%s", defaultRunnerImageBase, pgVer)
+		runnerImage = fmt.Sprintf("%s/%s:%s", defaultRunnerImageBase, pgVer, pgxman.ImageTag())
 	}
 
 	info := ContainerInfo{
