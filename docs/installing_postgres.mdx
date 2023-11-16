@@ -1,37 +1,39 @@
 ---
 title: "Installing Postgres"
-description: "You must either manually install your desired version of Postgres or use the default version provided by your distribution when installing extensions with pgxman."
 ---
 
-You must either manually install your desired version of Postgres or use the
-default version provided by your distribution when installing extensions with
-pgxman.
+## MacOS
 
-## Default versions
+On MacOS, you do not need to install Postgres. pgxman will use a container to emulate a Linux environment. For
+more information, please see [the container docs](container).
 
-* Debian Bookworm: Postgres 15
-* Ubuntu Jammy: Postgres 14
+## Linux
 
-## Automatic installation
+You must manually install your desired version of Postgres; pgxman will not install Postgres for you.
+You can either use the default version included with the distro, or use the Postgres Global Developer
+Group (`pgdg`) repository. Postgres can also be installed from source.
 
-Because pgxman declares the appropriate version of `postgresql` as a dependency,
-pgxman will automatically try to install the specified version of Postgres when
-installing an extension. For example:
+### Included versions
 
-```console
-pgxman install pgvector@15
-```
+- Debian Bookworm: Postgres 15
+  - `apt install postgresql-15`
+- Ubuntu Jammy: Postgres 14
+  - `apt install postgresql-14`
 
-In this case, the pgvector package for PG 15 will have `postgresql-15` package
-as a dependency, so it will try to install it if it is not already installed.
 
-## Installing other versions
+### Other versions
 
 We highly recommend using the Postgres Global Developer Group (`pgdg`)
 Apt repository to install other versions. To add this repository, run:
 
-```console
+```sh
 apt install -y postgresql-common gnupg2
 
 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+```
+
+Once the repository is installed, you can install your desired version of Postgres. For example:
+
+```sh
+apt install postgresql-16
 ```
