@@ -112,8 +112,13 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
+		pgVer := pgxman.PGVersion(flagInstallerPGVersion)
+		if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(c.Context(), pgVer) {
+			return errInvalidPGVersion{Version: pgVer}
+		}
+
 		p := &ArgsParser{
-			PGVer:  pgxman.PGVersion(flagInstallerPGVersion),
+			PGVer:  pgVer,
 			Logger: log.NewTextLogger(),
 		}
 		f, err := p.Parse(c.Context(), args)
@@ -174,10 +179,9 @@ type ArgsParser struct {
 }
 
 func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfile, error) {
-	if p.PGVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, p.PGVer) {
-		return nil, errInvalidPGVersion{Version: p.PGVer}
+	if err := pgxman.ValidatePGVersion(p.PGVer); err != nil {
+		return nil, err
 	}
-
 	var exts []pgxman.InstallExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
