@@ -62,10 +62,12 @@ build:
 buildDependencies:
   - dep1
   - dep2
+  - pgxman/extension
 # Run dependencies of the extension.
 runDependencies:
   - dep3
   - dep4
+  - pgxman/extension
 # Overrides the default builders to be used.
 builders:
   # Overrides the debian:bookworm builder.
@@ -243,13 +245,13 @@ build: |
 
 ## `runDependencies`
 
-- **Description**: Lists the rpackages needed for the extension to function properly at runtime.
+- **Description**: Lists the packages needed for the extension to function properly at runtime. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
 - **Type**: List of strings
 - **Required**: No
 
 ## `buildDependencies`
 
-- **Description**: Lists the packages necessary for building the extension.
+- **Description**: Lists the packages necessary for building the extension. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
 - **Type**: List of strings
 - **Required**: No
 
@@ -307,11 +309,11 @@ build: |
     - **Required**: No
     - **Fields**:
       - `buildDependencies`:
-        - **Description**: Lists the packages necessary for building for the `debian:bookworm` builder. This list overrides the global `buildDependencies`.
+        - **Description**: Lists the packages necessary for building for the `debian:bookworm` builder. This list overrides the global `buildDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
         - **Type**: List of strings
         - **Required**: No
       - `runDependencies`:
-        - **Description**: Lists the rpackages needed for the extension to function properly at runtime for the `debian:bookworm` builder. This list overrides the global `runDependencies`.
+        - **Description**: Lists the packages needed for the extension to function properly at runtime for the `debian:bookworm` builder. This list overrides the global `runDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
         - **Type**: List of strings
         - **Required**: No
       - `image`:
@@ -365,11 +367,11 @@ build: |
     - **Required**: No
     - **Fields**:
       - `buildDependencies`:
-        - **Description**: Lists the packages necessary for building for the `ubuntu:jammy` builder. This list overrides the global `buildDependencies`.
+        - **Description**: Lists the packages necessary for building for the `ubuntu:jammy` builder. This list overrides the global `buildDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
         - **Type**: List of strings
         - **Required**: No
       - `runDependencies`:
-        - **Description**: Lists the rpackages needed for the extension to function properly at runtime for the `ubuntu:jammy` builder. This list overrides the global `runDependencies`.
+        - **Description**: Lists the packages needed for the extension to function properly at runtime for the `ubuntu:jammy` builder. This list overrides the global `runDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
         - **Type**: List of strings
         - **Required**: No
       - `image`:
