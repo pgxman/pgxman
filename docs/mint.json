@@ -43,13 +43,14 @@
   },
   "navigation": [
     {
-      "group": "Welcome to pgxman",
+      "group": "Getting Started",
       "pages": [
-        "overview"
+        "overview",
+        "quickstart"
       ]
     },
     {
-      "group": "Getting Started",
+      "group": "User Guide",
       "pages": [
         "installing_pgxman",
         "installing_postgres",

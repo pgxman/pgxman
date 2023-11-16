@@ -1,0 +1,39 @@
+---
+title: "Quickstart"
+---
+
+pgxman makes installing Postgres extensions as easy as installing any other software package.
+
+### Install pgxman
+
+```sh
+curl -sfL https://install.pgx.sh | sh -
+# or with homebrew
+brew install pgxman/tap/pgxman
+```
+
+### Find and install an extension
+
+```sh
+pgxman search vector
+# found pgvector!
+pgxman install pgvector
+```
+
+### Connect to Postgres
+
+```sh
+# mac
+$ psql postgres://postgres:pgxman@127.0.0.1/postgres
+
+# linux
+$ sudo service postgresql restart
+$ sudo -u postgres psql
+```
+
+### Give it a try
+
+```
+postgres=# create extension vector;
+CREATE EXTENSION
+```
