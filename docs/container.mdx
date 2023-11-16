@@ -1,19 +1,51 @@
 ---
 title: "Using containers"
-description: pgxman has container support in order to facilitate testing on any operating system
+description: pgxman has container support in order to facilitate testing on any operating system.
 ---
 
-Implementation notes:
+<Note>On Mac, pgxman automatically aliases `pgxman install` to `pgxman container install`.</Note>
 
-* On Mac, pgxman automatically aliases `pgxman install` to `pgxman container install`.
-* Containers use Postgres 15 by default. To use a different version, use `--pg`.
-* Each version of Postgres is independent.
-* Installation is persistent; you can install multiple extensions in sequence. Each one will build a new image
-  with the extensions installed in the image.
-* The configuration for the image is stored in $USER_CONFIG_DIR/pgxmanrunner/PG_VERSION.
-  * On Linux, USER_CONFIG_DIR is `~/.config/pgxman`
-  * On Mac, USER_CONFIG_DIR is `~/Library/Application Support/pgxman`
-* Data stored in the container database, including which extensions are installed, will persist outside of the
-  container.
+## Installing extensions
 
-## container install
+* Containers use Postgres 15 by default. To use a different version, use the `--pg` flag to `pgxman container install`.
+* Each version of Postgres is managed and run independently.
+* Installation is persistent; you can install multiple extensions by running commands consecutively.
+  Each time you install an extension, it will be added to the configuration, then build a new image,
+  and restart the container with the extensions installed.
+
+## Connecting to the container
+
+pgxman uses the requested Postgres version and then `432` to form the port number:
+
+* pg16: 16432
+* pg15: 15432
+* pg14: 14432
+* pg13: 13432
+
+The username, password, and database are all set to `pgxman`.
+
+```
+psql postgres://pgxman:pgxman@127.0.0.1:15432/pgxman
+```
+
+## Managing running containers
+
+* Data stored in the database is stored in a Docker volume, e.g. `pgxman_runner_15_pg_data`.
+  To see the volumes, run `docker volume ls | grep pgxman`.
+* To see what containers are running, run `docker ps | grep pgxman`.
+* To stop a container, obtain the container ID using `docker ps` then run `docker stop $CONTAINER_ID`
+
+## Implementation Notes
+
+* The configuration for the images is stored in `USER_CONFIG_DIR/pgxman/runner/PG_VERSION`.
+  * On Linux, `USER_CONFIG_DIR` is `~/.config/pgxman`
+  * On Mac, `USER_CONFIG_DIR` is `~/Library/Application Support/pgxman`
+* Containers will run until you stop them with `docker stop` or terminate them completely with `pgxman container teardown`.
+
+<Hide>
+Things I don't know:
+
+* To start a container after it is stopped, ???
+* How does the data persist? When is it deleted?
+* When I teardown a container, what happens [to the data]?
+</Hide>
