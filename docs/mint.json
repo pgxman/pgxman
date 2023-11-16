@@ -68,7 +68,8 @@
     {
       "group": "Specifications",
       "pages": [
-        "spec/pgxman.yaml"
+        "spec/bundle",
+        "spec/buildkit"
       ]
     },
     {

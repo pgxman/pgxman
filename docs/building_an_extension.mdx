@@ -7,7 +7,7 @@ sidebarTitle: Building an extension
 
 - Docker
 
-## Initialize an extension manifest file
+## Initialize an buildkit file
 
 ```console
 pgxman init
@@ -19,14 +19,12 @@ create.
 This result is a manifest file named `extension.yaml`. The file serves as your
 blueprint for building the extension.
 
-## Writing the manifest file
+## Writing the buildkit file
 
-[Please refer to the full buildkit file specification for
-details](https://github.com/pgxman/buildkit/blob/main/spec/buildkit.md). You'll
-find a full documented example with all available fields, as well as
-documentation for the file. You can also [look at existing
-buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit) for examples
-on how to create a buildkit.
+[Please refer to the full buildkit file specification for details](spec/buildkit). You'll
+find a full documented example with all available fields, as well as documentation for the file.
+You can also [review existing buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit)
+for examples on how to create a buildkit.
 
 Most manifest files should follow the build instructions for the extension.
 This may be as simple as `make && make install`, but others may be considerably
