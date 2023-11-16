@@ -17,7 +17,7 @@ pgxman c install extension --pg version
 * Containers use Postgres 15 by default. To use a different version, use the `--pg` flag to `pgxman container install`.
 * Each version of Postgres is managed and run independently.
 * Installation is persistent; you can install multiple extensions by running commands consecutively.
-  Each time you install an extension, it will be added to the configuration, then build a new image,
+  Each time you install an extension, pgxman will add the extension to the configuration, build a new image,
   and restart the container with the extensions installed.
 
 ## Connecting to the container
