@@ -1,0 +1,46 @@
+.nh
+.TH "pgxman" "1" "Nov 2023" "pgxman" "PostgreSQL Extension Manager"
+
+.SH NAME
+.PP
+pgxman-search - Search for PostgreSQL extensions
+
+
+.SH SYNOPSIS
+.PP
+\fBpgxman search [] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Search for installable PostgreSQL extensions. The query is a regular expression that is matched
+against the extension name and description.
+
+
+.SH OPTIONS
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for search
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB--debug\fP[=false]
+	enable debug logging
+
+
+.SH EXAMPLE
+.EX
+  # Search for pgvector
+  pgxman search pgvector
+
+  # Search by regular expression
+  pgxman search ^pg_
+		
+
+.EE
+
+
+.SH SEE ALSO
+.PP
+\fBpgxman(1)\fP

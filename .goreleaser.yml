@@ -19,8 +19,7 @@ archives:
       - LICENSE*
       - README*
       - CHANGELOG*
-      - etc/*
-      - docs/pgxman/*
+      - docs/man/*
 checksum:
   name_template: "checksums.txt"
 snapshot:
@@ -63,5 +62,7 @@ brews:
       - git
     install: |
       bin.install "bin/pgxman"
+      man1.install Dir["docs/man/man1/pgxman*.1"]
+      generate_completions_from_executable(bin/"pgxman", "completion")
     test: |
       assert_match(/pgxman version/, shell_output("#{bin}/pgxman --version"))

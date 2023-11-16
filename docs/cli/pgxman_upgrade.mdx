@@ -1,0 +1,57 @@
+## pgxman upgrade
+
+Upgrade PostgreSQL extensions
+
+### Synopsis
+
+Upgrade PostgreSQL extensions from commandline arguments. The argument
+format is NAME=VERSION. The PostgreSQL version is detected from pg_config
+if it exists, or can be specified with the --pg flag.
+
+```
+pgxman upgrade [flags]
+```
+
+### Examples
+
+```
+  # Upgrade the latest pgvector for the installed PostgreSQL.
+  # PostgreSQL version is detected from pg_config if it exists,
+  # Otherwise, the latest supported PostgreSQL version is used.
+  pgxman upgrade pgvector
+
+  # Upgrade the latest pgvector for PostgreSQL 15
+  pgxman upgrade pgvector --pg 15
+
+  # Upgrade pgvector 0.5.0 for PostgreSQL 15
+  pgxman upgrade pgvector=0.5.0 --pg 15
+
+  # Upgrade pgvector 0.5.0 for PostgreSQL 15 with sudo
+  pgxman upgrade pgvector=0.5.0 --pg 15 --sudo
+
+  # Upgrade pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL 15
+  pgxman upgrade pgvector=0.5.0 postgis=3.3.3 --pg 15
+
+  # Upgrade from a local Debian package
+  pgxman upgrade /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb
+```
+
+### Options
+
+```
+  -h, --help        help for upgrade
+      --pg string   Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are 13, 14, 15, 16.
+      --sudo        Run the underlaying package manager command with sudo.
+  -y, --yes         Automatic yes to prompts and run install non-interactively.
+```
+
+### Options inherited from parent commands
+
+```
+      --debug   enable debug logging
+```
+
+### SEE ALSO
+
+* [pgxman](pgxman)	 - PostgreSQL Extension Manager
+

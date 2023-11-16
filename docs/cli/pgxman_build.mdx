@@ -1,0 +1,29 @@
+## pgxman build
+
+Build extension according to the configuration file
+
+```
+pgxman build [flags]
+```
+
+### Options
+
+```
+      --cache-from stringArray   External cache sources. The value is passed to docker buildx build --cache-from.
+      --cache-to stringArray     Cache export destinations. The value is passed to docker buildx build --cache-to.
+  -f, --file string              Path to the extension manifest file (default "extension.yaml")
+  -h, --help                     help for build
+      --no-cache                 Do not use cache when building the image. The value is passed to docker buildx build --no-cache.
+  -s, --set stringToString       Override values in the extension.yaml file in the format of --set KEY=VALUE, e.g. --set version=1.0.0 --set arch=[amd64,arm64] --set pgVersions=[10,11,12] (default [])
+```
+
+### Options inherited from parent commands
+
+```
+      --debug   enable debug logging
+```
+
+### SEE ALSO
+
+* [pgxman](pgxman)	 - PostgreSQL Extension Manager
+

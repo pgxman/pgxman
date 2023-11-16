@@ -1,0 +1,51 @@
+## pgxman container upgrade
+
+UpgradeInstall PostgreSQL extensions in a container
+
+### Synopsis
+
+Start a container with the specified PostgreSQL version and upgrade
+PostgreSQL extension from commandline arguments. The argument format
+is NAME=VERSION.
+
+```
+pgxman container upgrade [flags]
+```
+
+### Examples
+
+```
+  # Upgrade the latest pgvector in a container.
+  pgxman container upgrade pgvector
+
+  # Upgrade the latest pgvector for PostgreSQL 15 in a container.
+  pgxman container upgrade pgvector --pg 15
+
+  # Upgrade pgvector 0.5.0 for PostgreSQL 15 in a container.
+  pgxman container upgrade pgvector=0.5.0 --pg 15
+
+  # Upgrade pgvector 0.5.0 and postgis 3.3.3 for PostgreSQL 15 in a container
+  pgxman container upgrade pgvector=0.5.0 postgis=3.3.3 --pg 15
+
+  # Upgrade a local Debian package in a container
+  pgxman container upgrade /PATH_TO/postgresql-15-pgxman-pgvector_0.5.0_arm64.deb
+```
+
+### Options
+
+```
+  -h, --help                  help for upgrade
+      --pg string             Upgrade the extension for the PostgreSQL version. Supported values are 13, 14, 15, 16. (default "15")
+      --runner-image string   Override the default runner image
+```
+
+### Options inherited from parent commands
+
+```
+      --debug   enable debug logging
+```
+
+### SEE ALSO
+
+* [pgxman container](pgxman_container)	 - Run pgxman in a container
+
