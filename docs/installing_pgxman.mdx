@@ -3,28 +3,38 @@ title: "Installing pgxman"
 sidebarTitle: "Installing pgxman"
 ---
 
-pgxman is compatible with the following Debian-based Linux distributions:
+The installer script works on both MacOS and Linux.
 
-- [Debian Bookworm](https://www.debian.org/releases/bookworm)
-- [Ubuntu Jammy](https://releases.ubuntu.com/jammy)
+```sh
+curl -sfL https://install.pgx.sh | sh -
+```
 
-## Prerequisites
+After installation, pgxman will advise you on further requirements:
 
-- Apt Package Manager
-- [PostgreSQL](installing_postgres.md)
-- If you plan on [building an extension](building_an_extension.md):
-  - Docker
+- Linux: [PostgreSQL](installing_postgres)
+- Docker
+  - on MacOS, Docker is used for our [container support](container)
+  - if you plan on contributing extensions, Docker is used to build extensions locally with `pgxman build`
 
-## Installer
+You can run `pgxman doctor` at any time to check if you have everything you need to use pgxman.
 
-The simplest method to install `pgxman` is through the installer script:
+## MacOS: Homebrew
 
-```console
-curl -sfL https://pgxman.com/install | sh -
+Use the homebrew tap to install pgxman:
+
+```sh
+brew install pgxman/tap/pgxman
 ```
 
 ## Manual Download
 
-Download the latest [compiled Linux
-binaries](https://github.com/pgxman/release/releases/) and add them to your
-system's executable path.
+You can download the [latest compiled binaries][binaries] and add them to your system's executable path.
+
+[binaries]: https://github.com/pgxman/release/releases/
+
+## Linux Compatibility
+
+pgxman is compatible with the following Debian-based Linux distributions:
+
+- [Debian Bookworm](https://www.debian.org/releases/bookworm)
+- [Ubuntu Jammy](https://releases.ubuntu.com/jammy)

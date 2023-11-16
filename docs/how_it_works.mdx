@@ -1,18 +1,25 @@
 ---
-title: "How It Works"
+title: "How it works"
 ---
 
 In short:
 
 - Buildkits encapsulate metadata about the package-building process.
-- When a buildkit sees creation or updates within the [buildkit GitHub repo](https://github.com/pgxman/buildkit), [GitHub Actions](https://github.com/pgxman/buildkit/blob/main/.github/workflows/ci.yaml) builds the package and subsequently publishing it to a designated repository.
-- Invoking `pgxman install` adds pgxman's repository to your system, followed by package installations through your system's native package manager.
+- When a buildkit sees creation or updates within the [buildkit GitHub repo](https://github.com/pgxman/buildkit),
+  [GitHub Actions](https://github.com/pgxman/buildkit/blob/main/.github/workflows/ci.yaml) builds the package and
+  subsequently publishing it to a designated repository.
+- Invoking `pgxman install` adds pgxman's repository to your system, followed by package installations through
+  your system's native package manager.
 
 ## System Compatibility
 
 The backbone of pgxman's build system is your system's package manager.
-At present, `apt`-driven systems such as [Debian Bookworm](https://www.debian.org/releases/bookworm) and [Ubuntu Jammy](https://releases.ubuntu.com/jammy) are fully compatible.
-In the future, other package managers and operating systems will be supported. Currently, we are targeting:
+At present, only `apt`-driven systems of Debian and Ubuntu are supported.
+pgxman currently builds packages for
+[Debian Bookworm](https://www.debian.org/releases/bookworm)
+and [Ubuntu Jammy](https://releases.ubuntu.com/jammy).
+
+In the future, other package managers and operating systems will be supported. Currently, we plan to target:
 
 - [x] apt
 - [ ] brew
@@ -22,9 +29,11 @@ In the future, other package managers and operating systems will be supported. C
 
 ### Apt
 
-During the extension installation phase, pgxman adds its Apt repository to your system, enabling the installation of extension packages.
-pgxman handles dependency management, installation, and uninstallation through `apt`.
-Moreover, all pgxman packages are marked as 'hold back' with `apt-mark hold`, which prevents them from accidential installations, upgrades, or removals outside of pgxman.
+During the extension installation phase, pgxman adds its Apt repository to your system, enabling the installation of
+extension packages. pgxman handles dependency management, installation, and uninstallation through `apt`.
+
+All pgxman packages are marked as "held back" with `apt-mark hold`, which prevents them from accidential installations,
+upgrades, or removals outside of pgxman.
 
 ## Buildkits
 

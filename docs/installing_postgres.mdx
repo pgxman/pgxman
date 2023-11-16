@@ -1,37 +1,44 @@
 ---
 title: "Installing Postgres"
-description: "You must either manually install your desired version of Postgres or use the default version provided by your distribution when installing extensions with pgxman."
 ---
 
-You must either manually install your desired version of Postgres or use the
-default version provided by your distribution when installing extensions with
-pgxman.
+## MacOS
 
-## Default versions
+On MacOS, you do not need to install Postgres. pgxman will [use a container](container) to emulate a Linux environment.
+pgxman will support native homebrew installation in the future.
 
-* Debian Bookworm: Postgres 15
-* Ubuntu Jammy: Postgres 14
+## Linux
 
-## Automatic installation
+<Note>At this time, only Ubuntu Jammy and Debian Bookworm are supported.</Note>
 
-Because pgxman declares the appropriate version of `postgresql` as a dependency,
-pgxman will automatically try to install the specified version of Postgres when
-installing an extension. For example:
+pgxman assumes you likely already have Postgres installed, and because there are many ways to install
+Postgres, it does not try to install it for you. pgxman will detect your version of Postgres by looking
+for `pg_config`.
 
-```console
-pgxman install pgvector@15
-```
+If you do not have Postgres installed, we recommend either using the default version included with the distro,
+or use the Postgres Global Developer Group (`pgdg`) repository.
 
-In this case, the pgvector package for PG 15 will have `postgresql-15` package
-as a dependency, so it will try to install it if it is not already installed.
+### Included versions
 
-## Installing other versions
+- Debian Bookworm: Postgres 15
+  - `apt install postgresql-15`
+- Ubuntu Jammy: Postgres 14
+  - `apt install postgresql-14`
 
-We highly recommend using the Postgres Global Developer Group (`pgdg`)
-Apt repository to install other versions. To add this repository, run:
 
-```console
+### Other versions
+
+We highly recommend using the Postgres Global Developer Group (PGDG)
+apt repository to install other versions. To add this repository, run:
+
+```sh
 apt install -y postgresql-common gnupg2
 
 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+```
+
+Once the repository is installed, you can install your desired version of Postgres. For example:
+
+```sh
+apt install postgresql-16
 ```

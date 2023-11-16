@@ -83,7 +83,7 @@ func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Comm
 
 	cmd := &cobra.Command{
 		Use:   action,
-		Short: c.String(action) + "Install PostgreSQL extensions in a container",
+		Short: c.String(action) + " PostgreSQL extensions in a container",
 		Long: fmt.Sprintf(`Start a container with the specified PostgreSQL version and %s
 PostgreSQL extension from commandline arguments. The argument format
 is NAME=VERSION.`, action),

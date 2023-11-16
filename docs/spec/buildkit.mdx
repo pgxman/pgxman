@@ -1,0 +1,421 @@
+---
+title: "Buildkit"
+---
+
+A pgxman buildkit is a configuration file in YAML format that `pgxman` uses to specify how a PostgreSQL extension should be built and packaged. Buildkits are added to the [buildkit repository](https://github.com/pgxman/buildkit).
+
+Below is an example buildkit configuration including all the fields:
+
+```yaml
+# API version of the buildkit specification. Only v1 is supported.
+apiVersion: v1
+# Name of the extension.
+name: my-extension
+# Version of the extension. Must be in semantic versioning v2 format.
+version: "0.4.4"
+# URL of the extension's homepage.
+homepage: https://github.com/org/repo
+# URL of the extension's repository.
+repository: https://github.com/org/repo
+# URL of the extension's source code. Only `tar.gz` files are supported.
+source: https://github.com/org/repo/archive/refs/tags/v0.4.4.tar.gz
+# Description of the extension.
+description: Extension description
+# License of the extension. Must be a valid SPDX license identifier.
+license: PostgreSQL
+# Keywords relevant to the extension.
+keywords:
+  - keyword1
+  - keyword2
+# Supported architectures.
+arch:
+  - amd64
+  - arm64
+# Maintainers of the buildkit.
+maintainers:
+  - name: Owen Ou
+    email: o@hydra.so
+# Supported PostgreSQL versions.
+pgVersions:
+  - "13"
+  - "14"
+  - "15"
+  - "16"
+# Build scripts for the extension.
+build:
+  # Steps to be executed before the main build process.
+  pre:
+    - name: Install dependencies
+      run: |
+        # Do something
+  # Steps to be executed for the main build process.
+  main:
+    - name: Build pgvector
+      run: |
+        # Do something
+  # Steps to be executed after the main build process.
+  post:
+    - name: Cleanup
+      run: |
+        # Do something
+# Build dependencies of the extension.
+buildDependencies:
+  - dep1
+  - dep2
+  - pgxman/extension
+# Run dependencies of the extension.
+runDependencies:
+  - dep3
+  - dep4
+  - pgxman/extension
+# Overrides the default builders to be used.
+builders:
+  # Overrides the debian:bookworm builder.
+  debian:bookworm:
+    # Overrides the global build dependencies for this builder.
+    buildDependencies:
+      - dep1
+      - dpe2
+    # Overrides the global run dependencies for this builder.
+    runDependencies:
+      - dep3
+      - dep4
+    # Extra APT repositories to add.
+    aptRepositories:
+      - id: repo1
+        types:
+          - deb
+          - deb-src
+        uris:
+          - http://repo1.com
+        suites:
+          - suite1
+        components:
+          - comp1
+        signedKey:
+          - uri: http://repo1.com/key
+            format: gpg
+  # Overrides the ubuntu:jammy builder.
+  ubuntu:jammy:
+    # Overrides the global build dependencies for this builder.
+    buildDependencies:
+      - dep1
+      - dpe2
+    # Overrides the global run dependencies for this builder.
+    runDependencies:
+      - dep3
+      - dep4
+    # Extra APT repositories to add.
+    aptRepositories:
+      - id: repo1
+        types:
+          - deb
+          - deb-src
+        uris:
+          - http://repo1.com
+        suites:
+          - suite1
+        components:
+          - comp1
+        signedKey:
+          - uri: http://repo1.com/key
+            format: gpg
+```
+
+## `apiVersion`
+
+- **Description**: Defines the API version to which the buildkit conforms, ensuring its compatibility.
+- **Type**: String
+- **Required**: Yes
+- **Supported Values**: Currently, only `v1` is supported.
+
+## `name`
+
+- **Description**: Identifies the name of the extension.
+- **Type**: String
+- **Required**: Yes
+
+## `maintainers`
+
+- **Description**: Lists the individuals or organizations responsible for maintaining the buildkit.
+- **Type**: List of objects
+- **Required**: Yes
+- **Fields**:
+  - `name`:
+    - **Description**: The maintainer's full name.
+    - **Type**: String
+    - **Required:** Yes
+  - `email`:
+    - **Description**: The maintainer's contact email.
+    - **Type**: String
+    - **Required**: Yes
+
+## `source`
+
+- **Description**: Specifies the URI for the extension's source code. The URI can be a HTTP/HTTPS URL or a local file path.
+  If the URI is a HTTP/HTTPS URL, it must end with `.tar.gz`.
+- **Type**: String
+- **Required**: Yes
+
+## `repository`
+
+- **Description**: Specifies the URL for the extension's repository, where users can view the source code in more detail.
+- **Type**: String
+- **Required**: Yes
+
+## `version`
+
+- **Description**: Specifies the version of the extension buildkit. The versioning must adhere to the [Semantic Versioning 2.0.0](https://semver.org) format.
+- **Type**: String
+- **Required**: Yes
+
+## `pgVersions`
+
+- **Description**: Lists the PostgreSQL versions compatible with the extension. If unspecified, the extension is assumed to be compatible with all versions.
+- **Type**: List of strings
+- **Required**: No
+- **Supported Values**: `"13"`, `"14"`, `"15"`, `"16"`
+- **Default Values**: `"13"`, `"14"`, `"15"`, `"16"`
+
+## `license`
+
+- **Description**: Specifies the license under which the extension is distributed. The license must be a valid [SPDX license identifier](https://spdx.org/licenses/).
+- **Type**: String
+- **Required**: No
+
+## `build`
+
+- **Description**: Contains Bash scripts that automates the extension's build process. Some environment variables are set during the execution of these scripts. The built extension must be placed in the `$DESTDIR` directory.
+- **Type**: Object
+- **Required**: Yes
+- **Fields**:
+  - `pre`:
+    - **Description**: A list of steps before the main build process.
+    - **Type**: List of objects
+    - **Required**: No
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
+  - `main`:
+    - **Description**: A list of steps to be executed during main build process.
+    - **Type**: List of objects
+    - **Required**: Yes
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
+    - **Environment Variables**:
+      - `DESTDIR`: Indicates the directory where the built extension should be placed.
+      - `WORKDIR`: The working directory that contains the source code and the script.
+      - `PG_CONFIG`: Identifies the path to the `pg_config` executable.
+      - `USE_PGXS`: Always set to `1`.
+      - `PG_VERSION`: The PostgreSQL version that the script is building against.
+  - `post`:
+    - **Description**: A list of steps after the main build process.
+    - **Type**: List of objects
+    - **Required**: No
+    - **Fields**:
+      - `name`:
+        - **Description**: Name of the build step.
+        - **Type**: String
+        - **Required**: Yes
+      - `run`:
+        - **Description**: Bash command for the build step.
+        - **Type**: String
+        - **Required**: Yes
+
+The following is an example:
+
+```yaml
+build: |
+  make
+  DESTDIR=${DESTDIR} make install
+```
+
+## `runDependencies`
+
+- **Description**: Lists the packages needed for the extension to function properly at runtime. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+- **Type**: List of strings
+- **Required**: No
+
+## `buildDependencies`
+
+- **Description**: Lists the packages necessary for building the extension. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+- **Type**: List of strings
+- **Required**: No
+
+## `arch`
+
+- **Description**: Lists the architectures that the extension supports. If unspecified, all architectures are assumed to be supported.
+- **Type**: List of strings
+- **Required**: No
+- **Supported Values**: `amd64`, `arm64`
+- **Default Values**: `amd64`, `arm64`
+
+## `platform`
+
+- **Description**: Lists the platforms that the extension supports. Currently, only Linux is supported.
+- **Type**: List of strings
+- **Required**: No
+- **Supported Values**: `linux`
+- **Default Values**: `linux`
+
+## `formats`
+
+- **Description**: Lists the formats in which the built extension can be packaged. Currently, only Debian packages (`deb`) are supported.
+- **Type**: List of strings
+- **Required**: No
+- **Supported Values**: `deb`
+- **Default Values**: `deb`
+
+## `description`
+
+- **Description**: Provides a succinct overview of the extension.
+- **Type**: String
+- **Required**: No
+
+## `homepage`
+
+- **Description**: Specifies the URL of the extension's homepage, where users can find additional information about the extension.
+- **Type**: String
+- **Required**: No
+
+## `keywords`
+
+- **Description**: Lists keywords relevant to the extension, aiding its discovery in `pgxman` tool searches.
+- **Type**: List of strings
+- **Required**: No
+
+## `builders`
+
+- **Description**: Specify the builders to be used. If not provided, all supported builders are used.
+- **Type**: Object
+- **Required**: No
+- **Fields**:
+  - `debian:bookworm`:
+    - **Description**: Specifies the Debian Bookworm builder.
+    - **Type**: Object
+    - **Required**: No
+    - **Fields**:
+      - `buildDependencies`:
+        - **Description**: Lists the packages necessary for building for the `debian:bookworm` builder. This list overrides the global `buildDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+        - **Type**: List of strings
+        - **Required**: No
+      - `runDependencies`:
+        - **Description**: Lists the packages needed for the extension to function properly at runtime for the `debian:bookworm` builder. This list overrides the global `runDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+        - **Type**: List of strings
+        - **Required**: No
+      - `image`:
+        - **Description** Speifies the build image.
+        - **Type**: String
+        - **Required**: No
+        - **Default Value**: `ghcr.io/pgxman/builder/debian/bookworm`
+      - `aptRepositories`:
+        - **Description**: Lists the APT repositories containing the above Debian packages.
+        - **Type**: List of objects
+        - **Required**: No
+        - **Fields**:
+          - `id`:
+            - **Description**: The repository's id.
+            - **Type**: String
+            - **Required**: Yes
+          - `types`:
+            - **Description**: The repository's types.
+            - **Type**: String
+            - **Required**: Yes
+            - **Supported Values** `deb`, `deb-src`
+          - `uris`:
+            - **Description**: The repository's URIs.
+            - **Type**: List of strings
+            - **Required**: Yes
+          - `suites`:
+            - **Description**: The repository's suites within the APT repository.
+            - **Type**: List of objects
+            - **Required**: Yes
+          - `components`:
+            - **Description**: The components of the APT repository.
+            - **Type**: List of strings
+            - **Required**: Yes
+          - `signedKey`:
+            - **Description**: The GPG signed key of the APT repository.
+            - **Type**: List of objects
+            - **Required**: Yes
+            - **Fields**:
+              - `uri`:
+                - **Description**: The HTTP URL to download the GPG key.
+                - **Type**: String
+                - **Required**: Yes
+              - `format`:
+                - **Description**: The format of the GPG key.
+                - **Type**: String
+                - **Required**: Yes
+                - **Supported Values**: `gpg`, `asc`
+  - `ubuntu:jammy`:
+    - **Description**: Specifies the Ubuntu Jammy builder.
+    - **Type**: Object
+    - **Required**: No
+    - **Fields**:
+      - `buildDependencies`:
+        - **Description**: Lists the packages necessary for building for the `ubuntu:jammy` builder. This list overrides the global `buildDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+        - **Type**: List of strings
+        - **Required**: No
+      - `runDependencies`:
+        - **Description**: Lists the packages needed for the extension to function properly at runtime for the `ubuntu:jammy` builder. This list overrides the global `runDependencies`. pgxman extensions can be specified as dependencies using the format `pgxman/EXTENSION`.
+        - **Type**: List of strings
+        - **Required**: No
+      - `image`:
+        - **Description** Speifies the build image.
+        - **Type**: String
+        - **Required**: No
+        - **Default Value**: `ghcr.io/pgxman/builder/ubuntu/jammy`
+      - `aptRepositories`:
+        - **Description**: Lists the APT repositories containing the above Debian packages.
+        - **Type**: List of objects
+        - **Required**: No
+        - **Fields**:
+          - `id`:
+            - **Description**: The repository's id.
+            - **Type**: String
+            - **Required**: Yes
+          - `types`:
+            - **Description**: The repository's types.
+            - **Type**: String
+            - **Required**: Yes
+            - **Supported Values** `deb`, `deb-src`
+          - `uris`:
+            - **Description**: The repository's URIs.
+            - **Type**: List of strings
+            - **Required**: Yes
+          - `suites`:
+            - **Description**: The repository's suites within the APT repository.
+            - **Type**: List of objects
+            - **Required**: Yes
+          - `components`:
+            - **Description**: The components of the APT repository.
+            - **Type**: List of strings
+            - **Required**: Yes
+          - `signedKey`:
+            - **Description**: The GPG signed key of the APT repository.
+            - **Type**: List of objects
+            - **Required**: Yes
+            - **Fields**:
+              - `uri`:
+                - **Description**: The HTTP URL to download the GPG key.
+                - **Type**: String
+                - **Required**: Yes
+              - `format`:
+                - **Description**: The format of the GPG key.
+                - **Type**: String
+                - **Required**: Yes
+                - **Supported Values**: `gpg`, `asc`

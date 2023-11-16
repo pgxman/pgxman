@@ -1,0 +1,85 @@
+---
+title: "Using containers"
+description: pgxman has container support in order to facilitate testing on any operating system.
+---
+
+<Note>`pgxman container` is aliased to `pgxman c`</Note>
+<Note>On MacOS, pgxman automatically aliases `pgxman install` to `pgxman container install`</Note>
+
+## Installing extensions
+
+To install an extension into a container, run:
+
+```sh
+pgxman c install extension --pg version
+```
+
+* Containers use Postgres 15 by default. To use a different version, use the `--pg` flag to `pgxman container install`.
+* Each version of Postgres is managed and run independently.
+* Installation is persistent; you can install multiple extensions by running commands consecutively.
+  Each time you install an extension, pgxman will add the extension to the configuration, build a new image,
+  and restart the container with the extensions installed.
+
+## Connecting to the container
+
+The only thing you need to know to connect is the port number. pgxman uses the requested Postgres version
+and then `432` to form the port number:
+
+* pg16: 16432
+* pg15: 15432
+* pg14: 14432
+* pg13: 13432
+
+The username, password, and database are all set to `pgxman`. Combine these to connect to the database. You can use
+any Postgres client, like `psql` or your favorite GUI client.
+
+```
+psql postgres://pgxman:pgxman@127.0.0.1:15432/pgxman
+```
+
+Alternatively, you can use `psql` from inside the container:
+
+```
+docker exec -it pgxman_runner_15 psql -U pgxman
+```
+
+## Managing running containers
+
+Each version has its own named container, named `pgxman_runner_PGVERSION`, refered to as NAME below:
+
+* pg16: pgxman_runner_16
+* pg15: pgxman_runner_15
+* pg14: pgxman_runner_14
+* pg13: pgxman_runner_13
+
+Now you can manage the container as follows:
+
+* To **stop** a container, use `docker stop NAME`
+  * For example: `docker stop pgxman_runner_15`
+* To **start** a container after stopping it, use `docker start NAME`
+  * For example: `docker start pgxman_runner_15`
+* To **view** what containers are running, use `docker ps | grep pgxman`.
+
+<Note>These commands will be integrated into pgxman in a future release.</Note>
+
+### Database data
+
+Data is stored a corresponding Docker volume, e.g. `pgxman_runner_15_pg_data`.
+To see the volumes, run `docker volume ls | grep pgxman`.
+
+## Container teardown
+
+If you are done using a pgxman container, you can teardown the container. This will delete the image, volume, and
+configuration. Any data stored in the Postgres database will be deleted.
+
+```sh
+pgxman c teardown pgxman_runner_15
+```
+
+## How it works
+
+* pgxman generates a Dockerfile, a docker-compose file, and a pgxman bundle file. The configuration is stored in
+`USER_CONFIG_DIR/pgxman/runner/PG_VERSION`.
+  * On Linux, `USER_CONFIG_DIR` is `~/.config/pgxman`
+  * On MacOS, `USER_CONFIG_DIR` is `~/Library/Application Support/pgxman`
+* `pgxman c install` updates the pgxman bundle file, rebuilds the image, and restarts the container.

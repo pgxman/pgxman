@@ -1,15 +1,15 @@
 ---
-title: Building a PostgreSQL extension with pgxman
-sidebarTitle: Building an extension
+title: Add a PostgreSQL extension to pgxman
+sidebarTitle: Adding an extension
 ---
 
 ## Prerequisites
 
 - Docker
 
-## Initialize an extension manifest file
+## Initialize an buildkit file
 
-```console
+```sh
 pgxman init
 ```
 
@@ -19,14 +19,12 @@ create.
 This result is a manifest file named `extension.yaml`. The file serves as your
 blueprint for building the extension.
 
-## Writing the manifest file
+## Writing the buildkit file
 
-[Please refer to the full buildkit file specification for
-details](https://github.com/pgxman/buildkit/blob/main/spec/buildkit.md). You'll
-find a full documented example with all available fields, as well as
-documentation for the file. You can also [look at existing
-buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit) for examples
-on how to create a buildkit.
+[Please refer to the full buildkit file specification for details](spec/buildkit). You'll
+find a full documented example with all available fields, as well as documentation for the file.
+You can also [review existing buildkits](https://github.com/pgxman/buildkit/tree/main/buildkit)
+for examples on how to create a buildkit.
 
 Most manifest files should follow the build instructions for the extension.
 This may be as simple as `make && make install`, but others may be considerably
@@ -38,13 +36,13 @@ instructions and any required dependencies.
 Once you have a buildkit written, use pgxman to build the extension locally.
 pgxman uses Docker to build the packages.
 
-```console
+```sh
 pgxman build -f extension.yaml
 ```
 
 This will package the extension files in the `out` directory:
 
-```console
+```
 $ tree out
 out
 ├── linux_amd64
@@ -75,7 +73,7 @@ out
 
 ## Test the extension
 
-⚠️ We plan on making it easier to test extensions in the near future.
+<Note>We plan on making it easier to test extensions in the near future.</Note>
 
 Our recommendation is to test the built extension using Docker. You could use a
 Dockerfile to build an image, or run the commands manually from inside of the
@@ -90,7 +88,7 @@ FROM postgres:15-bookworm
 
 RUN apt-get update && \
   apt-get install -y curl && \
-  curl -sfL https://pgxman.com/install | sh -
+  curl -sfL https://install.pgx.sh | sh -
 
 COPY out/ /pgxman/out/
 COPY pgxman.yaml /pgxman/pgxman.yaml
@@ -104,9 +102,9 @@ Here's an example `pgxman.yaml` file for this setup:
 ```yaml
 apiVersion: v1
 extensions:
-- path: "/out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
-pgVersions:
-- "15"
+- path: "./out/debian/bookworm/postgresql-15-pgxman-yourpackage_1.2.3_arm64.deb"
+postgres:
+  version: 15
 ```
 
 ## Adding the extension to pgxman
