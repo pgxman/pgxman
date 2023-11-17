@@ -6,7 +6,9 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/log"
@@ -117,7 +119,13 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		exts := extNames(f.Extensions)
-		fmt.Printf("%s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
+
+		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+		s.Suffix = fmt.Sprintf(" %s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
+
+		s.Start()
+		defer s.Stop()
+
 		info, err := container.NewContainer(
 			container.WithRunnerImage(flagContainerInstallRunnerImage),
 		).Install(cmd.Context(), *f)
@@ -125,7 +133,7 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		fmt.Printf(`%s
+		s.FinalMSG = fmt.Sprintf(`%s
 To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
