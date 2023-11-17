@@ -10,5 +10,5 @@ title: $command
 ---
 
 EOF
-  tail +3 $f | sed 's/\.md)/)/g' >> ${f}x
+  sed -E -e '1,2d' -e 's/\.md)/)/g' -e 's#\(pgxman#(/cli/pgxman#g' $f >> ${f}x
 done
