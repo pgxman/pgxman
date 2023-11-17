@@ -88,7 +88,7 @@ func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Comm
 PostgreSQL extension from commandline arguments. The argument format
 is NAME=VERSION.`, action),
 		Example: buf.String(),
-		RunE:    runContainerInstall,
+		RunE:    runContainerInstall(upgrade),
 		Args:    cobra.MinimumNArgs(1),
 	}
 
@@ -100,26 +100,32 @@ is NAME=VERSION.`, action),
 	return cmd
 }
 
-func runContainerInstall(cmd *cobra.Command, args []string) error {
-	p := &ArgsParser{
-		PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
-		Logger: log.NewTextLogger(),
-	}
-	f, err := p.Parse(cmd.Context(), args)
-	if err != nil {
-		return err
-	}
+func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		p := &ArgsParser{
+			PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
+			Logger: log.NewTextLogger(),
+		}
+		f, err := p.Parse(cmd.Context(), args)
+		if err != nil {
+			return err
+		}
 
-	exts := extNames(f.Extensions)
-	fmt.Printf("Installing %s in a container for PostgreSQL %s...\n", exts, flagContainerInstallPGVersion)
-	info, err := container.NewContainer(
-		container.WithRunnerImage(flagContainerInstallRunnerImage),
-	).Install(cmd.Context(), *f)
-	if err != nil {
-		return err
-	}
+		action := "Installing"
+		if upgrade {
+			action = "Upgrading"
+		}
 
-	fmt.Printf(`%s
+		exts := extNames(f.Extensions)
+		fmt.Printf("%s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
+		info, err := container.NewContainer(
+			container.WithRunnerImage(flagContainerInstallRunnerImage),
+		).Install(cmd.Context(), *f)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf(`%s
 To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
@@ -130,15 +136,16 @@ To tear down the container, run:
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
-		installedExt(f, false, info.ContainerName),
-		info.Postgres.Username,
-		info.Postgres.Password,
-		info.Postgres.Port,
-		info.Postgres.DBName,
-		info.ContainerName,
-	)
+			installedExt(f, upgrade, info.ContainerName),
+			info.Postgres.Username,
+			info.Postgres.Password,
+			info.Postgres.Port,
+			info.Postgres.DBName,
+			info.ContainerName,
+		)
 
-	return nil
+		return nil
+	}
 }
 
 func newContainerTeardownCmd() *cobra.Command {

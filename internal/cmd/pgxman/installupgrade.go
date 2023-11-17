@@ -142,7 +142,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			fmt.Printf(`%s
 After restarting PostgreSQL, update extensions in each database by running in the psql shell:
 
-	ALTER EXTENSION name UPDATE
+    ALTER EXTENSION name UPDATE
 `, installedExt(f, true, ""))
 
 			return nil
