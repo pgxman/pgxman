@@ -129,7 +129,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		exts := extNames(f.Extensions)
 
 		if upgrade {
-			fmt.Printf("Upgrading %q for PostgreSQL %s...\n", exts, pgVer)
+			fmt.Printf("Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
 			if err := i.Upgrade(
 				c.Context(),
 				*f,
@@ -149,7 +149,7 @@ After restarting PostgreSQL, update extensions in each database by running in th
 			return nil
 		}
 
-		fmt.Printf("Installing %q for PostgreSQL %s...\n", exts, pgVer)
+		fmt.Printf("Installing %s for PostgreSQL %s...\n", exts, pgVer)
 		if err := i.Install(
 			c.Context(),
 			*f,
