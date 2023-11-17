@@ -125,7 +125,7 @@ echo $PGXS
 			image = "ubuntu:jammy"
 			pathPrefix = "ubuntu/jammy"
 		} else if strings.Contains(match, "debian") {
-			image = "postgres:14-bookworm"
+			image = "postgres:15-bookworm"
 			pathPrefix = "debian/bookworm"
 		} else {
 			assert.Failf("unexpected debian package os: %s", match)
@@ -169,6 +169,8 @@ apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+apt-get update
+apt-get install postgresql-15 -y
 cat <<EOS | pgxman bundle -f -
 apiVersion: v1
 extensions:
@@ -176,7 +178,7 @@ extensions:
   version: "1.5.1"
 - path: "/out/%s"
 postgres:
-  version: "14"
+  version: "15"
 EOS
 `, filepath.Join(pathPrefix, debFile)),
 			)

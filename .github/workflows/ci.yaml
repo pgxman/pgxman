@@ -106,6 +106,7 @@ jobs:
     name: Mac Install Test
     needs: [build, test, vet]
     runs-on: macos-13
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
@@ -125,6 +126,6 @@ jobs:
           bin/pgxman install pgvector --debug
   docker:
     name: Docker
-    needs: [e2etest, installer_test, mac_install_test]
+    needs: [e2etest, installer_test]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit

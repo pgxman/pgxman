@@ -15,13 +15,19 @@ import (
 func TestContainer(t *testing.T) {
 	assert := assert.New(t)
 
+	configDir := t.TempDir()
 	c := container.NewContainer(
 		container.WithRunnerImage(flagRunnerPostgres15Image),
+		container.WithConfigDir(configDir),
 	)
-	wantFile := &pgxman.PGXManfile{
+	wantFile := pgxman.PGXManfile{
 		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
 		Postgres: pgxman.Postgres{
-			Version: pgxman.PGVersion15,
+			Version:  pgxman.PGVersion15,
+			Username: "pgxman",
+			Password: "pgxman",
+			DBName:   "pgxman",
+			Port:     "15432",
 		},
 		Extensions: []pgxman.InstallExtension{
 			{
@@ -40,7 +46,7 @@ func TestContainer(t *testing.T) {
 	var gotFile pgxman.PGXManfile
 	err = yaml.Unmarshal(b, &gotFile)
 	assert.NoError(err)
-	assert.Equal(wantFile, &gotFile)
+	assert.Equal(wantFile, gotFile)
 
 	err = c.Teardown(context.TODO(), pgxman.PGVersion15)
 	assert.NoError(err)

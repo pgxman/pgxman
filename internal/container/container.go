@@ -14,7 +14,6 @@ import (
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
-	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/docker"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
@@ -45,6 +44,7 @@ type Container struct {
 
 type ContainerOpt struct {
 	runnerImage string
+	configDir   string
 }
 
 type ContainerOptFunc func(*ContainerOpt)
@@ -52,6 +52,12 @@ type ContainerOptFunc func(*ContainerOpt)
 func WithRunnerImage(image string) ContainerOptFunc {
 	return func(o *ContainerOpt) {
 		o.runnerImage = image
+	}
+}
+
+func WithConfigDir(dir string) ContainerOptFunc {
+	return func(o *ContainerOpt) {
+		o.configDir = dir
 	}
 }
 
@@ -67,7 +73,7 @@ func WithRunnerImage(image string) ContainerOptFunc {
 // --------- pgxman.yaml
 // --------- compose.yaml
 // --------- files
-func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*ContainerInfo, error) {
+func (c *Container) Install(ctx context.Context, f pgxman.PGXManfile) (*ContainerInfo, error) {
 	if err := c.checkDocker(ctx); err != nil {
 		return nil, err
 	}
@@ -81,7 +87,7 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 	f.Postgres.DBName = "pgxman"
 	f.Postgres.Port = fmt.Sprintf("%s432", pgVer)
 
-	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pgVer))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err
 	}
@@ -115,10 +121,11 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		return nil, err
 	}
 
-	if err := mergeBundleFile(f, runnerDir); err != nil {
+	if err := mergeBundleFile(&f, runnerDir); err != nil {
 		return nil, err
 	}
 
+	w := c.Logger.Writer(slog.LevelDebug)
 	dockerCompose := exec.CommandContext(
 		ctx,
 		"docker",
@@ -131,8 +138,8 @@ func (c *Container) Install(ctx context.Context, f *pgxman.PGXManfile) (*Contain
 		"--detach",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
-	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stdout = w
+	dockerCompose.Stderr = w
 
 	return &info, dockerCompose.Run()
 }
@@ -142,11 +149,12 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		return err
 	}
 
-	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pgVer))
 	if _, err := os.Stat(runnerDir); err != nil {
 		return fmt.Errorf("runner configuration does not exist: %w", err)
 	}
 
+	w := c.Logger.Writer(slog.LevelDebug)
 	dockerCompose := exec.CommandContext(
 		ctx,
 		"docker",
@@ -157,8 +165,8 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		"--volumes",
 	)
 	dockerCompose.Dir = runnerDir
-	dockerCompose.Stdout = c.Logger.Writer(slog.LevelDebug)
-	dockerCompose.Stderr = c.Logger.Writer(slog.LevelDebug)
+	dockerCompose.Stdout = w
+	dockerCompose.Stderr = w
 	if err := dockerCompose.Run(); err != nil {
 		return err
 	}
@@ -170,7 +178,7 @@ func (c *Container) checkDocker(ctx context.Context) error {
 	return docker.CheckInstall(ctx)
 }
 
-func copyLocalFiles(f *pgxman.PGXManfile, dstDir string) error {
+func copyLocalFiles(f pgxman.PGXManfile, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}

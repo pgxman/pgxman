@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -66,18 +67,45 @@ func runBundle(c *cobra.Command, args []string) error {
 		flagBundlePGXManfile = filepath.Join(pwd, "pgxman.yaml")
 	}
 
-	pgxmf, err := pgxman.ReadPGXManfile(flagBundlePGXManfile)
+	f, err := pgxman.ReadPGXManfile(flagBundlePGXManfile)
 	if err != nil {
 		return err
 	}
-	if err := LockPGXManfile(pgxmf, log.NewTextLogger()); err != nil {
+
+	pgVer := f.Postgres.Version
+	if err := validatePGVer(c.Context(), pgVer); err != nil {
 		return err
+	}
+
+	if err := LockPGXManfile(f, log.NewTextLogger()); err != nil {
+		return err
+	}
+
+	s := newSpinner()
+	defer s.Stop()
+
+	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
+	s.FinalMSG = extOutput(f)
+
+	opts := []pgxman.InstallerOptionsFunc{
+		pgxman.WithSudo(flagInstallerSudo),
+	}
+	if flagInstallerYes {
+		s.Start()
+	} else {
+		opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
+			if err := promptInstallOrUpgrade(debPkgs, sources, false); err != nil {
+				return err
+			}
+
+			s.Start()
+			return nil
+		}))
 	}
 
 	return i.Upgrade(
 		c.Context(),
-		[]pgxman.PGXManfile{*pgxmf},
-		pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
-		pgxman.InstallOptWithSudo(flagInstallerSudo),
+		*f,
+		opts...,
 	)
 }

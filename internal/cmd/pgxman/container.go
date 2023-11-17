@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
@@ -88,7 +89,7 @@ func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Comm
 PostgreSQL extension from commandline arguments. The argument format
 is NAME=VERSION.`, action),
 		Example: buf.String(),
-		RunE:    runContainerInstall,
+		RunE:    runContainerInstall(upgrade),
 		Args:    cobra.MinimumNArgs(1),
 	}
 
@@ -100,35 +101,39 @@ is NAME=VERSION.`, action),
 	return cmd
 }
 
-func runContainerInstall(cmd *cobra.Command, args []string) error {
-	p := &ArgsParser{
-		PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
-		Logger: log.NewTextLogger(),
-	}
-	f, err := p.Parse(cmd.Context(), args)
-	if err != nil {
-		return err
-	}
-
-	var exts []string
-	for _, ext := range f.Extensions {
-		if ext.Name != "" {
-			exts = append(exts, ext.Name)
-		} else if ext.Path != "" {
-			exts = append(exts, ext.Path)
+func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		p := &ArgsParser{
+			PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
+			Logger: log.NewTextLogger(),
 		}
-	}
+		f, err := p.Parse(cmd.Context(), args)
+		if err != nil {
+			return err
+		}
 
-	fmt.Printf("Installing %q in a container for PostgreSQL %s...\n", strings.Join(exts, ", "), flagContainerInstallPGVersion)
-	info, err := container.NewContainer(
-		container.WithRunnerImage(flagContainerInstallRunnerImage),
-	).Install(cmd.Context(), f)
-	if err != nil {
-		return err
-	}
+		s := newSpinner()
+		defer s.Stop()
 
-	fmt.Printf(`%s was installed successfully in container %s.
+		var (
+			action = "Installing"
+		)
+		if upgrade {
+			action = "Upgrading"
+		}
 
+		exts := extNames(f.Extensions)
+		s.Suffix = fmt.Sprintf(" %s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
+
+		s.Start()
+		info, err := container.NewContainer(
+			container.WithRunnerImage(flagContainerInstallRunnerImage),
+			container.WithConfigDir(config.ConfigDir()),
+		).Install(cmd.Context(), *f)
+		if err != nil {
+			return err
+		}
+		s.FinalMSG = fmt.Sprintf(`%s
 To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
@@ -139,16 +144,16 @@ To tear down the container, run:
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
-		strings.Join(exts, ", "),
-		info.ContainerName,
-		info.Postgres.Username,
-		info.Postgres.Password,
-		info.Postgres.Port,
-		info.Postgres.DBName,
-		info.ContainerName,
-	)
+			extOutput(f),
+			info.Postgres.Username,
+			info.Postgres.Password,
+			info.Postgres.Port,
+			info.Postgres.DBName,
+			info.ContainerName,
+		)
 
-	return nil
+		return nil
+	}
 }
 
 func newContainerTeardownCmd() *cobra.Command {
@@ -174,7 +179,9 @@ var (
 )
 
 func runContainerTeardown(cmd *cobra.Command, args []string) error {
-	c := container.NewContainer()
+	c := container.NewContainer(
+		container.WithConfigDir(config.ConfigDir()),
+	)
 	for _, arg := range args {
 		match := regexpContainerName.FindStringSubmatch(arg)
 		if len(match) == 0 {
@@ -186,10 +193,13 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Printf("Tearing down container for PostgreSQL %s...\n", pgVer)
+		s := newSpinner()
+		s.Suffix = fmt.Sprintf(" Tearing down container for PostgreSQL %s...\n", pgVer)
+		s.Start()
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}
+		s.Stop()
 	}
 
 	return nil

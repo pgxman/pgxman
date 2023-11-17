@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -9,7 +10,9 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/errorsx"
@@ -113,8 +116,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		pgVer := pgxman.PGVersion(flagInstallerPGVersion)
-		if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(c.Context(), pgVer) {
-			return errInvalidPGVersion{Version: pgVer}
+		if err := validatePGVer(c.Context(), pgVer); err != nil {
+			return err
 		}
 
 		p := &ArgsParser{
@@ -126,28 +129,51 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
+		s := newSpinner()
+		defer s.Stop()
+
+		exts := extNames(f.Extensions)
 		if upgrade {
-			if err := i.Upgrade(
+			s.Suffix = fmt.Sprintf(" Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
+			s.FinalMSG = fmt.Sprintf(`%s
+After restarting PostgreSQL, update extensions in each database by running in the psql shell:
+
+    ALTER EXTENSION name UPDATE
+`, extOutput(f))
+
+		} else {
+			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
+			s.FinalMSG = extOutput(f)
+		}
+
+		opts := []pgxman.InstallerOptionsFunc{
+			pgxman.WithSudo(flagInstallerSudo),
+		}
+		if flagInstallerYes {
+			s.Start()
+		} else {
+			opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
+				if err := promptInstallOrUpgrade(debPkgs, sources, upgrade); err != nil {
+					return err
+				}
+
+				s.Start()
+				return nil
+			}))
+		}
+
+		if upgrade {
+			return i.Upgrade(
 				c.Context(),
-				[]pgxman.PGXManfile{*f},
-				pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
-				pgxman.InstallOptWithSudo(flagInstallerSudo),
-			); err != nil {
-				return err
-			}
-
-			fmt.Println(`After restarting PostgreSQL, update extensions in each database by running:
-
-  ALTER EXTENSION name UPDATE`)
-
-			return nil
+				*f,
+				opts...,
+			)
 		}
 
 		return i.Install(
 			c.Context(),
-			[]pgxman.PGXManfile{*f},
-			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
-			pgxman.InstallOptWithSudo(flagInstallerSudo),
+			*f,
+			opts...,
 		)
 	}
 }
@@ -284,4 +310,86 @@ func supportedPGVersions() []string {
 	}
 
 	return pgVers
+}
+
+func extOutput(f *pgxman.PGXManfile) string {
+	var lines []string
+	for _, ext := range f.Extensions {
+		lines = append(lines, fmt.Sprintf("[%s] %s: %s", checkMark, extName(ext), extLink(ext)))
+	}
+
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func extNames(exts []pgxman.InstallExtension) string {
+	var names []string
+	for _, ext := range exts {
+		names = append(names, extName(ext))
+	}
+
+	return strings.Join(names, ", ")
+}
+
+func extName(ext pgxman.InstallExtension) string {
+	if ext.Name != "" {
+		return ext.Name
+	}
+
+	return ext.Path
+}
+
+func extLink(ext pgxman.InstallExtension) string {
+	return fmt.Sprintf("https://pgx.sh/%s", ext.Name)
+}
+
+func promptInstallOrUpgrade(debPkgs []string, sources []string, upgrade bool) error {
+	var (
+		action   = "installed"
+		abortMsg = "installation aborted"
+	)
+	if upgrade {
+		action = "upgraded"
+		abortMsg = "upgrade aborted"
+	}
+
+	out := []string{
+		fmt.Sprintf("The following Debian packages will be %s:", action),
+	}
+	for _, debPkg := range debPkgs {
+		out = append(out, "  "+debPkg)
+	}
+
+	if len(sources) > 0 {
+		out = append(out, "The following Apt repositories will be added or updated:")
+		for _, source := range sources {
+			out = append(out, "  "+source)
+		}
+	}
+
+	out = append(out, "Do you want to continue? [Y/n] ")
+	fmt.Print(strings.Join(out, "\n"))
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		switch strings.ToLower(scanner.Text()) {
+		case "y", "yes", "":
+			return nil
+		default:
+			return fmt.Errorf(abortMsg)
+		}
+	}
+
+	return nil
+}
+
+func validatePGVer(ctx context.Context, pgVer pgxman.PGVersion) error {
+	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
+		return errInvalidPGVersion{Version: pgVer}
+	}
+
+	return nil
+}
+
+func newSpinner() *spinner.Spinner {
+	return spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 }
