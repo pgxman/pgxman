@@ -170,7 +170,7 @@ apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 apt-get update
-apt-get install postgresql-all -y
+apt-get install postgresql-15 -y
 cat <<EOS | pgxman bundle -f -
 apiVersion: v1
 extensions:
