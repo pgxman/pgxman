@@ -93,8 +93,16 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 		return err
 	}
 
-	if !opts.IgnorePrompt {
-		if err := promptInstallOrUpgrade(aptPkgs, aptSources, upgrade); err != nil {
+	if h := opts.BeforeHook; h != nil {
+		var pkgs []string
+		for _, pkg := range aptPkgs {
+			pkgs = append(pkgs, pkg.Pkg)
+		}
+		var sources []string
+		for _, source := range aptSources {
+			sources = append(sources, source.Name)
+		}
+		if err := h(pkgs, sources); err != nil {
 			return err
 		}
 	}

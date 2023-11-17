@@ -70,19 +70,26 @@ func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
 type InstallerOptions struct {
 	IgnorePrompt bool
 	Sudo         bool
+	BeforeHook   func(debPkgs []string, sources []string) error
 }
 
 type InstallerOptionsFunc func(*InstallerOptions)
 
-func InstallOptWithIgnorePrompt(ignore bool) InstallerOptionsFunc {
+func WithIgnorePrompt(ignore bool) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {
 		ops.IgnorePrompt = ignore
 	}
 }
 
-func InstallOptWithSudo(sudo bool) InstallerOptionsFunc {
+func WithSudo(sudo bool) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {
 		ops.Sudo = sudo
+	}
+}
+
+func WithBeforeHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
+	return func(ops *InstallerOptions) {
+		ops.BeforeHook = hook
 	}
 }
 

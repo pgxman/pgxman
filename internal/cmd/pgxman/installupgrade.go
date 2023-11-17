@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -9,7 +10,9 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/errorsx"
@@ -128,39 +131,52 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 
 		exts := extNames(f.Extensions)
 
-		if upgrade {
-			fmt.Printf("Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
-			if err := i.Upgrade(
-				c.Context(),
-				*f,
-				pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
-				pgxman.InstallOptWithSudo(flagInstallerSudo),
-			); err != nil {
-				return err
-			}
+		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+		defer s.Stop()
 
-			fmt.Printf(`%s
+		if upgrade {
+			s.Suffix = fmt.Sprintf(" Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
+			s.FinalMSG = fmt.Sprintf(`%s
 After restarting PostgreSQL, update extensions in each database by running in the psql shell:
 
     ALTER EXTENSION name UPDATE
 `, installedExt(f, true, ""))
 
-			return nil
+		} else {
+			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
+			s.FinalMSG = installedExt(f, false, "")
 		}
 
-		fmt.Printf("Installing %s for PostgreSQL %s...\n", exts, pgVer)
-		if err := i.Install(
+		opts := []pgxman.InstallerOptionsFunc{
+			pgxman.WithSudo(flagInstallerSudo),
+		}
+		if flagInstallerYes {
+			s.Start()
+		} else {
+			opts = append(opts, pgxman.WithBeforeHook(func(debPkgs []string, sources []string) error {
+				if err := promptInstallOrUpgrade(debPkgs, sources, upgrade); err != nil {
+					return err
+				}
+
+				s.Start()
+
+				return nil
+			}))
+		}
+
+		if upgrade {
+			return i.Upgrade(
+				c.Context(),
+				*f,
+				opts...,
+			)
+		}
+
+		return i.Install(
 			c.Context(),
 			*f,
-			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
-			pgxman.InstallOptWithSudo(flagInstallerSudo),
-		); err != nil {
-			return err
-		}
-
-		fmt.Println(installedExt(f, false, ""))
-
-		return nil
+			opts...,
+		)
 	}
 }
 
@@ -308,7 +324,7 @@ func installedExt(f *pgxman.PGXManfile, upgrade bool, containerName string) stri
 	}
 
 	if len(f.Extensions) == 1 {
-		return fmt.Sprintf("%q was %s.\nMore info %s.", extName(f.Extensions[0]), action, extLink(f.Extensions[0]))
+		return fmt.Sprintf("%q was %s.\nMore info %s.\n", extName(f.Extensions[0]), action, extLink(f.Extensions[0]))
 	}
 
 	var lines []string
@@ -317,7 +333,8 @@ func installedExt(f *pgxman.PGXManfile, upgrade bool, containerName string) stri
 	}
 
 	return fmt.Sprintf(`The following extensions were %s:
-%s`, action, strings.Join(lines, "\n"))
+%s
+`, action, strings.Join(lines, "\n"))
 }
 
 func extNames(exts []pgxman.InstallExtension) string {
@@ -339,4 +356,44 @@ func extName(ext pgxman.InstallExtension) string {
 
 func extLink(ext pgxman.InstallExtension) string {
 	return fmt.Sprintf("https://pgx.sh/%s", ext.Name)
+}
+
+func promptInstallOrUpgrade(debPkgs []string, sources []string, upgrade bool) error {
+	var (
+		action   = "installed"
+		abortMsg = "installation aborted"
+	)
+	if upgrade {
+		action = "upgraded"
+		abortMsg = "upgrade aborted"
+	}
+
+	out := []string{
+		fmt.Sprintf("The following Debian packages will be %s:", action),
+	}
+	for _, debPkg := range debPkgs {
+		out = append(out, "  "+debPkg)
+	}
+
+	if len(sources) > 0 {
+		out = append(out, "The following Apt repositories will be added or updated:")
+		for _, source := range sources {
+			out = append(out, "  "+source)
+		}
+	}
+
+	out = append(out, "Do you want to continue? [Y/n] ")
+	fmt.Print(strings.Join(out, "\n"))
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		switch strings.ToLower(scanner.Text()) {
+		case "y", "yes", "":
+			return nil
+		default:
+			return fmt.Errorf(abortMsg)
+		}
+	}
+
+	return nil
 }
