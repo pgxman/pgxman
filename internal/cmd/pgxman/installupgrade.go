@@ -132,7 +132,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			fmt.Printf("Upgrading %q for PostgreSQL %s...\n", exts, pgVer)
 			if err := i.Upgrade(
 				c.Context(),
-				[]pgxman.PGXManfile{*f},
+				*f,
 				pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 				pgxman.InstallOptWithSudo(flagInstallerSudo),
 			); err != nil {
@@ -152,7 +152,7 @@ After restarting PostgreSQL, update extensions in each database by running in th
 		fmt.Printf("Installing %q for PostgreSQL %s...\n", exts, pgVer)
 		if err := i.Install(
 			c.Context(),
-			[]pgxman.PGXManfile{*f},
+			*f,
 			pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 			pgxman.InstallOptWithSudo(flagInstallerSudo),
 		); err != nil {

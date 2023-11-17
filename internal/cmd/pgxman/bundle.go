@@ -76,7 +76,7 @@ func runBundle(c *cobra.Command, args []string) error {
 
 	return i.Upgrade(
 		c.Context(),
-		[]pgxman.PGXManfile{*pgxmf},
+		*pgxmf,
 		pgxman.InstallOptWithIgnorePrompt(flagInstallerYes),
 		pgxman.InstallOptWithSudo(flagInstallerSudo),
 	)

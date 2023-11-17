@@ -87,6 +87,6 @@ func InstallOptWithSudo(sudo bool) InstallerOptionsFunc {
 }
 
 type Installer interface {
-	Install(ctx context.Context, exts []PGXManfile, opts ...InstallerOptionsFunc) error
-	Upgrade(ctx context.Context, exts []PGXManfile, opts ...InstallerOptionsFunc) error
+	Install(ctx context.Context, ext PGXManfile, opts ...InstallerOptionsFunc) error
+	Upgrade(ctx context.Context, exts PGXManfile, opts ...InstallerOptionsFunc) error
 }

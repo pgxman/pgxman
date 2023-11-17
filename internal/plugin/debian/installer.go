@@ -16,17 +16,17 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Upgrade(ctx context.Context, extFiles []pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, extFiles, true, optFuncs...)
+func (i *DebianInstaller) Upgrade(ctx context.Context, f pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, f, true, optFuncs...)
 }
 
-func (i *DebianInstaller) Install(ctx context.Context, extFiles []pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, extFiles, false, optFuncs...)
+func (i *DebianInstaller) Install(ctx context.Context, f pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, f, false, optFuncs...)
 }
 
-func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman.PGXManfile, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
+func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfile, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	opts := pgxman.NewInstallerOptions(optFuncs)
-	i.Logger.Debug("Installing extensions", "pgxman.yaml", extFiles, "options", opts)
+	i.Logger.Debug("Installing extensions", "manifest", f, "options", opts)
 
 	i.Logger.Debug("Fetching installable extensions")
 	installableExts, err := buildkit.Extensions()
@@ -42,40 +42,38 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, extFiles []pgxman
 	var (
 		aptPkgs []AptPackage
 	)
-	for _, extFile := range extFiles {
-		for _, extToInstall := range extFile.Extensions {
-			if err := extToInstall.Validate(); err != nil {
-				return err
+	for _, extToInstall := range f.Extensions {
+		if err := extToInstall.Validate(); err != nil {
+			return err
+		}
+
+		if extToInstall.Path != "" {
+			aptPkgs = append(
+				aptPkgs,
+				AptPackage{
+					Pkg:     extToInstall.Path,
+					IsLocal: true,
+					Opts:    extToInstall.Options,
+				},
+			)
+		} else {
+			installableExt, ok := installableExts[extToInstall.Name]
+			if !ok {
+				return fmt.Errorf("extension %q not found", extToInstall.Name)
 			}
 
-			if extToInstall.Path != "" {
-				aptPkgs = append(
-					aptPkgs,
-					AptPackage{
-						Pkg:     extToInstall.Path,
-						IsLocal: true,
-						Opts:    extToInstall.Options,
-					},
-				)
-			} else {
-				installableExt, ok := installableExts[extToInstall.Name]
-				if !ok {
-					return fmt.Errorf("extension %q not found", extToInstall.Name)
-				}
+			aptPkgs = append(
+				aptPkgs,
+				AptPackage{
+					Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", f.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
+					Opts: extToInstall.Options,
+				},
+			)
 
-				aptPkgs = append(
-					aptPkgs,
-					AptPackage{
-						Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", extFile.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
-						Opts: extToInstall.Options,
-					},
-				)
-
-				if builders := installableExt.Builders; builders != nil {
-					builder := builders.Current()
-					if ar := builder.AptRepositories; len(ar) > 0 {
-						aptRepos = append(aptRepos, ar...)
-					}
+			if builders := installableExt.Builders; builders != nil {
+				builder := builders.Current()
+				if ar := builder.AptRepositories; len(ar) > 0 {
+					aptRepos = append(aptRepos, ar...)
 				}
 			}
 		}
