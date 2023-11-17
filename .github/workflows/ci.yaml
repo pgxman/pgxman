@@ -126,6 +126,6 @@ jobs:
           bin/pgxman install pgvector --debug
   docker:
     name: Docker
-    needs: [e2etest, installer_test, mac_install_test]
+    needs: [e2etest, installer_test]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
