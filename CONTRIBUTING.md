@@ -28,4 +28,14 @@ and alternatives considered.
 If you are interested in sending a PR for your feature, please let us know this in your issue.
 We would be happy to discuss implementation details with you.
 
+### Missing or incorrect documentation
+
+We welcome issues or PRs for our documentation. Documentation is generated from the markdown
+files in `docs`.
+
+Note that `docs/cli` and `docs/man` are automatically generated from the code, so updates
+to these files need to be made to their respective `internal/cmd/pgxman` files, then run `make docs`.
+
+For information about previewing the docs locally, please see [docs/README.md](docs/README.md).
+
 Thanks!
