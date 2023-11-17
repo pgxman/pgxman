@@ -1,48 +1,32 @@
 # pgxman - PostgreSQL Extension Manager
 
+[![GitHub release](https://img.shields.io/github/release/pgxman/pgxman.svg)](https://github.com/pgxman/pgxman/releases)
+
 Welcome to pgxman, the solution for managing PostgreSQL extensions!
 
 PostgreSQL extensions enhance the database's capabilities by introducing new
 features, data types, functions, and performance optimizations without altering
-the core code. pgxman streamlines using these extensions by simplifying the
+the core code. **pgxman** streamlines using these extensions by simplifying the
 tasks of building, packaging, and installing them.
 
-pgxman is currently compatible with the following Linux distributions:
+## More Documentation
 
-- [Debian Bookworm](https://www.debian.org/releases/bookworm)
-- [Ubuntu Jammy](https://releases.ubuntu.com/jammy)
-
-For more information about pgxman, see our [full documentation](docs/README.md).
+Try `pgxman help`, `man pgxman`, or [read our documentation](https://docs.pgxman.com).
 
 ## Installation
 
 Run:
 
-```console
+```sh
+# with homebrew
+brew install pgxman/tap/pgxman
+# without homebrew
 curl -sfL https://install.pgx.sh | sh -
 ```
 
-Or download the latest [compiled binaries](https://github.com/pgxman/release/releases/) and add them to your executable path.
-
-For further detailed instructions, see [our documentation](docs/installing_pgxman.md).
+For more options, see [our installation documentation](https://docs.pgxman.com/installing_pgxman).
 
 ## Quickstart
-
-### `install`
-
-To install an extension, such as the `pgvector` version `0.5.0` for PostgreSQL 15, run:
-
-```console
-pgxman install pgvector=0.5.0@15
-```
-
-You can also utilize a [pgxman.yaml](spec/pgxman.yaml.md) file to install multiple extensions at once:
-
-```console
-pgxman install -f pgxman.yaml
-```
-
-Once installed, restart Postgres, then `CREATE EXTENSION pgvector`.
 
 ### `search`
 
@@ -52,9 +36,34 @@ Find extensions with `pgxman search`:
 pgxman search fdw
 ```
 
+### `install`
+
+To install an extension, say `pgvector`, run:
+
+```sh
+pgxman install pgvector
+```
+
+pgxman will automatically detect your local install of Postgres (or, on MacOS, will [use a container](https://docs.pgxman.com/container)).
+
+You can specify multiple extensions, specific extension versions, and a PG version:
+
+```sh
+pgxman install --pg 15 pgvector=0.5.1 pg_ivm=1.7.0
+```
+
+You can also utilize a [pgxman bundle](https://docs.pgxman.com/spec/bundle) file to install multiple extensions at once:
+
+```sh
+pgxman install -f pgxman.yaml
+```
+
+Once installed, restart Postgres, then use `CREATE EXTENSION`.
+
+
 ### `init`, `build`
 
-[Please refer to our docs for how to build an extension for pgxman](docs/building_an_extension.md).
+[Please refer to our docs for how to build an extension for pgxman](https://docs.pgxman.com/building_an_extension).
 
 ## How it works
 
@@ -68,41 +77,7 @@ the packages into your system. This way, pgxman is able to handle dependency
 management, installation, and uninstallation through your system's package
 manager.
 
-For more details, see [How It Works](docs/how_it_works.md) in the
+pgxman itself is either installed as an apt package or via homebrew.
+
+For more details, see [how it works](https://docs.pgxman.com/how_it_works) in the
 documentation.
-
-## Roadmap
-
-- Support for multiple operating systems & package managers
-  - [x] Debian Bookworm & APT
-  - [x] Ubuntu Jammy & APT
-  - [ ] MacOS & Homebrew
-  - [ ] Fedora & RPM
-  - [ ] AlmaLinux & RPM
-
-- Support popular extensions
-  - [x] pgvector
-  - [x] pg_ivm
-  - [x] mysql_fdw
-  - [x] parquet_s3_fdw
-  - [x] hydra_columnar
-  - [x] multicorn2
-  - [x] pg_hint_plan
-  - [x] psql-http
-  - [ ] postgis
-  - [ ] hll
-  - [ ] pg-embedding
-  - [ ] plv8
-  - [ ] pg_graphql
-
-- CLI
-  - [x] `pgxman init` to create a buildkit YAML file by following a questionnaire
-  - [x] `pgxman build` to build & package an extension
-  - [x] `pgxman search` to search for an extension
-  - [x] `pgxman install` to install an extension
-  - [ ] `pgxman upgrade` to upgrade an extension
-  - [ ] `pgxman uninstall` to uninstall an extension
-  - [ ] `pgxman container` to explore extensions in a container
-
-- [ ] Website
-- [ ] API
