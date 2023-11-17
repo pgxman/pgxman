@@ -14,7 +14,6 @@ import (
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
-	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/docker"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
@@ -45,6 +44,7 @@ type Container struct {
 
 type ContainerOpt struct {
 	runnerImage string
+	configDir   string
 }
 
 type ContainerOptFunc func(*ContainerOpt)
@@ -52,6 +52,12 @@ type ContainerOptFunc func(*ContainerOpt)
 func WithRunnerImage(image string) ContainerOptFunc {
 	return func(o *ContainerOpt) {
 		o.runnerImage = image
+	}
+}
+
+func WithConfigDir(dir string) ContainerOptFunc {
+	return func(o *ContainerOpt) {
+		o.configDir = dir
 	}
 }
 
@@ -81,7 +87,7 @@ func (c *Container) Install(ctx context.Context, f pgxman.PGXManfile) (*Containe
 	f.Postgres.DBName = "pgxman"
 	f.Postgres.Port = fmt.Sprintf("%s432", pgVer)
 
-	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pgVer))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err
 	}
@@ -143,7 +149,7 @@ func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error 
 		return err
 	}
 
-	runnerDir := filepath.Join(config.ConfigDir(), "runner", string(pgVer))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pgVer))
 	if _, err := os.Stat(runnerDir); err != nil {
 		return fmt.Errorf("runner configuration does not exist: %w", err)
 	}

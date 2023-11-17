@@ -10,6 +10,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
@@ -128,6 +129,7 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 
 		info, err := container.NewContainer(
 			container.WithRunnerImage(flagContainerInstallRunnerImage),
+			container.WithConfigDir(config.ConfigDir()),
 		).Install(cmd.Context(), *f)
 		if err != nil {
 			return err
@@ -179,7 +181,9 @@ var (
 )
 
 func runContainerTeardown(cmd *cobra.Command, args []string) error {
-	c := container.NewContainer()
+	c := container.NewContainer(
+		container.WithConfigDir(config.ConfigDir()),
+	)
 	for _, arg := range args {
 		match := regexpContainerName.FindStringSubmatch(arg)
 		if len(match) == 0 {
