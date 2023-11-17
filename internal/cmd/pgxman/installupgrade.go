@@ -139,12 +139,11 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 				return err
 			}
 
-			fmt.Printf(`%s was upgraded successfully.
-
+			fmt.Printf(`%s
 After restarting PostgreSQL, update extensions in each database by running in the psql shell:
 
 	ALTER EXTENSION name UPDATE
-`, exts)
+`, installedExt(f, true, ""))
 
 			return nil
 		}
@@ -309,12 +308,12 @@ func installedExt(f *pgxman.PGXManfile, upgrade bool, containerName string) stri
 	}
 
 	if len(f.Extensions) == 1 {
-		return fmt.Sprintf("%q was %s.\nMore info %s", extName(f.Extensions[0]), action, extLink(f.Extensions[0]))
+		return fmt.Sprintf("%q was %s.\nMore info %s.", extName(f.Extensions[0]), action, extLink(f.Extensions[0]))
 	}
 
 	var lines []string
 	for _, ext := range f.Extensions {
-		lines = append(lines, fmt.Sprintf("* %s\n  More info %s", extName(ext), extLink(ext)))
+		lines = append(lines, fmt.Sprintf("* %s\n  More info %s.", extName(ext), extLink(ext)))
 	}
 
 	return fmt.Sprintf(`The following extensions were %s:

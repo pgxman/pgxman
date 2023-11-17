@@ -120,7 +120,6 @@ func runContainerInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf(`%s
-
 To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
