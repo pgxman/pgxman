@@ -114,9 +114,13 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		action := "Installing"
+		var (
+			action   = "Installing"
+			actioned = "installed"
+		)
 		if upgrade {
 			action = "Upgrading"
+			actioned = "upgraded"
 		}
 
 		exts := extNames(f.Extensions)
@@ -146,7 +150,7 @@ To tear down the container, run:
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
-			installedExt(f, upgrade, info.ContainerName),
+			extOutput(f, actioned, info.ContainerName),
 			info.Postgres.Username,
 			info.Postgres.Password,
 			info.Postgres.Port,

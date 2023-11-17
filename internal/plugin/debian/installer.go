@@ -1,11 +1,8 @@
 package debian
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
@@ -112,44 +109,4 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 	}
 
 	return apt.Install(ctx, aptPkgs, aptSources)
-}
-
-func promptInstallOrUpgrade(debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
-	var (
-		action   = "installed"
-		abortMsg = "installation aborted"
-	)
-	if upgrade {
-		action = "upgraded"
-		abortMsg = "upgrade aborted"
-	}
-
-	out := []string{
-		fmt.Sprintf("The following Debian packages will be %s:", action),
-	}
-	for _, debPkg := range debPkgs {
-		out = append(out, "  "+debPkg.Pkg)
-	}
-
-	if len(sources) > 0 {
-		out = append(out, "The following Apt repositories will be added or updated:")
-		for _, source := range sources {
-			out = append(out, "  "+source.Name)
-		}
-	}
-
-	out = append(out, "Do you want to continue? [Y/n] ")
-	fmt.Print(strings.Join(out, "\n"))
-
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		switch strings.ToLower(scanner.Text()) {
-		case "y", "yes", "":
-			return nil
-		default:
-			return fmt.Errorf(abortMsg)
-		}
-	}
-
-	return nil
 }
