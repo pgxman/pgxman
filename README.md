@@ -32,7 +32,7 @@ For more options, see [our installation documentation](https://docs.pgxman.com/i
 
 Find extensions with `pgxman search`:
 
-```console
+```sh
 pgxman search fdw
 ```
 
@@ -55,7 +55,7 @@ pgxman install --pg 15 pgvector=0.5.1 pg_ivm=1.7.0
 You can also utilize a [pgxman bundle](https://docs.pgxman.com/spec/bundle) file to install multiple extensions at once:
 
 ```sh
-pgxman install -f pgxman.yaml
+pgxman bundle -f pgxman.yaml
 ```
 
 Once installed, restart Postgres, then use `CREATE EXTENSION`.
