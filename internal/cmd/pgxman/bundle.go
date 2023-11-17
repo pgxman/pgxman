@@ -85,7 +85,7 @@ func runBundle(c *cobra.Command, args []string) error {
 	defer s.Stop()
 
 	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
-	s.FinalMSG = extOutput(f, "bundled", "")
+	s.FinalMSG = extOutput(f)
 
 	opts := []pgxman.InstallerOptionsFunc{
 		pgxman.WithSudo(flagInstallerSudo),
