@@ -68,8 +68,8 @@ func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
 }
 
 type InstallerOptions struct {
-	Sudo       bool
-	BeforeHook func(debPkgs []string, sources []string) error
+	Sudo          bool
+	BeforeRunHook func(debPkgs []string, sources []string) error
 }
 
 type InstallerOptionsFunc func(*InstallerOptions)
@@ -80,13 +80,13 @@ func WithSudo(sudo bool) InstallerOptionsFunc {
 	}
 }
 
-func WithBeforeHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
+func WithBeforeRunHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {
-		ops.BeforeHook = hook
+		ops.BeforeRunHook = hook
 	}
 }
 
 type Installer interface {
-	Install(ctx context.Context, ext PGXManfile, opts ...InstallerOptionsFunc) error
-	Upgrade(ctx context.Context, exts PGXManfile, opts ...InstallerOptionsFunc) error
+	Install(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
+	Upgrade(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
 }

@@ -90,7 +90,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 		return err
 	}
 
-	if h := opts.BeforeHook; h != nil {
+	if h := opts.BeforeRunHook; h != nil {
 		var pkgs []string
 		for _, pkg := range aptPkgs {
 			pkgs = append(pkgs, pkg.Pkg)

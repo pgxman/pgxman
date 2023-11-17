@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/log"
-	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/spf13/cobra"
 )
@@ -74,17 +71,21 @@ func runBundle(c *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	pgVer := f.Postgres.Version
+	if err := validatePGVer(c.Context(), pgVer); err != nil {
+		return err
+	}
+
 	if err := LockPGXManfile(f, log.NewTextLogger()); err != nil {
 		return err
 	}
 
-	pgVer := f.Postgres.Version
-	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(c.Context(), pgVer) {
-		return errInvalidPGVersion{Version: pgVer}
-	}
-
-	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	s := newSpinner()
 	defer s.Stop()
+
+	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
+	s.FinalMSG = extOutput(f, "bundled", "")
 
 	opts := []pgxman.InstallerOptionsFunc{
 		pgxman.WithSudo(flagInstallerSudo),
@@ -92,8 +93,8 @@ func runBundle(c *cobra.Command, args []string) error {
 	if flagInstallerYes {
 		s.Start()
 	} else {
-		opts = append(opts, pgxman.WithBeforeHook(func(debPkgs []string, sources []string) error {
-			if err := promptInstallOrUpgrade(debPkgs, sources, true); err != nil {
+		opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
+			if err := promptInstallOrUpgrade(debPkgs, sources, false); err != nil {
 				return err
 			}
 
@@ -101,9 +102,6 @@ func runBundle(c *cobra.Command, args []string) error {
 			return nil
 		}))
 	}
-
-	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
-	s.FinalMSG = extOutput(f, "bundled", "")
 
 	return i.Upgrade(
 		c.Context(),

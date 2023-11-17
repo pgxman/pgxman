@@ -116,8 +116,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		pgVer := pgxman.PGVersion(flagInstallerPGVersion)
-		if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(c.Context(), pgVer) {
-			return errInvalidPGVersion{Version: pgVer}
+		if err := validatePGVer(c.Context(), pgVer); err != nil {
+			return err
 		}
 
 		p := &ArgsParser{
@@ -129,11 +129,10 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		exts := extNames(f.Extensions)
-
-		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+		s := newSpinner()
 		defer s.Stop()
 
+		exts := extNames(f.Extensions)
 		if upgrade {
 			s.Suffix = fmt.Sprintf(" Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
 			s.FinalMSG = fmt.Sprintf(`%s
@@ -153,7 +152,7 @@ After restarting PostgreSQL, update extensions in each database by running in th
 		if flagInstallerYes {
 			s.Start()
 		} else {
-			opts = append(opts, pgxman.WithBeforeHook(func(debPkgs []string, sources []string) error {
+			opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
 				if err := promptInstallOrUpgrade(debPkgs, sources, upgrade); err != nil {
 					return err
 				}
@@ -316,11 +315,11 @@ func supportedPGVersions() []string {
 func extOutput(f *pgxman.PGXManfile, actioned string, containerName string) string {
 	act := fmt.Sprintf("%s successfully", actioned)
 	if containerName != "" {
-		act += fmt.Sprintf(" in container %q", containerName)
+		act += fmt.Sprintf(" in container %s", containerName)
 	}
 
 	if len(f.Extensions) == 1 {
-		return fmt.Sprintf("%q was %s.\nMore info %s.\n", extName(f.Extensions[0]), act, extLink(f.Extensions[0]))
+		return fmt.Sprintf("%s was %s.\nMore info %s.\n", extName(f.Extensions[0]), act, extLink(f.Extensions[0]))
 	}
 
 	var lines []string
@@ -392,4 +391,16 @@ func promptInstallOrUpgrade(debPkgs []string, sources []string, upgrade bool) er
 	}
 
 	return nil
+}
+
+func validatePGVer(ctx context.Context, pgVer pgxman.PGVersion) error {
+	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
+		return errInvalidPGVersion{Version: pgVer}
+	}
+
+	return nil
+}
+
+func newSpinner() *spinner.Spinner {
+	return spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 }

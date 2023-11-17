@@ -6,9 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/container"
@@ -114,6 +112,9 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
+		s := newSpinner()
+		defer s.Stop()
+
 		var (
 			action   = "Installing"
 			actioned = "installed"
@@ -124,13 +125,9 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		exts := extNames(f.Extensions)
-
-		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 		s.Suffix = fmt.Sprintf(" %s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
 
 		s.Start()
-		defer s.Stop()
-
 		info, err := container.NewContainer(
 			container.WithRunnerImage(flagContainerInstallRunnerImage),
 			container.WithConfigDir(config.ConfigDir()),
@@ -138,7 +135,6 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 		if err != nil {
 			return err
 		}
-
 		s.FinalMSG = fmt.Sprintf(`%s
 To connect, run:
 
@@ -199,10 +195,13 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Printf("Tearing down container for PostgreSQL %s...\n", pgVer)
+		s := newSpinner()
+		s.Suffix = fmt.Sprintf(" Tearing down container for PostgreSQL %s...\n", pgVer)
+		s.Start()
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
 		}
+		s.Stop()
 	}
 
 	return nil
