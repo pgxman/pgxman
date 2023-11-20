@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_exitingAptSourceURIs(t *testing.T) {
+func Test_exitingAptSourceHosts(t *testing.T) {
 	assert := assert.New(t)
 
 	sourceDir := t.TempDir()
@@ -21,6 +21,15 @@ URIs: https://apt.pgxman.com
 Suites: stable
 Components: main
 Signed-By: /usr/share/keyrings/pgxman.gpg
+`),
+		0644,
+	)
+	assert.NoError(err)
+
+	err = os.WriteFile(
+		filepath.Join(sourceDir, "pgdg.list"),
+		[]byte(`
+deb [ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] http://apt.postgresql.org/pub/repos/apt2/ bookworm-pgdg main 15
 `),
 		0644,
 	)
@@ -45,13 +54,14 @@ Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
 	)
 	assert.NoError(err)
 
-	uris, err := exitingAptSourceURIs(sourceDir)
+	uris, err := exitingAptSourceHosts(sourceDir)
 	assert.NoError(err)
 
 	assert.Equal(
 		map[string]struct{}{
-			"https://apt.postgresql.org/pub/repos/apt":  {},
-			"https://apt.postgresql.org/pub/repos/apt1": {},
+			"/apt.postgresql.org/pub/repos/apt":  {},
+			"/apt.postgresql.org/pub/repos/apt1": {},
+			"/apt.postgresql.org/pub/repos/apt2": {},
 		},
 		uris,
 	)

@@ -125,7 +125,7 @@ jobs:
 
           make build docker_load_runner
           bin/pgxman doctor
-          bin/pgxman install pgvector --debug
+          bin/pgxman install pgvector postgis parquet_s3_fdw --debug
   docker:
     name: Docker
     needs: [e2etest, installer_test]

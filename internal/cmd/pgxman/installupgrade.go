@@ -25,9 +25,9 @@ import (
 )
 
 var (
-	flagInstallerYes       bool
-	flagInstallerSudo      bool
-	flagInstallerPGVersion string
+	flagInstallOrUpgradeYes       bool
+	flagInstallOrUpgradeSudo      bool
+	flagInstallOrUpgradePGVersion string
 )
 
 func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
@@ -97,9 +97,9 @@ if it exists, or can be specified with the --pg flag.`,
 		Args:    cobra.MinimumNArgs(1),
 	}
 
-	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
-	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
-	cmd.PersistentFlags().StringVar(&flagInstallerPGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().BoolVar(&flagInstallOrUpgradeSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
+	cmd.PersistentFlags().BoolVarP(&flagInstallOrUpgradeYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
+	cmd.PersistentFlags().StringVar(&flagInstallOrUpgradePGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 
 	return cmd
 }
@@ -115,7 +115,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
-		pgVer := pgxman.PGVersion(flagInstallerPGVersion)
+		pgVer := pgxman.PGVersion(flagInstallOrUpgradePGVersion)
 		if err := validatePGVer(c.Context(), pgVer); err != nil {
 			return err
 		}
@@ -140,16 +140,15 @@ After restarting PostgreSQL, update extensions in each database by running in th
 
     ALTER EXTENSION name UPDATE
 `, extOutput(f))
-
 		} else {
 			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
 			s.FinalMSG = extOutput(f)
 		}
 
 		opts := []pgxman.InstallerOptionsFunc{
-			pgxman.WithSudo(flagInstallerSudo),
+			pgxman.WithSudo(flagInstallOrUpgradeSudo),
 		}
-		if flagInstallerYes {
+		if flagInstallOrUpgradeYes {
 			s.Start()
 		} else {
 			opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
@@ -163,18 +162,26 @@ After restarting PostgreSQL, update extensions in each database by running in th
 		}
 
 		if upgrade {
-			return i.Upgrade(
+			if err := i.Upgrade(
 				c.Context(),
 				*f,
 				opts...,
-			)
+			); err != nil {
+				return fmt.Errorf("failed to upgrade %s, run with `--debug` to see the full error", exts)
+			}
+
+			return nil
 		}
 
-		return i.Install(
+		if err := i.Install(
 			c.Context(),
 			*f,
 			opts...,
-		)
+		); err != nil {
+			return fmt.Errorf("failed to install %s, run with `--debug` to see the full error", exts)
+		}
+
+		return nil
 	}
 }
 

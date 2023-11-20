@@ -45,6 +45,7 @@ type Container struct {
 type ContainerOpt struct {
 	runnerImage string
 	configDir   string
+	debug       bool
 }
 
 type ContainerOptFunc func(*ContainerOpt)
@@ -58,6 +59,12 @@ func WithRunnerImage(image string) ContainerOptFunc {
 func WithConfigDir(dir string) ContainerOptFunc {
 	return func(o *ContainerOpt) {
 		o.configDir = dir
+	}
+}
+
+func WithDebug(debug bool) ContainerOptFunc {
+	return func(o *ContainerOpt) {
+		o.debug = debug
 	}
 }
 
@@ -102,6 +109,9 @@ func (c *Container) Install(ctx context.Context, f pgxman.PGXManfile) (*Containe
 		RunnerDir:     runnerDir,
 		ContainerName: fmt.Sprintf("pgxman_runner_%s", pgVer),
 		Postgres:      f.Postgres,
+	}
+	if c.Config.debug {
+		info.BundleArgs = "--debug"
 	}
 
 	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pgVer)
@@ -259,6 +269,7 @@ type ContainerInfo struct {
 	RunnerDir     string
 	ContainerName string
 	Postgres      pgxman.Postgres
+	BundleArgs    string
 }
 
 type runnerTemplater struct {
