@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - PGXMAN_BUNDLE_ARGS={{ .BundleArgs }}
     ports:
       - {{ .Postgres.Port }}:5432
     environment:

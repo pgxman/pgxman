@@ -129,6 +129,7 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 		info, err := container.NewContainer(
 			container.WithRunnerImage(flagContainerInstallRunnerImage),
 			container.WithConfigDir(config.ConfigDir()),
+			container.WithDebug(flagDebug),
 		).Install(cmd.Context(), *f)
 		if err != nil {
 			return err
@@ -181,6 +182,7 @@ var (
 func runContainerTeardown(cmd *cobra.Command, args []string) error {
 	c := container.NewContainer(
 		container.WithConfigDir(config.ConfigDir()),
+		container.WithDebug(flagDebug),
 	)
 	for _, arg := range args {
 		match := regexpContainerName.FindStringSubmatch(arg)

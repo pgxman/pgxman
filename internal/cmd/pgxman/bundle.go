@@ -13,6 +13,8 @@ import (
 )
 
 var (
+	flagBundleYes        bool
+	flagBundleSudo       bool
 	flagBundlePGXManfile string
 )
 
@@ -46,8 +48,8 @@ This ensures consistency across extensions by synchronizing them with the defini
 	}
 
 	cmd.PersistentFlags().StringVarP(&flagBundlePGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
-	cmd.PersistentFlags().BoolVar(&flagInstallerSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
-	cmd.PersistentFlags().BoolVarP(&flagInstallerYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
+	cmd.PersistentFlags().BoolVar(&flagBundleSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
+	cmd.PersistentFlags().BoolVarP(&flagBundleYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
 }
@@ -88,9 +90,9 @@ func runBundle(c *cobra.Command, args []string) error {
 	s.FinalMSG = extOutput(f)
 
 	opts := []pgxman.InstallerOptionsFunc{
-		pgxman.WithSudo(flagInstallerSudo),
+		pgxman.WithSudo(flagBundleSudo),
 	}
-	if flagInstallerYes {
+	if flagBundleYes {
 		s.Start()
 	} else {
 		opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {

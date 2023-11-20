@@ -8,8 +8,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,7 +37,8 @@ Components: {{ .Components }}
 Signed-By: {{ .SignedBy }}
 `))
 
-	regexpSourceURIs = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
+	regexpSourceFileURIs = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
+	regexpSourceListURIs = regexp.MustCompile(`\bdeb(?:-src)?\s+(?:\[.*\]\s+)?(http[^\s]+)`)
 )
 
 type aptSourcesTmplData struct {
@@ -47,22 +50,22 @@ type aptSourcesTmplData struct {
 }
 
 func NewApt(sudo bool, logger *log.Logger) (*Apt, error) {
-	uris, err := exitingAptSourceURIs(aptSourceDir)
+	hosts, err := exitingAptSourceHosts(aptSourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Apt{
-		Sudo:              sudo,
-		ExitingSourceURIs: uris,
-		Logger:            logger,
+		Sudo:               sudo,
+		ExitingSourceHosts: hosts,
+		Logger:             logger,
 	}, nil
 }
 
 type Apt struct {
-	ExitingSourceURIs map[string]struct{}
-	Sudo              bool
-	Logger            *log.Logger
+	ExitingSourceHosts map[string]struct{}
+	Sudo               bool
+	Logger             *log.Logger
 }
 
 type AptSource struct {
@@ -86,7 +89,7 @@ type AptPackage struct {
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
 	var result []AptSource
 	for _, repo := range repos {
-		uris := a.removeDuplicatedSourceURIs(repo.URIs)
+		uris := a.removeDuplicatedSourceHosts(repo.URIs)
 		if len(uris) == 0 {
 			a.Logger.Debug("Skipping apt source that already exists", "name", repo.Name())
 			continue
@@ -107,7 +110,7 @@ func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) 
 func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
 	var result []AptSource
 	for _, repo := range repos {
-		uris := a.removeDuplicatedSourceURIs(repo.URIs)
+		uris := a.removeDuplicatedSourceHosts(repo.URIs)
 		if len(uris) == 0 {
 			a.Logger.Debug("Skipping apt source that already exists", "name", repo.Name())
 			continue
@@ -162,10 +165,16 @@ func (a *Apt) installOrUpgrade(ctx context.Context, pkgs []AptPackage, sources [
 	return nil
 }
 
-func (a *Apt) removeDuplicatedSourceURIs(uris []string) []string {
+func (a *Apt) removeDuplicatedSourceHosts(uris []string) []string {
 	var result []string
 	for _, uri := range uris {
-		_, exists := a.ExitingSourceURIs[uri]
+		u, err := sourceHost(uri)
+		if err != nil {
+			// impossible
+			panic(err.Error())
+		}
+
+		_, exists := a.ExitingSourceHosts[u]
 		if !exists {
 			result = append(result, uri)
 		}
@@ -363,7 +372,7 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 	}, nil
 }
 
-func exitingAptSourceURIs(sourceDir string) (map[string]struct{}, error) {
+func exitingAptSourceHosts(sourceDir string) (map[string]struct{}, error) {
 	files, err := os.ReadDir(sourceDir)
 	if err != nil {
 		return nil, err
@@ -381,17 +390,48 @@ func exitingAptSourceURIs(sourceDir string) (map[string]struct{}, error) {
 			return nil, err
 		}
 
-		for _, m := range regexpSourceURIs.FindAllStringSubmatch(string(b), -1) {
+		for _, m := range regexpSourceListURIs.FindAllStringSubmatch(string(b), -1) {
+			u, err := sourceHost(m[1])
+			if err != nil {
+				return nil, err
+			}
+
+			result[u] = struct{}{}
+		}
+
+		for _, m := range regexpSourceFileURIs.FindAllStringSubmatch(string(b), -1) {
 			for _, s := range strings.Split(m[1], " ") {
 				s = strings.TrimSpace(s)
 				if s == "" {
 					continue
 				}
 
-				result[s] = struct{}{}
+				u, err := sourceHost(s)
+				if err != nil {
+					return nil, err
+				}
+
+				result[u] = struct{}{}
 			}
 		}
 	}
 
 	return result, nil
+}
+
+func sourceHost(surl string) (string, error) {
+	u, err := url.Parse(path.Clean(surl))
+	if err != nil {
+		return "", err
+	}
+
+	// skip scheme, user info & query
+	// apt ignores http:// and https:// treat them as the same host
+	// for example, https://apt.postgresql.org/pub/repos/apt & http://apt.postgresql.org/pub/repos/apt are the same host
+	u.Scheme = ""
+	u.User = nil
+	u.RawQuery = ""
+	u.Fragment = ""
+
+	return u.String(), nil
 }
