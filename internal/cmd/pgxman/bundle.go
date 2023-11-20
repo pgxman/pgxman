@@ -105,9 +105,13 @@ func runBundle(c *cobra.Command, args []string) error {
 		}))
 	}
 
-	return i.Upgrade(
+	if err := i.Upgrade(
 		c.Context(),
 		*f,
 		opts...,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to bundle extensions, run with `--debug` to see the full error")
+	}
+
+	return nil
 }

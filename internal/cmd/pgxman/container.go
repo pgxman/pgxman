@@ -116,10 +116,12 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 		defer s.Stop()
 
 		var (
-			action = "Installing"
+			action     = "Installing"
+			actionVerb = "install"
 		)
 		if upgrade {
 			action = "Upgrading"
+			actionVerb = "upgrade"
 		}
 
 		exts := extNames(f.Extensions)
@@ -132,8 +134,9 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			container.WithDebug(flagDebug),
 		).Install(cmd.Context(), *f)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to %s %s in a container for PostgreSQL %s, run with `--debug` to see the full error", actionVerb, exts, flagContainerInstallPGVersion)
 		}
+
 		s.FinalMSG = fmt.Sprintf(`%s
 To connect, run:
 

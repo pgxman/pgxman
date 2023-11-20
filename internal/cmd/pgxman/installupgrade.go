@@ -140,7 +140,6 @@ After restarting PostgreSQL, update extensions in each database by running in th
 
     ALTER EXTENSION name UPDATE
 `, extOutput(f))
-
 		} else {
 			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
 			s.FinalMSG = extOutput(f)
@@ -163,18 +162,26 @@ After restarting PostgreSQL, update extensions in each database by running in th
 		}
 
 		if upgrade {
-			return i.Upgrade(
+			if err := i.Upgrade(
 				c.Context(),
 				*f,
 				opts...,
-			)
+			); err != nil {
+				return fmt.Errorf("failed to upgrade %s, run with `--debug` to see the full error", exts)
+			}
+
+			return nil
 		}
 
-		return i.Install(
+		if err := i.Install(
 			c.Context(),
 			*f,
 			opts...,
-		)
+		); err != nil {
+			return fmt.Errorf("failed to install %s, run with `--debug` to see the full error", exts)
+		}
+
+		return nil
 	}
 }
 
