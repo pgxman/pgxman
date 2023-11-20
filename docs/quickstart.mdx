@@ -6,17 +6,31 @@ pgxman makes installing Postgres extensions as easy as installing any other soft
 
 ### Install pgxman
 
+#### Using curl
+
 ```sh
 curl -sfL https://install.pgx.sh | sh -
-# or with homebrew
+```
+
+#### Using brew
+
+```sh
 brew install pgxman/tap/pgxman
 ```
 
+<Note>Docker and Docker deamon is required to run pgxman on Mac</Note>
+
 ### Find and install an extension
+
+#### Search
 
 ```sh
 pgxman search vector
-# found pgvector!
+```
+
+#### Install
+
+```sh
 pgxman install pgvector
 ```
 
