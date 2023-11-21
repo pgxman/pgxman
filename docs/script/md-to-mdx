@@ -1,14 +1,13 @@
 #!/bin/bash
 
-for f in $@
-do
-  filename=$(basename -s .md $f)
-  command=$(echo $filename | tr _ ' ')
-  cat <<EOF >${f}x
+for f in "$@"; do
+  filename=$(basename -s .md "$f")
+  command=$(echo "$filename" | tr _ ' ')
+  cat <<EOF >"${f}x"
 ---
 title: $command
 ---
 
 EOF
-  sed -E -e '1,2d' -e 's/\.md)/)/g' -e 's#\(pgxman#(/cli/pgxman#g' $f >> ${f}x
+  sed -e '1,2d' -e 's/\.md)/)/g' -e 's/(pgxman/(\/cli\/pgxman/g' "$f" >>"${f}x"
 done
