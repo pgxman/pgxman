@@ -1,13 +1,13 @@
 ---
-title: "Buildkit"
+title: "Devpack"
 ---
 
-A pgxman buildkit is a configuration file in YAML format that `pgxman` uses to specify how a PostgreSQL extension should be built and packaged. Buildkits are added to the [buildkit repository](https://github.com/pgxman/buildkit).
+A pgxman devpack is a configuration file in YAML format that `pgxman` uses to specify how a PostgreSQL extension should be built and packaged. devpacks are added to the [devpack repository](https://github.com/pgxman/devpack).
 
-Below is an example buildkit configuration including all the fields:
+Below is an example devpack configuration including all the fields:
 
 ```yaml
-# API version of the buildkit specification. Only v1 is supported.
+# API version of the devpack specification. Only v1 is supported.
 apiVersion: v1
 # Name of the extension.
 name: my-extension
@@ -31,7 +31,7 @@ keywords:
 arch:
   - amd64
   - arm64
-# Maintainers of the buildkit.
+# Maintainers of the devpack.
 maintainers:
   - name: Owen Ou
     email: o@hydra.so
@@ -124,7 +124,7 @@ builders:
 
 ## `apiVersion`
 
-- **Description**: Defines the API version to which the buildkit conforms, ensuring its compatibility.
+- **Description**: Defines the API version to which the devpack conforms, ensuring its compatibility.
 - **Type**: String
 - **Required**: Yes
 - **Supported Values**: Currently, only `v1` is supported.
@@ -137,7 +137,7 @@ builders:
 
 ## `maintainers`
 
-- **Description**: Lists the individuals or organizations responsible for maintaining the buildkit.
+- **Description**: Lists the individuals or organizations responsible for maintaining the devpack.
 - **Type**: List of objects
 - **Required**: Yes
 - **Fields**:
@@ -165,7 +165,7 @@ builders:
 
 ## `version`
 
-- **Description**: Specifies the version of the extension buildkit. The versioning must adhere to the [Semantic Versioning 2.0.0](https://semver.org) format.
+- **Description**: Specifies the version of the extension devpack. The versioning must adhere to the [Semantic Versioning 2.0.0](https://semver.org) format.
 - **Type**: String
 - **Required**: Yes
 
