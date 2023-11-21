@@ -68,17 +68,10 @@ func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
 }
 
 type InstallerOptions struct {
-	Sudo          bool
 	BeforeRunHook func(debPkgs []string, sources []string) error
 }
 
 type InstallerOptionsFunc func(*InstallerOptions)
-
-func WithSudo(sudo bool) InstallerOptionsFunc {
-	return func(ops *InstallerOptions) {
-		ops.Sudo = sudo
-	}
-}
 
 func WithBeforeRunHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {

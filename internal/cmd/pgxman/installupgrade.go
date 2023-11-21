@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -105,7 +106,7 @@ if it exists, or can be specified with the --pg flag.`,
 }
 
 func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) error {
-	return func(c *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		i, err := plugin.GetInstaller()
 		if err != nil {
 			return errorsx.Pretty(err)
@@ -116,7 +117,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		pgVer := pgxman.PGVersion(flagInstallOrUpgradePGVersion)
-		if err := validatePGVer(c.Context(), pgVer); err != nil {
+		if err := validatePGVer(cmd.Context(), pgVer); err != nil {
 			return err
 		}
 
@@ -124,7 +125,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			PGVer:  pgVer,
 			Logger: log.NewTextLogger(),
 		}
-		f, err := p.Parse(c.Context(), args)
+		f, err := p.Parse(cmd.Context(), args)
 		if err != nil {
 			return err
 		}
@@ -133,15 +134,18 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		defer s.Stop()
 
 		exts := extNames(f.Extensions)
+		var (
+			action     = "Installing"
+			actionVerb = "install"
+		)
 		if upgrade {
-			s.Suffix = fmt.Sprintf(" Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
-		} else {
-			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
+			action = "Upgrading"
+			actionVerb = "upgrade"
 		}
 
-		opts := []pgxman.InstallerOptionsFunc{
-			pgxman.WithSudo(flagInstallOrUpgradeSudo),
-		}
+		s.Suffix = fmt.Sprintf(" %s %s for PostgreSQL %s...\n", action, exts, pgVer)
+
+		var opts []pgxman.InstallerOptionsFunc
 		if flagInstallOrUpgradeYes {
 			s.Start()
 		} else {
@@ -155,13 +159,21 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			}))
 		}
 
+		handleErr := func(err error) error {
+			if errors.Is(err, pgxman.ErrRootAccessRequired) {
+				return fmt.Errorf("must run command as root: sudo %s", strings.Join(os.Args, " "))
+			}
+
+			return fmt.Errorf("failed to %s %s, run with `--debug` to see the full error: %w", actionVerb, exts, err)
+		}
+
 		if upgrade {
 			if err := i.Upgrade(
-				c.Context(),
+				cmd.Context(),
 				*f,
 				opts...,
 			); err != nil {
-				return fmt.Errorf("failed to upgrade %s, run with `--debug` to see the full error: %w", exts, err)
+				return handleErr(err)
 			}
 
 			s.FinalMSG = fmt.Sprintf(`%s
@@ -173,11 +185,11 @@ After restarting PostgreSQL, update extensions in each database by running in th
 		}
 
 		if err := i.Install(
-			c.Context(),
+			cmd.Context(),
 			*f,
 			opts...,
 		); err != nil {
-			return fmt.Errorf("failed to install %s, run with `--debug` to see the full error: %w", exts, err)
+			return handleErr(err)
 		}
 
 		s.FinalMSG = extOutput(f)
