@@ -135,14 +135,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		exts := extNames(f.Extensions)
 		if upgrade {
 			s.Suffix = fmt.Sprintf(" Upgrading %s for PostgreSQL %s...\n", exts, pgVer)
-			s.FinalMSG = fmt.Sprintf(`%s
-After restarting PostgreSQL, update extensions in each database by running in the psql shell:
-
-    ALTER EXTENSION name UPDATE
-`, extOutput(f))
 		} else {
 			s.Suffix = fmt.Sprintf(" Installing %s for PostgreSQL %s...\n", exts, pgVer)
-			s.FinalMSG = extOutput(f)
 		}
 
 		opts := []pgxman.InstallerOptionsFunc{
@@ -167,9 +161,14 @@ After restarting PostgreSQL, update extensions in each database by running in th
 				*f,
 				opts...,
 			); err != nil {
-				return fmt.Errorf("failed to upgrade %s, run with `--debug` to see the full error", exts)
+				return fmt.Errorf("failed to upgrade %s, run with `--debug` to see the full error: %w", exts, err)
 			}
 
+			s.FinalMSG = fmt.Sprintf(`%s
+After restarting PostgreSQL, update extensions in each database by running in the psql shell:
+
+    ALTER EXTENSION name UPDATE
+`, extOutput(f))
 			return nil
 		}
 
@@ -178,9 +177,10 @@ After restarting PostgreSQL, update extensions in each database by running in th
 			*f,
 			opts...,
 		); err != nil {
-			return fmt.Errorf("failed to install %s, run with `--debug` to see the full error", exts)
+			return fmt.Errorf("failed to install %s, run with `--debug` to see the full error: %w", exts, err)
 		}
 
+		s.FinalMSG = extOutput(f)
 		return nil
 	}
 }
