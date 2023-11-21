@@ -81,3 +81,19 @@ pgxman itself is either installed as an apt package or via homebrew.
 
 For more details, see [how it works](https://docs.pgxman.com/how_it_works) in the
 documentation.
+
+## License
+
+The pgxman client is licensed under the [FSL](LICENSE.md), which, in short, means
+pgxman is open for all internal, non-competing usage. To learn more about the
+FSL, please see [fsl.software](https://fsl.software). As stated:
+
+> You can do anything with FSL software except undermine its producer. You can read it,
+> learn from it, run it internally, modify it, and propose improvements back to the
+> producer. After two years it becomes Open Source software under Apache 2.0 or MIT.
+
+We consider any Postgres service provider using pgxman as part of their service
+to be a Competing Usage. However, we encourage widespread adoption of pgxman and welcome
+any service provider to contact us at `pgxman [at] hydra [dot] so` to obtain a
+license for usage as part of your service. Our main concern is assuring the pgxman
+service can scale to the needs of your service.
