@@ -11,18 +11,10 @@ import (
 )
 
 var (
-	checkMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).SetString("✓")
-	crossMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).SetString("x")
+	checkMark        = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).SetString("✓")
+	warningCrossMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")).SetString("x")
+	errorCrossMark   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).SetString("x")
 )
-
-const (
-	ValidationSuccess ValidationResult = "success"
-	ValiationError    ValidationResult = "error"
-)
-
-type ValidationResult string
-
-type ValidateFunc func() (ValidationResult, string)
 
 func newDoctorCmd() *cobra.Command {
 	root := &cobra.Command{
@@ -37,28 +29,42 @@ func newDoctorCmd() *cobra.Command {
 
 func runDoctor(cmd *cobra.Command, args []string) {
 	var (
-		lines        []string
+		lines        = []string{"Doctor summary:"}
 		failureCount int
 	)
 
-	results := doctor.Validate(cmd.Context())
-	for _, result := range results {
+	printLine := func(result doctor.ValidationResult) string {
 		var line string
 
 		switch result.Type {
 		case doctor.ValidationSuccess:
 			line = fmt.Sprintf("[%s] %s", checkMark, result.Message)
+		case doctor.ValidationWarning:
+			line = fmt.Sprintf("[%s] %s", warningCrossMark, result.Message)
+			failureCount++
 		case doctor.ValiationError:
-			line = fmt.Sprintf("[%s] %s", crossMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", errorCrossMark, result.Message)
 			failureCount++
 		default:
 			panic(fmt.Sprintf("unknown validation result type: %s", result.Type))
 		}
 
-		lines = append(lines, line)
+		return line
 	}
 
-	lines = append([]string{"Doctor summary:"}, lines...)
+	required, optional := doctor.Validate(cmd.Context())
+	for _, result := range required {
+		lines = append(lines, printLine(result))
+	}
+
+	if len(optional) > 0 {
+		lines = append(lines, "Recommendations:")
+
+		for _, result := range optional {
+			lines = append(lines, printLine(result))
+		}
+	}
+
 	if failureCount == 0 {
 		lines = append(lines, "\nYour system is ready to use pgxman!")
 	} else {
