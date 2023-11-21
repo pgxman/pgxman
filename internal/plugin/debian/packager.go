@@ -34,6 +34,10 @@ type DebianPackager struct {
 func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
 	p.Logger.Debug("Init step", "opts", opts, "ext", ext)
 
+	if err := checkRootAccess(); err != nil {
+		return err
+	}
+
 	targetDir, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -57,6 +61,10 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
 	p.Logger.Debug("Pre step", "opts", opts, "ext", ext)
 
+	if err := checkRootAccess(); err != nil {
+		return err
+	}
+
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -67,6 +75,10 @@ func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgx
 
 func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
 	p.Logger.Debug("Post step", "opts", opts, "ext", ext)
+
+	if err := checkRootAccess(); err != nil {
+		return err
+	}
 
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {
@@ -90,6 +102,10 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 //     ---- script
 func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
 	p.Logger.Debug("Main step", "opts", opts, "ext", ext)
+
+	if err := checkRootAccess(); err != nil {
+		return err
+	}
 
 	_, buildDir, err := p.mkdir(opts)
 	if err != nil {

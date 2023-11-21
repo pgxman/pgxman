@@ -26,8 +26,8 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 	opts := pgxman.NewInstallerOptions(optFuncs)
 	i.Logger.Debug("Installing extensions", "manifest", f, "options", opts)
 
-	if os.Getuid() != 0 {
-		return pgxman.ErrRootAccessRequired
+	if err := checkRootAccess(); err != nil {
+		return err
 	}
 
 	i.Logger.Debug("Fetching installable extensions")
@@ -114,4 +114,11 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 	}
 
 	return apt.Install(ctx, aptPkgs, aptSources)
+}
+
+func checkRootAccess() error {
+	if os.Getuid() != 0 {
+		return pgxman.ErrRootAccessRequired
+	}
+	return nil
 }
