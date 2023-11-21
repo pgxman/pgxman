@@ -332,7 +332,7 @@ func supportedPGVersions() []string {
 func extOutput(f *pgxman.PGXManfile) string {
 	var lines []string
 	for _, ext := range f.Extensions {
-		lines = append(lines, fmt.Sprintf("[%s] %s: %s", checkMark, extName(ext), extLink(ext)))
+		lines = append(lines, fmt.Sprintf("[%s] %s: %s", successMark, extName(ext), extLink(ext)))
 	}
 
 	return strings.Join(lines, "\n") + "\n"
