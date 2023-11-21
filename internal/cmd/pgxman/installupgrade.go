@@ -27,7 +27,6 @@ import (
 
 var (
 	flagInstallOrUpgradeYes       bool
-	flagInstallOrUpgradeSudo      bool
 	flagInstallOrUpgradePGVersion string
 )
 
@@ -98,7 +97,6 @@ if it exists, or can be specified with the --pg flag.`,
 		Args:    cobra.MinimumNArgs(1),
 	}
 
-	cmd.PersistentFlags().BoolVar(&flagInstallOrUpgradeSudo, "sudo", os.Getenv("PGXMAN_SUDO") != "", "Run the underlaying package manager command with sudo.")
 	cmd.PersistentFlags().BoolVarP(&flagInstallOrUpgradeYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 	cmd.PersistentFlags().StringVar(&flagInstallOrUpgradePGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 
