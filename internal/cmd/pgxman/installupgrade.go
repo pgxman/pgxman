@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -265,6 +266,10 @@ func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
 			if installableExt.Version != ext.Version {
 				// TODO(owenthereal): validate old version when api is ready
 				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
+			}
+
+			if !slices.Contains(installableExt.PGVersions, f.Postgres.Version) {
+				return fmt.Errorf("the extension version to install is incompatible with PostgreSQL %s", f.Postgres.Version)
 			}
 		}
 
