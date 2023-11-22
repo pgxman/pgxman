@@ -279,7 +279,7 @@ func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
 			}
 
 			if !slices.Contains(installableExt.PGVersions, f.Postgres.Version) {
-				return fmt.Errorf("the extension version to install is incompatible with PostgreSQL %s", f.Postgres.Version)
+				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, f.Postgres.Version)
 			}
 		}
 
