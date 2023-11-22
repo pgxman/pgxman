@@ -10,6 +10,20 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type IO struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+func NewStdIO() IO {
+	return IO{
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+}
+
 func WriteExtension(path string, ext Extension) error {
 	b, err := yaml.Marshal(ext)
 	if err != nil {

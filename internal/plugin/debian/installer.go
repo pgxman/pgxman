@@ -1,9 +1,11 @@
 package debian
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
@@ -14,12 +16,12 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Upgrade(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, b, true, optFuncs...)
-}
-
 func (i *DebianInstaller) Install(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	return i.installOrUpgrade(ctx, b, false, optFuncs...)
+}
+
+func (i *DebianInstaller) Upgrade(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, b, true, optFuncs...)
 }
 
 func (i DebianInstaller) installOrUpgrade(ctx context.Context, bundle pgxman.Bundle, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
@@ -95,16 +97,14 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, bundle pgxman.Bun
 		return err
 	}
 
+	if !opts.IgnorePrompt {
+		if err := promptInstallOrUpgrade(opts.IO, aptPkgs, aptSources, upgrade); err != nil {
+			return err
+		}
+	}
+
 	if h := opts.BeforeRunHook; h != nil {
-		var pkgs []string
-		for _, pkg := range aptPkgs {
-			pkgs = append(pkgs, pkg.Pkg)
-		}
-		var sources []string
-		for _, source := range aptSources {
-			sources = append(sources, source.Name)
-		}
-		if err := h(pkgs, sources); err != nil {
+		if err := h(); err != nil {
 			return err
 		}
 	}
@@ -120,5 +120,45 @@ func checkRootAccess() error {
 	if os.Getuid() != 0 {
 		return pgxman.ErrRootAccessRequired
 	}
+	return nil
+}
+
+func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
+	var (
+		action   = "installed"
+		abortMsg = "installation aborted"
+	)
+	if upgrade {
+		action = "upgraded"
+		abortMsg = "upgrade aborted"
+	}
+
+	out := []string{
+		fmt.Sprintf("The following Debian packages will be %s:", action),
+	}
+	for _, debPkg := range debPkgs {
+		out = append(out, "  "+debPkg.Pkg)
+	}
+
+	if len(sources) > 0 {
+		out = append(out, "The following Apt repositories will be added or updated:")
+		for _, source := range sources {
+			out = append(out, "  "+source.Name)
+		}
+	}
+
+	out = append(out, "Do you want to continue? [Y/n] ")
+	fmt.Fprint(io.Stdout, strings.Join(out, "\n"))
+
+	scanner := bufio.NewScanner(io.Stdin)
+	for scanner.Scan() {
+		switch strings.ToLower(scanner.Text()) {
+		case "y", "yes", "":
+			return nil
+		default:
+			return fmt.Errorf(abortMsg)
+		}
+	}
+
 	return nil
 }

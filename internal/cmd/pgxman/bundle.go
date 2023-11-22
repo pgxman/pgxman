@@ -83,15 +83,14 @@ func runBundle(c *cobra.Command, args []string) error {
 	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
 	s.FinalMSG = extOutput(f)
 
-	var opts []pgxman.InstallerOptionsFunc
+	opts := []pgxman.InstallerOptionsFunc{
+		pgxman.WithIO(pgxman.NewStdIO()),
+		pgxman.WithIgnorePrompt(flagBundleYes),
+	}
 	if flagBundleYes {
 		s.Start()
 	} else {
-		opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
-			if err := promptInstallOrUpgrade(debPkgs, sources, false); err != nil {
-				return err
-			}
-
+		opts = append(opts, pgxman.WithBeforeRunHook(func() error {
 			s.Start()
 			return nil
 		}))

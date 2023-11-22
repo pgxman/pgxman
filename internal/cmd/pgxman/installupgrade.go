@@ -144,15 +144,14 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 
 		s.Suffix = fmt.Sprintf(" %s %s for PostgreSQL %s...\n", action, exts, pgVer)
 
-		var opts []pgxman.InstallerOptionsFunc
+		opts := []pgxman.InstallerOptionsFunc{
+			pgxman.WithIO(pgxman.NewStdIO()),
+			pgxman.WithIgnorePrompt(flagBundleYes),
+		}
 		if flagInstallOrUpgradeYes {
 			s.Start()
 		} else {
-			opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
-				if err := promptInstallOrUpgrade(debPkgs, sources, upgrade); err != nil {
-					return err
-				}
-
+			opts = append(opts, pgxman.WithBeforeRunHook(func() error {
 				s.Start()
 				return nil
 			}))

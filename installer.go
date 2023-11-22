@@ -13,18 +13,18 @@ type Bundle struct {
 	Postgres   Postgres          `json:"postgres"`
 }
 
-func (file Bundle) Validate() error {
-	if file.APIVersion != DefaultBundleAPIVersion {
-		return fmt.Errorf("invalid api version: %s", file.APIVersion)
+func (b Bundle) Validate() error {
+	if b.APIVersion != DefaultBundleAPIVersion {
+		return fmt.Errorf("invalid api version: %s", b.APIVersion)
 	}
 
-	for _, ext := range file.Extensions {
+	for _, ext := range b.Extensions {
 		if err := ext.Validate(); err != nil {
 			return err
 		}
 	}
 
-	if err := file.Postgres.Validate(); err != nil {
+	if err := b.Postgres.Validate(); err != nil {
 		return err
 	}
 
@@ -68,14 +68,28 @@ func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
 }
 
 type InstallerOptions struct {
-	BeforeRunHook func(debPkgs []string, sources []string) error
+	BeforeRunHook func() error
+	IO            IO
+	IgnorePrompt  bool
 }
 
 type InstallerOptionsFunc func(*InstallerOptions)
 
-func WithBeforeRunHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
+func WithBeforeRunHook(hook func() error) InstallerOptionsFunc {
 	return func(ops *InstallerOptions) {
 		ops.BeforeRunHook = hook
+	}
+}
+
+func WithIO(io IO) InstallerOptionsFunc {
+	return func(ops *InstallerOptions) {
+		ops.IO = io
+	}
+}
+
+func WithIgnorePrompt(ignore bool) InstallerOptionsFunc {
+	return func(ops *InstallerOptions) {
+		ops.IgnorePrompt = ignore
 	}
 }
 
