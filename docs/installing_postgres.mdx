@@ -21,9 +21,9 @@ or use the Postgres Global Developer Group (`pgdg`) repository.
 ### Included versions
 
 - Debian Bookworm: Postgres 15
-  - `apt install postgresql-15`
+  - `sudo apt install postgresql-15`
 - Ubuntu Jammy: Postgres 14
-  - `apt install postgresql-14`
+  - `sudo apt install postgresql-14`
 
 
 ### Other versions
@@ -32,13 +32,12 @@ We highly recommend using the Postgres Global Developer Group (PGDG)
 apt repository to install other versions. To add this repository, run:
 
 ```sh
-apt install -y postgresql-common gnupg2
-
-/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt install -y postgresql-common gnupg2
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 ```
 
 Once the repository is installed, you can install your desired version of Postgres. For example:
 
 ```sh
-apt install postgresql-16
+sudo apt install postgresql-16
 ```

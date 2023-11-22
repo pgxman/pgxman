@@ -194,7 +194,7 @@ func (v *postgresValidator) Validate(ctx context.Context) []ValidationResult {
 	if e != nil {
 		lines := []string{
 			"To install a PostgreSQL extension, you'll need install PostgreSQL.",
-			"Visit https://www.postgresql.org/download for more info.",
+			"Visit https://docs.pgxman.com/installing_postgres for more info.",
 		}
 		results = append(results, ValidationResult{
 			Type:     ValiationError,
