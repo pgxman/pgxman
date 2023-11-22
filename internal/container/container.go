@@ -80,7 +80,7 @@ func WithDebug(debug bool) ContainerOptFunc {
 // --------- pgxman.yaml
 // --------- compose.yaml
 // --------- files
-func (c *Container) Install(ctx context.Context, f pgxman.PGXManfile) (*ContainerInfo, error) {
+func (c *Container) Install(ctx context.Context, f pgxman.Bundle) (*ContainerInfo, error) {
 	if err := c.checkDocker(ctx); err != nil {
 		return nil, err
 	}
@@ -188,12 +188,12 @@ func (c *Container) checkDocker(ctx context.Context) error {
 	return docker.CheckInstall(ctx)
 }
 
-func copyLocalFiles(f pgxman.PGXManfile, dstDir string) error {
+func copyLocalFiles(f pgxman.Bundle, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}
 
-	var exts []pgxman.InstallExtension
+	var exts []pgxman.BundleExtension
 	for _, ext := range f.Extensions {
 		if src := ext.Path; src != "" {
 			dst := filepath.Join(dstDir, filepath.Base(src))
@@ -213,7 +213,7 @@ func copyLocalFiles(f pgxman.PGXManfile, dstDir string) error {
 	return nil
 }
 
-func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
+func mergeBundleFile(new *pgxman.Bundle, dstDir string) error {
 	bundleFile := filepath.Join(dstDir, "pgxman.yaml")
 
 	b, err := os.ReadFile(bundleFile)
@@ -225,17 +225,17 @@ func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
 		}
 	}
 
-	var existing pgxman.PGXManfile
+	var existing pgxman.Bundle
 	if err := yaml.Unmarshal(b, &existing); err != nil {
 		return err
 	}
 
 	// new extensions overwrite existing extensions
-	extsMap := make(map[string]pgxman.InstallExtension)
+	extsMap := make(map[string]pgxman.BundleExtension)
 	for _, ext := range append(existing.Extensions, new.Extensions...) {
 		extsMap[ext.Name] = ext
 	}
-	var result []pgxman.InstallExtension
+	var result []pgxman.BundleExtension
 	for _, ext := range extsMap {
 		result = append(result, ext)
 	}
@@ -251,7 +251,7 @@ func mergeBundleFile(new *pgxman.PGXManfile, dstDir string) error {
 	return writeBundleFile(new, bundleFile)
 }
 
-func writeBundleFile(f *pgxman.PGXManfile, dst string) error {
+func writeBundleFile(f *pgxman.Bundle, dst string) error {
 	bb, err := yaml.Marshal(f)
 	if err != nil {
 		return err

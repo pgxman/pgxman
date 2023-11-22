@@ -222,11 +222,11 @@ type ArgsParser struct {
 	Logger *log.Logger
 }
 
-func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfile, error) {
+func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.Bundle, error) {
 	if err := pgxman.ValidatePGVersion(p.PGVer); err != nil {
 		return nil, err
 	}
-	var exts []pgxman.InstallExtension
+	var exts []pgxman.BundleExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
 		if err != nil {
@@ -236,22 +236,22 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfi
 		exts = append(exts, *ext)
 	}
 
-	f := &pgxman.PGXManfile{
-		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
+	f := &pgxman.Bundle{
+		APIVersion: pgxman.DefaultBundleAPIVersion,
 		Extensions: exts,
 		Postgres: pgxman.Postgres{
 			Version: p.PGVer,
 		},
 	}
-	if err := LockPGXManfile(f, p.Logger); err != nil {
+	if err := LockBundle(f, p.Logger); err != nil {
 		return nil, err
 	}
 
 	return f, nil
 }
 
-func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
-	if err := f.Validate(); err != nil {
+func LockBundle(bundle *pgxman.Bundle, logger *log.Logger) error {
+	if err := bundle.Validate(); err != nil {
 		return err
 	}
 
@@ -260,8 +260,8 @@ func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
 		return fmt.Errorf("fetch installable extensions: %w", err)
 	}
 
-	var exts []pgxman.InstallExtension
-	for _, ext := range f.Extensions {
+	var exts []pgxman.BundleExtension
+	for _, ext := range bundle.Extensions {
 		if ext.Name != "" {
 			installableExt, ok := installableExts[ext.Name]
 			if !ok {
@@ -279,14 +279,14 @@ func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
 			}
 
 			if !slices.Contains(installableExt.PGVersions, f.Postgres.Version) {
-				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, f.Postgres.Version)
+				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, bundle.Postgres.Version)
 			}
 		}
 
 		exts = append(exts, ext)
 	}
 
-	f.Extensions = exts
+	bundle.Extensions = exts
 
 	return nil
 }
@@ -295,7 +295,7 @@ var (
 	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
 )
 
-func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
+func parseInstallExtension(arg string) (*pgxman.BundleExtension, error) {
 	// install from local file
 	if _, err := os.Stat(arg); err == nil {
 		path, err := filepath.Abs(arg)
@@ -303,7 +303,7 @@ func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 			return nil, err
 		}
 
-		return &pgxman.InstallExtension{
+		return &pgxman.BundleExtension{
 			Path: path,
 		}, nil
 	}
@@ -316,7 +316,7 @@ func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 			version = match[2]
 		)
 
-		return &pgxman.InstallExtension{
+		return &pgxman.BundleExtension{
 			Name:    name,
 			Version: version,
 		}, nil
@@ -334,7 +334,7 @@ func supportedPGVersions() []string {
 	return pgVers
 }
 
-func extOutput(f *pgxman.PGXManfile) string {
+func extOutput(f *pgxman.Bundle) string {
 	var lines []string
 	for _, ext := range f.Extensions {
 		lines = append(lines, fmt.Sprintf("[%s] %s: %s", successMark, extName(ext), extLink(ext)))
@@ -343,7 +343,7 @@ func extOutput(f *pgxman.PGXManfile) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func extNames(exts []pgxman.InstallExtension) string {
+func extNames(exts []pgxman.BundleExtension) string {
 	var names []string
 	for _, ext := range exts {
 		names = append(names, extName(ext))
@@ -352,7 +352,7 @@ func extNames(exts []pgxman.InstallExtension) string {
 	return strings.Join(names, ", ")
 }
 
-func extName(ext pgxman.InstallExtension) string {
+func extName(ext pgxman.BundleExtension) string {
 	if ext.Name != "" {
 		return ext.Name
 	}
@@ -360,7 +360,7 @@ func extName(ext pgxman.InstallExtension) string {
 	return ext.Path
 }
 
-func extLink(ext pgxman.InstallExtension) string {
+func extLink(ext pgxman.BundleExtension) string {
 	return fmt.Sprintf("https://pgx.sh/%s", ext.Name)
 }
 

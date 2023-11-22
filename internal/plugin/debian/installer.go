@@ -14,17 +14,17 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Upgrade(ctx context.Context, f pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, f, true, optFuncs...)
+func (i *DebianInstaller) Upgrade(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, b, true, optFuncs...)
 }
 
-func (i *DebianInstaller) Install(ctx context.Context, f pgxman.PGXManfile, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, f, false, optFuncs...)
+func (i *DebianInstaller) Install(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
+	return i.installOrUpgrade(ctx, b, false, optFuncs...)
 }
 
-func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfile, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
+func (i DebianInstaller) installOrUpgrade(ctx context.Context, bundle pgxman.Bundle, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	opts := pgxman.NewInstallerOptions(optFuncs)
-	i.Logger.Debug("Installing extensions", "manifest", f, "options", opts)
+	i.Logger.Debug("Installing extensions", "bundle", bundle, "options", opts)
 
 	if err := checkRootAccess(); err != nil {
 		return err
@@ -44,7 +44,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 	var (
 		aptPkgs []AptPackage
 	)
-	for _, extToInstall := range f.Extensions {
+	for _, extToInstall := range bundle.Extensions {
 		if err := extToInstall.Validate(); err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 			aptPkgs = append(
 				aptPkgs,
 				AptPackage{
-					Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", f.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
+					Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", bundle.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
 					Opts: extToInstall.Options,
 				},
 			)

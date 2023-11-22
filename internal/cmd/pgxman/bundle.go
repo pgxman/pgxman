@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	flagBundleYes        bool
-	flagBundlePGXManfile string
+	flagBundleYes  bool
+	flagBundleFile string
 )
 
 func newBundleCmd() *cobra.Command {
@@ -46,7 +46,12 @@ This ensures consistency across extensions by synchronizing them with the defini
 		RunE: runBundle,
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagBundlePGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	cmd.PersistentFlags().StringVarP(&flagBundleFile, "file", "f", filepath.Join(pwd, "pgxman.yaml"), "The bundle file to use.")
 	cmd.PersistentFlags().BoolVarP(&flagBundleYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
@@ -58,16 +63,7 @@ func runBundle(c *cobra.Command, args []string) error {
 		return errorsx.Pretty(err)
 	}
 
-	if flagBundlePGXManfile == "" {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		flagBundlePGXManfile = filepath.Join(pwd, "pgxman.yaml")
-	}
-
-	f, err := pgxman.ReadPGXManfile(flagBundlePGXManfile)
+	f, err := pgxman.ReadBundleFile(flagBundleFile)
 	if err != nil {
 		return err
 	}
@@ -77,7 +73,7 @@ func runBundle(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := LockPGXManfile(f, log.NewTextLogger()); err != nil {
+	if err := LockBundle(f, log.NewTextLogger()); err != nil {
 		return err
 	}
 

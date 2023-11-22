@@ -5,16 +5,16 @@ import (
 	"fmt"
 )
 
-const DefaultPGXManfileAPIVersion = "v1"
+const DefaultBundleAPIVersion = "v1"
 
-type PGXManfile struct {
-	APIVersion string             `json:"apiVersion"`
-	Extensions []InstallExtension `json:"extensions"`
-	Postgres   Postgres           `json:"postgres"`
+type Bundle struct {
+	APIVersion string            `json:"apiVersion"`
+	Extensions []BundleExtension `json:"extensions"`
+	Postgres   Postgres          `json:"postgres"`
 }
 
-func (file PGXManfile) Validate() error {
-	if file.APIVersion != DefaultPGXManfileAPIVersion {
+func (file Bundle) Validate() error {
+	if file.APIVersion != DefaultBundleAPIVersion {
 		return fmt.Errorf("invalid api version: %s", file.APIVersion)
 	}
 
@@ -31,14 +31,14 @@ func (file PGXManfile) Validate() error {
 	return nil
 }
 
-type InstallExtension struct {
+type BundleExtension struct {
 	Name    string   `json:"name,omitempty"`
 	Version string   `json:"version,omitempty"`
 	Path    string   `json:"path,omitempty"`
 	Options []string `json:"options,omitempty"`
 }
 
-func (e InstallExtension) Validate() error {
+func (e BundleExtension) Validate() error {
 	if e.Name == "" && e.Path == "" {
 		return fmt.Errorf("name or path is required")
 	}
@@ -80,6 +80,6 @@ func WithBeforeRunHook(hook func(debPkgs []string, sources []string) error) Inst
 }
 
 type Installer interface {
-	Install(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
-	Upgrade(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
+	Install(ctx context.Context, b Bundle, opts ...InstallerOptionsFunc) error
+	Upgrade(ctx context.Context, b Bundle, opts ...InstallerOptionsFunc) error
 }

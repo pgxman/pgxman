@@ -19,11 +19,11 @@ func WriteExtension(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func ReadPGXManfile(path string) (*PGXManfile, error) {
+func ReadBundleFile(path string) (*Bundle, error) {
 	var (
-		pgxmanf PGXManfile
-		b       []byte
-		err     error
+		bundle Bundle
+		b      []byte
+		err    error
 	)
 
 	if path == "-" {
@@ -35,11 +35,11 @@ func ReadPGXManfile(path string) (*PGXManfile, error) {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(b, &pgxmanf); err != nil {
+	if err := yaml.Unmarshal(b, &bundle); err != nil {
 		return nil, err
 	}
 
-	return &pgxmanf, nil
+	return &bundle, nil
 }
 
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {
