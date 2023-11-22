@@ -108,6 +108,7 @@ install_pgxman_linux() {
             which sudo >/dev/null 2>&1
         then
             SUDO="sudo"
+            echo "Installing pgxman Debian package as root"
         else
             echo "Sudo not found. You will need to run this script as root."
             exit

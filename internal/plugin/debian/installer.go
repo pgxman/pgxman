@@ -3,6 +3,7 @@ package debian
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
@@ -24,6 +25,10 @@ func (i *DebianInstaller) Install(ctx context.Context, f pgxman.PGXManfile, optF
 func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfile, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
 	opts := pgxman.NewInstallerOptions(optFuncs)
 	i.Logger.Debug("Installing extensions", "manifest", f, "options", opts)
+
+	if err := checkRootAccess(); err != nil {
+		return err
+	}
 
 	i.Logger.Debug("Fetching installable extensions")
 	installableExts, err := buildkit.Extensions()
@@ -80,7 +85,7 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 		return nil
 	}
 
-	apt, err := NewApt(opts.Sudo, i.Logger.WithGroup("apt"))
+	apt, err := NewApt(i.Logger.WithGroup("apt"))
 	if err != nil {
 		return err
 	}
@@ -109,4 +114,11 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, f pgxman.PGXManfi
 	}
 
 	return apt.Install(ctx, aptPkgs, aptSources)
+}
+
+func checkRootAccess() error {
+	if os.Getuid() != 0 {
+		return pgxman.ErrRootAccessRequired
+	}
+	return nil
 }

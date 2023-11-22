@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	checkMark        = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).SetString("✓")
-	warningCrossMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")).SetString("x")
-	errorCrossMark   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).SetString("x")
+	successMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).SetString("✓")
+	infoMark    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0000FF")).SetString("!")
+	errorMark   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).SetString("x")
 )
 
 func newDoctorCmd() *cobra.Command {
@@ -38,12 +38,12 @@ func runDoctor(cmd *cobra.Command, args []string) {
 
 		switch result.Type {
 		case doctor.ValidationSuccess:
-			line = fmt.Sprintf("[%s] %s", checkMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", successMark, result.Message)
 		case doctor.ValidationWarning:
-			line = fmt.Sprintf("[%s] %s", warningCrossMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", infoMark, result.Message)
 			failureCount++
 		case doctor.ValiationError:
-			line = fmt.Sprintf("[%s] %s", errorCrossMark, result.Message)
+			line = fmt.Sprintf("[%s] %s", errorMark, result.Message)
 			failureCount++
 		default:
 			panic(fmt.Sprintf("unknown validation result type: %s", result.Type))

@@ -49,14 +49,13 @@ type aptSourcesTmplData struct {
 	SignedBy   string
 }
 
-func NewApt(sudo bool, logger *log.Logger) (*Apt, error) {
+func NewApt(logger *log.Logger) (*Apt, error) {
 	hosts, err := exitingAptSourceHosts(aptSourceDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Apt{
-		Sudo:               sudo,
 		ExitingSourceHosts: hosts,
 		Logger:             logger,
 	}, nil
@@ -64,7 +63,6 @@ func NewApt(sudo bool, logger *log.Logger) (*Apt, error) {
 
 type Apt struct {
 	ExitingSourceHosts map[string]struct{}
-	Sudo               bool
 	Logger             *log.Logger
 }
 
@@ -251,13 +249,7 @@ func (a *Apt) aptMarkUnhold(ctx context.Context, pkg AptPackage) error {
 }
 
 func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) error {
-	var c []string
-	if a.Sudo {
-		c = append(c, "sudo", command)
-	} else {
-		c = append(c, command)
-	}
-	c = append(c, args...)
+	c := append([]string{command}, args...)
 
 	w := a.Logger.Writer(slog.LevelDebug)
 	cmd := exec.CommandContext(ctx, c[0], c[1:]...)

@@ -64,9 +64,7 @@ vet:
 .PHONY: docs
 docs:
 	rm -rf docs/cli docs/man
-	docker run --rm -ti -v $(CURDIR):/src -w /src golang:latest go run /src/cmd/gendoc/main.go -markdown docs/cli -man docs/man
-	docs/script/md-to-mdx docs/cli/*.md
-	rm docs/cli/*.md
+	docker run --rm -ti -v $(CURDIR):/src -w /src golang:latest bash -c "go run /src/cmd/gendoc/main.go -markdown docs/cli -man docs/man && docs/script/md-to-mdx docs/cli/*.md && rm docs/cli/*.md"
 
 DOCKER_ARGS ?=
 .PHONY: docker_build_builder
