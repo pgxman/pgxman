@@ -246,7 +246,7 @@ func LockBundle(bundle *pgxman.Bundle, logger *log.Logger) error {
 				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
 			}
 
-			if !slices.Contains(installableExt.PGVersions, f.Postgres.Version) {
+			if !slices.Contains(installableExt.PGVersions, bundle.Postgres.Version) {
 				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, bundle.Postgres.Version)
 			}
 		}
