@@ -306,11 +306,8 @@ func installExts(b pgxman.Bundle) []pgxman.InstallExtension {
 	var installExts []pgxman.InstallExtension
 	for _, ext := range b.Extensions {
 		installExts = append(installExts, pgxman.InstallExtension{
-			Name:      ext.Name,
-			Version:   ext.Version,
-			Path:      ext.Path,
-			Options:   ext.Options,
-			PGVersion: b.Postgres.Version,
+			BundleExtension: ext,
+			PGVersion:       b.Postgres.Version,
 		})
 	}
 

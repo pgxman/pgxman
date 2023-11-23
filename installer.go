@@ -32,11 +32,8 @@ func (b Bundle) Validate() error {
 }
 
 type InstallExtension struct {
-	Name      string    `json:"name,omitempty"`
-	Version   string    `json:"version,omitempty"`
-	Path      string    `json:"path,omitempty"`
-	Options   []string  `json:"options,omitempty"`
-	PGVersion PGVersion `json:"pg_version"`
+	BundleExtension
+	PGVersion PGVersion
 }
 
 func (e InstallExtension) String() string {
@@ -48,8 +45,8 @@ func (e InstallExtension) String() string {
 }
 
 func (e InstallExtension) Validate() error {
-	if e.Name == "" && e.Path == "" {
-		return fmt.Errorf("name or path is required")
+	if err := e.BundleExtension.Validate(); err != nil {
+		return err
 	}
 
 	if err := ValidatePGVersion(e.PGVersion); err != nil {

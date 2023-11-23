@@ -21,8 +21,10 @@ func TestContainer(t *testing.T) {
 		container.WithConfigDir(configDir),
 	)
 	wantFile := pgxman.InstallExtension{
-		Name:      "pgvector",
-		Version:   "0.5.1",
+		BundleExtension: pgxman.BundleExtension{
+			Name:    "pgvector",
+			Version: "0.5.1",
+		},
 		PGVersion: pgxman.PGVersion15,
 	}
 
