@@ -129,7 +129,7 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			info *container.ContainerInfo
 		)
 
-		fmt.Printf(" %s extensions in a container for PostgreSQL %s...\n", action, flagContainerInstallPGVersion)
+		fmt.Printf("%s extensions in a container for PostgreSQL %s...\n", action, flagContainerInstallPGVersion)
 		for _, ext := range f {
 			var err error
 			info, err = installInContainer(cmd.Context(), c, ext)
@@ -214,13 +214,14 @@ func installInContainer(ctx context.Context, c *container.Container, ext pgxman.
 	s.Suffix = fmt.Sprintf(" Installing %s...\n", ext)
 	defer s.Stop()
 
+	s.Start()
 	info, err := c.Install(ctx, ext)
 	if err != nil {
-		s.FinalMSG = fmt.Sprintf("[%s] %s", errorMark, ext)
+		s.FinalMSG = fmt.Sprintf("[%s] %s\n", errorMark, ext)
 		return nil, fmt.Errorf("failed to install %s in a container, run with `--debug` to see the full error: %w", ext, err)
 	}
 
-	s.FinalMSG = fmt.Sprintf("[%s] %s", successMark, ext)
+	s.FinalMSG = fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name)
 
 	return info, nil
 }
