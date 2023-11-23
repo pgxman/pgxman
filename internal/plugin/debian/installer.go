@@ -209,19 +209,5 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 		}
 	}
 
-	// scanner := bufio.NewScanner(io.Stdin)
-	// for scanner.Scan() {
-	// 	switch strings.ToLower(scanner.Text()) {
-	// 	case "y", "yes", "":
-	// 		return nil
-	// 	default:
-	// 		return fmt.Errorf(abortMsg)
-	// 	}
-	// }
-	// if scanner.Err() != nil {
-	// 	return scanner.Err()
-	// }
-	// fmt.Println("ffffff")
-
 	return nil
 }
