@@ -108,19 +108,14 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
 			Logger: log.NewTextLogger(),
 		}
-		f, err := p.Parse(cmd.Context(), args)
+		exts, err := p.Parse(cmd.Context(), args)
 		if err != nil {
 			return err
 		}
 
 		var (
 			action = "Installing"
-		)
-		if upgrade {
-			action = "Upgrading"
-		}
 
-		var (
 			c = container.NewContainer(
 				container.WithRunnerImage(flagContainerInstallRunnerImage),
 				container.WithConfigDir(config.ConfigDir()),
@@ -128,9 +123,12 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			)
 			info *container.ContainerInfo
 		)
+		if upgrade {
+			action = "Upgrading"
+		}
 
 		fmt.Printf("%s extensions in a container for PostgreSQL %s...\n", action, flagContainerInstallPGVersion)
-		for _, ext := range f {
+		for _, ext := range exts {
 			var err error
 			info, err = installInContainer(cmd.Context(), c, ext)
 			if err != nil {

@@ -114,7 +114,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		pgVer := pgxman.PGVersion(flagInstallOrUpgradePGVersion)
-		if err := validatePGVer(cmd.Context(), pgVer); err != nil {
+		if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 			return err
 		}
 
@@ -127,17 +127,13 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		var (
-			io = pgxman.NewStdIO()
-		)
-
 		if !flagInstallOrUpgradeYes {
 			checkFunc := i.PreInstallCheck
 			if upgrade {
 				checkFunc = i.PreUpgradeCheck
 			}
 
-			if err := checkFunc(cmd.Context(), exts, io); err != nil {
+			if err := checkFunc(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
 				return err
 			}
 		}
@@ -194,46 +190,41 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.Install
 	if err := pgxman.ValidatePGVersion(p.PGVer); err != nil {
 		return nil, err
 	}
-	var exts []pgxman.BundleExtension
+
+	var exts []pgxman.InstallExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
 		if err != nil {
 			return nil, err
 		}
 
-		exts = append(exts, *ext)
+		exts = append(exts, pgxman.InstallExtension{
+			BundleExtension: *ext,
+			PGVersion:       p.PGVer,
+		})
 	}
 
-	f := &pgxman.Bundle{
-		APIVersion: pgxman.DefaultBundleAPIVersion,
-		Extensions: exts,
-		Postgres: pgxman.Postgres{
-			Version: p.PGVer,
-		},
-	}
-	if err := LockBundle(f, p.Logger); err != nil {
+	var err error
+	exts, err = LockExtensions(exts, p.Logger)
+	if err != nil {
 		return nil, err
 	}
 
-	return installExts(*f), nil
+	return exts, nil
 }
 
-func LockBundle(bundle *pgxman.Bundle, logger *log.Logger) error {
-	if err := bundle.Validate(); err != nil {
-		return err
-	}
-
+func LockExtensions(exts []pgxman.InstallExtension, logger *log.Logger) ([]pgxman.InstallExtension, error) {
 	installableExts, err := buildkit.Extensions()
 	if err != nil {
-		return fmt.Errorf("fetch installable extensions: %w", err)
+		return nil, fmt.Errorf("fetch installable extensions: %w", err)
 	}
 
-	var exts []pgxman.BundleExtension
-	for _, ext := range bundle.Extensions {
+	var result []pgxman.InstallExtension
+	for _, ext := range exts {
 		if ext.Name != "" {
 			installableExt, ok := installableExts[ext.Name]
 			if !ok {
-				return fmt.Errorf("extension %q not found", ext.Name)
+				return nil, fmt.Errorf("extension %q not found", ext.Name)
 			}
 
 			// if version is not specified, use the latest version
@@ -246,17 +237,15 @@ func LockBundle(bundle *pgxman.Bundle, logger *log.Logger) error {
 				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
 			}
 
-			if !slices.Contains(installableExt.PGVersions, bundle.Postgres.Version) {
-				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, bundle.Postgres.Version)
+			if !slices.Contains(installableExt.PGVersions, ext.PGVersion) {
+				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
 			}
 		}
 
 		exts = append(exts, ext)
 	}
 
-	bundle.Extensions = exts
-
-	return nil
+	return result, nil
 }
 
 var (
@@ -314,7 +303,7 @@ func installExts(b pgxman.Bundle) []pgxman.InstallExtension {
 	return installExts
 }
 
-func validatePGVer(ctx context.Context, pgVer pgxman.PGVersion) error {
+func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
 		return errInvalidPGVersion{Version: pgVer}
 	}

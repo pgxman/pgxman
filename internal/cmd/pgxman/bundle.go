@@ -71,22 +71,22 @@ func runBundle(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if err := b.Validate(); err != nil {
+		return err
+	}
+
 	pgVer := b.Postgres.Version
-	if err := validatePGVer(cmd.Context(), pgVer); err != nil {
+	if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 		return err
 	}
 
-	if err := LockBundle(b, log.NewTextLogger()); err != nil {
+	exts, err := LockExtensions(installExts(*b), log.NewTextLogger())
+	if err != nil {
 		return err
 	}
-
-	var (
-		io   = pgxman.NewStdIO()
-		exts = installExts(*b)
-	)
 
 	if !flagBundleYes {
-		if err := i.PreInstallCheck(cmd.Context(), exts, io); err != nil {
+		if err := i.PreInstallCheck(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
 			return err
 		}
 	}
