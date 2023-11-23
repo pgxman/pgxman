@@ -1,12 +1,12 @@
 package debian
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/eiannone/keyboard"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
@@ -16,71 +16,43 @@ type DebianInstaller struct {
 	Logger *log.Logger
 }
 
-func (i *DebianInstaller) Install(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, b, false, optFuncs...)
+func (i *DebianInstaller) Install(ctx context.Context, ext pgxman.InstallExtension) error {
+	return i.installOrUpgrade(ctx, ext, false)
 }
 
-func (i *DebianInstaller) Upgrade(ctx context.Context, b pgxman.Bundle, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	return i.installOrUpgrade(ctx, b, true, optFuncs...)
+func (i *DebianInstaller) Upgrade(ctx context.Context, ext pgxman.InstallExtension) error {
+	return i.installOrUpgrade(ctx, ext, true)
 }
 
-func (i DebianInstaller) installOrUpgrade(ctx context.Context, bundle pgxman.Bundle, upgrade bool, optFuncs ...pgxman.InstallerOptionsFunc) error {
-	opts := pgxman.NewInstallerOptions(optFuncs)
-	i.Logger.Debug("Installing extensions", "bundle", bundle, "options", opts)
+func (i *DebianInstaller) PreInstallCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO) error {
+	return i.installOrUpgradeCheck(ctx, exts, io, false)
+}
 
+func (i *DebianInstaller) PreUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO) error {
+	return i.installOrUpgradeCheck(ctx, exts, io, true)
+}
+
+func (i DebianInstaller) installOrUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO, upgrade bool) error {
 	if err := checkRootAccess(); err != nil {
 		return err
 	}
 
-	i.Logger.Debug("Fetching installable extensions")
-	installableExts, err := buildkit.Extensions()
-	if err != nil {
-		return fmt.Errorf("fetch installable extensions: %w", err)
-	}
-
-	aptRepos, err := coreAptRepos()
-	if err != nil {
-		return err
-	}
-
 	var (
-		aptPkgs []AptPackage
+		aptPkgs  []AptPackage
+		aptRepos []pgxman.AptRepository
 	)
-	for _, extToInstall := range bundle.Extensions {
+	for _, extToInstall := range exts {
 		if err := extToInstall.Validate(); err != nil {
 			return err
 		}
 
-		if extToInstall.Path != "" {
-			aptPkgs = append(
-				aptPkgs,
-				AptPackage{
-					Pkg:     extToInstall.Path,
-					IsLocal: true,
-					Opts:    extToInstall.Options,
-				},
-			)
-		} else {
-			installableExt, ok := installableExts[extToInstall.Name]
-			if !ok {
-				return fmt.Errorf("extension %q not found", extToInstall.Name)
-			}
-
-			aptPkgs = append(
-				aptPkgs,
-				AptPackage{
-					Pkg:  fmt.Sprintf("postgresql-%s-pgxman-%s=%s", bundle.Postgres.Version, debNormalizedName(extToInstall.Name), extToInstall.Version),
-					Opts: extToInstall.Options,
-				},
-			)
-
-			if builders := installableExt.Builders; builders != nil {
-				builder := builders.Current()
-				if ar := builder.AptRepositories; len(ar) > 0 {
-					aptRepos = append(aptRepos, ar...)
-				}
-			}
+		aptPkg, err := newAptPackage(extToInstall)
+		if err != nil {
+			return err
 		}
+
+		aptPkgs = append(aptPkgs, aptPkg)
+		aptRepos = append(aptRepos, aptPkg.Repos...)
 	}
 
 	if len(aptPkgs) == 0 {
@@ -97,23 +69,44 @@ func (i DebianInstaller) installOrUpgrade(ctx context.Context, bundle pgxman.Bun
 		return err
 	}
 
-	if !opts.IgnorePrompt {
-		if err := promptInstallOrUpgrade(opts.IO, aptPkgs, aptSources, upgrade); err != nil {
-			return err
-		}
+	return promptInstallOrUpgrade(io, aptPkgs, aptSources, upgrade)
+}
+
+func (i DebianInstaller) installOrUpgrade(ctx context.Context, ext pgxman.InstallExtension, upgrade bool) error {
+	i.Logger.Debug("Installing extension", "extension", ext)
+
+	if err := checkRootAccess(); err != nil {
+		return err
 	}
 
-	if h := opts.BeforeRunHook; h != nil {
-		if err := h(); err != nil {
-			return err
-		}
+	if err := ext.Validate(); err != nil {
+		return err
+	}
+
+	aptPkg, err := newAptPackage(ext)
+	if err != nil {
+		return err
+	}
+
+	apt, err := NewApt(i.Logger.WithGroup("apt"))
+	if err != nil {
+		return err
+	}
+
+	aptSources, err := apt.GetChangedSources(ctx, aptPkg.Repos)
+	if err != nil {
+		return err
 	}
 
 	if upgrade {
-		return apt.Upgrade(ctx, aptPkgs, aptSources)
+		return apt.Upgrade(ctx, []AptPackage{aptPkg}, aptSources)
 	}
 
-	return apt.Install(ctx, aptPkgs, aptSources)
+	return apt.Install(ctx, []AptPackage{aptPkg}, aptSources)
+}
+
+func extDebPkgName(ext pgxman.InstallExtension) string {
+	return fmt.Sprintf("postgresql-%s-pgxman-%s=%s", ext.PGVersion, debNormalizedName(ext.Name), ext.Version)
 }
 
 func checkRootAccess() error {
@@ -123,7 +116,53 @@ func checkRootAccess() error {
 	return nil
 }
 
+func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
+	var aptPkg AptPackage
+
+	installableExts, err := buildkit.Extensions()
+	if err != nil {
+		return aptPkg, fmt.Errorf("fetch installable extensions: %w", err)
+	}
+
+	coreAptRepos, err := coreAptRepos()
+	if err != nil {
+		return aptPkg, err
+	}
+
+	if ext.Path != "" {
+		aptPkg = AptPackage{
+			Pkg:     ext.Path,
+			IsLocal: true,
+			Opts:    ext.Options,
+		}
+	} else {
+		installableExt, ok := installableExts[ext.Name]
+		if !ok {
+			return aptPkg, fmt.Errorf("extension %q not found", ext.Name)
+		}
+
+		aptPkg = AptPackage{
+			Pkg:   extDebPkgName(ext),
+			Opts:  ext.Options,
+			Repos: coreAptRepos,
+		}
+
+		if builders := installableExt.Builders; builders != nil {
+			builder := builders.Current()
+			if ar := builder.AptRepositories; len(ar) > 0 {
+				aptPkg.Repos = append(aptPkg.Repos, ar...)
+			}
+		}
+	}
+
+	return aptPkg, nil
+}
+
 func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
+	if !io.IsTerminal() {
+		return nil
+	}
+
 	var (
 		action   = "installed"
 		abortMsg = "installation aborted"
@@ -150,15 +189,39 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 	out = append(out, "Do you want to continue? [Y/n] ")
 	fmt.Fprint(io.Stdout, strings.Join(out, "\n"))
 
-	scanner := bufio.NewScanner(io.Stdin)
-	for scanner.Scan() {
-		switch strings.ToLower(scanner.Text()) {
-		case "y", "yes", "":
-			return nil
-		default:
+	if err := keyboard.Open(); err != nil {
+		return err
+	}
+	defer keyboard.Close()
+
+	for {
+		char, key, err := keyboard.GetKey()
+		if err != nil {
+			return err
+		}
+
+		if char == 'y' || char == 'Y' || key == keyboard.KeyEnter {
+			fmt.Println()
+			break
+		} else {
+			fmt.Println()
 			return fmt.Errorf(abortMsg)
 		}
 	}
+
+	// scanner := bufio.NewScanner(io.Stdin)
+	// for scanner.Scan() {
+	// 	switch strings.ToLower(scanner.Text()) {
+	// 	case "y", "yes", "":
+	// 		return nil
+	// 	default:
+	// 		return fmt.Errorf(abortMsg)
+	// 	}
+	// }
+	// if scanner.Err() != nil {
+	// 	return scanner.Err()
+	// }
+	// fmt.Println("ffffff")
 
 	return nil
 }

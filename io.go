@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"dario.cat/mergo"
+	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
 
@@ -14,6 +15,10 @@ type IO struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+}
+
+func (i IO) IsTerminal() bool {
+	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 
 func NewStdIO() IO {

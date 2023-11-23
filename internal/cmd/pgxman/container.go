@@ -2,6 +2,7 @@ package pgxman
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -112,33 +113,32 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		s := newSpinner()
-		defer s.Stop()
-
 		var (
-			action     = "Installing"
-			actionVerb = "install"
+			action = "Installing"
 		)
 		if upgrade {
 			action = "Upgrading"
-			actionVerb = "upgrade"
 		}
 
-		exts := extNames(f.Extensions)
-		s.Suffix = fmt.Sprintf(" %s %s in a container for PostgreSQL %s...\n", action, exts, flagContainerInstallPGVersion)
+		var (
+			c = container.NewContainer(
+				container.WithRunnerImage(flagContainerInstallRunnerImage),
+				container.WithConfigDir(config.ConfigDir()),
+				container.WithDebug(flagDebug),
+			)
+			info *container.ContainerInfo
+		)
 
-		s.Start()
-		info, err := container.NewContainer(
-			container.WithRunnerImage(flagContainerInstallRunnerImage),
-			container.WithConfigDir(config.ConfigDir()),
-			container.WithDebug(flagDebug),
-		).Install(cmd.Context(), *f)
-		if err != nil {
-			return fmt.Errorf("failed to %s %s in a container for PostgreSQL %s, run with `--debug` to see the full error", actionVerb, exts, flagContainerInstallPGVersion)
+		fmt.Printf(" %s extensions in a container for PostgreSQL %s...\n", action, flagContainerInstallPGVersion)
+		for _, ext := range f {
+			var err error
+			info, err = installInContainer(cmd.Context(), c, ext)
+			if err != nil {
+				return err
+			}
 		}
 
-		s.FinalMSG = fmt.Sprintf(`%s
-To connect, run:
+		fmt.Printf(`To connect, run:
 
     $ psql postgres://%s:%s@127.0.0.1:%s/%s
 
@@ -148,7 +148,6 @@ To tear down the container, run:
 
 For more information on the docker environment, please see: https://docs.pgxman.com/container.
 `,
-			extOutput(f),
 			info.Postgres.Username,
 			info.Postgres.Password,
 			info.Postgres.Port,
@@ -208,4 +207,20 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func installInContainer(ctx context.Context, c *container.Container, ext pgxman.InstallExtension) (*container.ContainerInfo, error) {
+	s := newSpinner()
+	s.Suffix = fmt.Sprintf(" Installing %s...\n", ext)
+	defer s.Stop()
+
+	info, err := c.Install(ctx, ext)
+	if err != nil {
+		s.FinalMSG = fmt.Sprintf("[%s] %s", errorMark, ext)
+		return nil, fmt.Errorf("failed to install %s in a container, run with `--debug` to see the full error: %w", ext, err)
+	}
+
+	s.FinalMSG = fmt.Sprintf("[%s] %s", successMark, ext)
+
+	return info, nil
 }

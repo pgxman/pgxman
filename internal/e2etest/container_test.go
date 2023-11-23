@@ -20,21 +20,10 @@ func TestContainer(t *testing.T) {
 		container.WithRunnerImage(flagRunnerPostgres15Image),
 		container.WithConfigDir(configDir),
 	)
-	wantFile := pgxman.Bundle{
-		APIVersion: pgxman.DefaultBundleAPIVersion,
-		Postgres: pgxman.Postgres{
-			Version:  pgxman.PGVersion15,
-			Username: "pgxman",
-			Password: "pgxman",
-			DBName:   "pgxman",
-			Port:     "15432",
-		},
-		Extensions: []pgxman.BundleExtension{
-			{
-				Name:    "pgvector",
-				Version: "0.5.1",
-			},
-		},
+	wantFile := pgxman.InstallExtension{
+		Name:      "pgvector",
+		Version:   "0.5.1",
+		PGVersion: pgxman.PGVersion15,
 	}
 
 	info, err := c.Install(context.TODO(), wantFile)

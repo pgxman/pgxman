@@ -80,41 +80,52 @@ func WithDebug(debug bool) ContainerOptFunc {
 // --------- pgxman.yaml
 // --------- compose.yaml
 // --------- files
-func (c *Container) Install(ctx context.Context, f pgxman.Bundle) (*ContainerInfo, error) {
+func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*ContainerInfo, error) {
 	if err := c.checkDocker(ctx); err != nil {
 		return nil, err
 	}
 
-	pgVer := f.Postgres.Version
+	b := pgxman.Bundle{
+		APIVersion: pgxman.DefaultBundleAPIVersion,
+		Extensions: []pgxman.BundleExtension{
+			{
+				Name:    ext.Name,
+				Path:    ext.Path,
+				Version: ext.Version,
+				Options: ext.Options,
+			},
+		},
+		Postgres: pgxman.Postgres{
+			Version: ext.PGVersion,
+			Port:    fmt.Sprintf("%s432", ext.PGVersion),
+			// TODO: randomize password
+			Username: "pgxman",
+			Password: "pgxman",
+			DBName:   "pgxman",
+		},
+	}
 
-	// Set default values
-	// TODO: randomize password
-	f.Postgres.Username = "pgxman"
-	f.Postgres.Password = "pgxman"
-	f.Postgres.DBName = "pgxman"
-	f.Postgres.Port = fmt.Sprintf("%s432", pgVer)
-
-	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pgVer))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(b.Postgres.Version))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err
 	}
 
 	runnerImage := c.Config.runnerImage
 	if runnerImage == "" {
-		runnerImage = fmt.Sprintf("%s/%s:%s", defaultRunnerImageBase, pgVer, pgxman.ImageTag())
+		runnerImage = fmt.Sprintf("%s/%s:%s", defaultRunnerImageBase, b.Postgres.Version, pgxman.ImageTag())
 	}
 
 	info := ContainerInfo{
 		RunnerImage:   runnerImage,
 		RunnerDir:     runnerDir,
-		ContainerName: fmt.Sprintf("pgxman_runner_%s", pgVer),
-		Postgres:      f.Postgres,
+		ContainerName: fmt.Sprintf("pgxman_runner_%s", b.Postgres.Version),
+		Postgres:      b.Postgres,
 	}
 	if c.Config.debug {
 		info.BundleArgs = "--debug"
 	}
 
-	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pgVer)
+	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", b.Postgres.Version)
 	if err := tmpl.ExportFS(
 		runner.FS,
 		runnerTemplater{
@@ -127,11 +138,11 @@ func (c *Container) Install(ctx context.Context, f pgxman.Bundle) (*ContainerInf
 
 	localFilesDir := filepath.Join(runnerDir, "files")
 	c.Logger.Debug("Copying local files", "dir", localFilesDir)
-	if err := copyLocalFiles(f, localFilesDir); err != nil {
+	if err := copyLocalFiles(b, localFilesDir); err != nil {
 		return nil, err
 	}
 
-	if err := mergeBundleFile(&f, runnerDir); err != nil {
+	if err := mergeBundleFile(&b, runnerDir); err != nil {
 		return nil, err
 	}
 
