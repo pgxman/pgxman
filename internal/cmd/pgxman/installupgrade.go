@@ -242,7 +242,7 @@ func LockExtensions(exts []pgxman.InstallExtension, logger *log.Logger) ([]pgxma
 			}
 		}
 
-		exts = append(exts, ext)
+		result = append(result, ext)
 	}
 
 	return result, nil
