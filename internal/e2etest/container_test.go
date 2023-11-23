@@ -20,33 +20,28 @@ func TestContainer(t *testing.T) {
 		container.WithRunnerImage(flagRunnerPostgres15Image),
 		container.WithConfigDir(configDir),
 	)
-	wantFile := pgxman.PGXManfile{
-		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
-		Postgres: pgxman.Postgres{
-			Version:  pgxman.PGVersion15,
-			Username: "pgxman",
-			Password: "pgxman",
-			DBName:   "pgxman",
-			Port:     "15432",
+	wantExt := pgxman.InstallExtension{
+		BundleExtension: pgxman.BundleExtension{
+			Name:    "pgvector",
+			Version: "0.5.1",
 		},
-		Extensions: []pgxman.InstallExtension{
-			{
-				Name:    "pgvector",
-				Version: "0.5.1",
-			},
-		},
+		PGVersion: pgxman.PGVersion15,
 	}
 
-	info, err := c.Install(context.TODO(), wantFile)
+	info, err := c.Install(context.TODO(), wantExt)
 	assert.NoError(err)
 
 	b, err := os.ReadFile(filepath.Join(info.RunnerDir, "pgxman.yaml"))
 	assert.NoError(err)
 
-	var gotFile pgxman.PGXManfile
+	var gotFile pgxman.Bundle
 	err = yaml.Unmarshal(b, &gotFile)
 	assert.NoError(err)
-	assert.Equal(wantFile, gotFile)
+	assert.Equal(pgxman.Bundle{
+		APIVersion: pgxman.DefaultBundleAPIVersion,
+		Extensions: []pgxman.BundleExtension{wantExt.BundleExtension},
+		Postgres:   info.Postgres,
+	}, gotFile)
 
 	err = c.Teardown(context.TODO(), pgxman.PGVersion15)
 	assert.NoError(err)

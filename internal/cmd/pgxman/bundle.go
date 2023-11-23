@@ -1,9 +1,12 @@
 package pgxman
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
@@ -13,8 +16,8 @@ import (
 )
 
 var (
-	flagBundleYes        bool
-	flagBundlePGXManfile string
+	flagBundleYes  bool
+	flagBundleFile string
 )
 
 func newBundleCmd() *cobra.Command {
@@ -46,68 +49,83 @@ This ensures consistency across extensions by synchronizing them with the defini
 		RunE: runBundle,
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagBundlePGXManfile, "file", "f", "", "The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.")
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	cmd.PersistentFlags().StringVarP(&flagBundleFile, "file", "f", filepath.Join(pwd, "pgxman.yaml"), "The bundle file to use.")
 	cmd.PersistentFlags().BoolVarP(&flagBundleYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
 }
 
-func runBundle(c *cobra.Command, args []string) error {
+func runBundle(cmd *cobra.Command, args []string) error {
 	i, err := plugin.GetInstaller()
 	if err != nil {
 		return errorsx.Pretty(err)
 	}
 
-	if flagBundlePGXManfile == "" {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		flagBundlePGXManfile = filepath.Join(pwd, "pgxman.yaml")
-	}
-
-	f, err := pgxman.ReadPGXManfile(flagBundlePGXManfile)
+	b, err := pgxman.ReadBundleFile(flagBundleFile)
 	if err != nil {
 		return err
 	}
 
-	pgVer := f.Postgres.Version
-	if err := validatePGVer(c.Context(), pgVer); err != nil {
+	if err := b.Validate(); err != nil {
 		return err
 	}
 
-	if err := LockPGXManfile(f, log.NewTextLogger()); err != nil {
+	pgVer := b.Postgres.Version
+	if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 		return err
 	}
 
+	exts, err := LockExtensions(installExts(*b), log.NewTextLogger())
+	if err != nil {
+		return err
+	}
+
+	if !flagBundleYes {
+		if err := i.PreInstallCheck(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("Bundling extensions for PostgreSQL %s...\n", pgVer)
+	for _, ext := range exts {
+		if err := installOrUpgrade(cmd.Context(), i, ext, true); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.InstallExtension, upgrade bool) error {
 	s := newSpinner()
+	s.Suffix = fmt.Sprintf(" Installing %s...\n", ext)
 	defer s.Stop()
 
-	s.Suffix = fmt.Sprintf(" Bundling extensions for PostgreSQL %s...\n", pgVer)
-	s.FinalMSG = extOutput(f)
-
-	var opts []pgxman.InstallerOptionsFunc
-	if flagBundleYes {
-		s.Start()
-	} else {
-		opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
-			if err := promptInstallOrUpgrade(debPkgs, sources, false); err != nil {
-				return err
-			}
-
-			s.Start()
-			return nil
-		}))
+	f := i.Install
+	if upgrade {
+		f = i.Upgrade
 	}
 
-	if err := i.Upgrade(
-		c.Context(),
-		*f,
-		opts...,
-	); err != nil {
-		return fmt.Errorf("failed to bundle extensions, run with `--debug` to see the full error")
+	handleErr := func(err error) error {
+		if errors.Is(err, pgxman.ErrRootAccessRequired) {
+			return fmt.Errorf("must run command as root: sudo %s", strings.Join(os.Args, " "))
+		}
+
+		return fmt.Errorf("failed to install %s, run with `--debug` to see the full error: %w", ext, err)
 	}
+
+	s.Start()
+	if err := f(ctx, ext); err != nil {
+		s.FinalMSG = fmt.Sprintf("[%s] %s\n", errorMark, ext)
+		return handleErr(err)
+	}
+
+	s.FinalMSG = fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name)
 
 	return nil
 }

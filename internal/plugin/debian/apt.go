@@ -82,6 +82,7 @@ type AptPackage struct {
 	Pkg     string
 	IsLocal bool
 	Opts    []string
+	Repos   []pgxman.AptRepository
 }
 
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
@@ -106,7 +107,7 @@ func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) 
 }
 
 func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
-	var result []AptSource
+	aptSourceMap := make(map[string]AptSource)
 	for _, repo := range repos {
 		uris := a.removeDuplicatedSourceHosts(repo.URIs)
 		if len(uris) == 0 {
@@ -114,6 +115,13 @@ func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepositor
 			continue
 		}
 		repo.URIs = uris
+
+		key := strings.Join(repo.URIs, ",")
+		_, exists := aptSourceMap[key]
+		if exists {
+			a.Logger.Debug("Skipping duplicated apt source", "name", repo.Name())
+			continue
+		}
 
 		file, err := a.newSourceFile(ctx, repo)
 		if err != nil {
@@ -125,7 +133,7 @@ func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepositor
 			return nil, err
 		}
 		if diff {
-			result = append(result, *file)
+			aptSourceMap[key] = *file
 			continue
 		}
 
@@ -134,8 +142,13 @@ func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepositor
 			return nil, err
 		}
 		if diff {
-			result = append(result, *file)
+			aptSourceMap[key] = *file
 		}
+	}
+
+	var result []AptSource
+	for _, v := range aptSourceMap {
+		result = append(result, v)
 	}
 
 	return result, nil

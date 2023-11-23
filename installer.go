@@ -5,26 +5,26 @@ import (
 	"fmt"
 )
 
-const DefaultPGXManfileAPIVersion = "v1"
+const DefaultBundleAPIVersion = "v1"
 
-type PGXManfile struct {
-	APIVersion string             `json:"apiVersion"`
-	Extensions []InstallExtension `json:"extensions"`
-	Postgres   Postgres           `json:"postgres"`
+type Bundle struct {
+	APIVersion string            `json:"apiVersion"`
+	Extensions []BundleExtension `json:"extensions"`
+	Postgres   Postgres          `json:"postgres"`
 }
 
-func (file PGXManfile) Validate() error {
-	if file.APIVersion != DefaultPGXManfileAPIVersion {
-		return fmt.Errorf("invalid api version: %s", file.APIVersion)
+func (b Bundle) Validate() error {
+	if b.APIVersion != DefaultBundleAPIVersion {
+		return fmt.Errorf("invalid api version: %s", b.APIVersion)
 	}
 
-	for _, ext := range file.Extensions {
+	for _, ext := range b.Extensions {
 		if err := ext.Validate(); err != nil {
 			return err
 		}
 	}
 
-	if err := file.Postgres.Validate(); err != nil {
+	if err := b.Postgres.Validate(); err != nil {
 		return err
 	}
 
@@ -32,13 +32,38 @@ func (file PGXManfile) Validate() error {
 }
 
 type InstallExtension struct {
+	BundleExtension
+	PGVersion PGVersion
+}
+
+func (e InstallExtension) String() string {
+	if e.Name != "" {
+		return fmt.Sprintf("%s %s", e.Name, e.Version)
+	}
+
+	return e.Path
+}
+
+func (e InstallExtension) Validate() error {
+	if err := e.BundleExtension.Validate(); err != nil {
+		return err
+	}
+
+	if err := ValidatePGVersion(e.PGVersion); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type BundleExtension struct {
 	Name    string   `json:"name,omitempty"`
 	Version string   `json:"version,omitempty"`
 	Path    string   `json:"path,omitempty"`
 	Options []string `json:"options,omitempty"`
 }
 
-func (e InstallExtension) Validate() error {
+func (e BundleExtension) Validate() error {
 	if e.Name == "" && e.Path == "" {
 		return fmt.Errorf("name or path is required")
 	}
@@ -58,28 +83,9 @@ func (p Postgres) Validate() error {
 	return ValidatePGVersion(p.Version)
 }
 
-func NewInstallerOptions(optFuncs []InstallerOptionsFunc) *InstallerOptions {
-	opts := &InstallerOptions{}
-	for _, f := range optFuncs {
-		f(opts)
-	}
-
-	return opts
-}
-
-type InstallerOptions struct {
-	BeforeRunHook func(debPkgs []string, sources []string) error
-}
-
-type InstallerOptionsFunc func(*InstallerOptions)
-
-func WithBeforeRunHook(hook func(debPkgs []string, sources []string) error) InstallerOptionsFunc {
-	return func(ops *InstallerOptions) {
-		ops.BeforeRunHook = hook
-	}
-}
-
 type Installer interface {
-	Install(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
-	Upgrade(ctx context.Context, f PGXManfile, opts ...InstallerOptionsFunc) error
+	Install(ctx context.Context, ext InstallExtension) error
+	Upgrade(ctx context.Context, ext InstallExtension) error
+	PreInstallCheck(ctx context.Context, exts []InstallExtension, io IO) error
+	PreUpgradeCheck(ctx context.Context, exts []InstallExtension, io IO) error
 }

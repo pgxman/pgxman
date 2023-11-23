@@ -13,22 +13,22 @@ import (
 func Test_mergeBundleFile(t *testing.T) {
 	cases := []struct {
 		Name               string
-		ExistingBundleFile *pgxman.PGXManfile
-		NewBundleFile      *pgxman.PGXManfile
-		WantBundleFile     *pgxman.PGXManfile
+		ExistingBundleFile *pgxman.Bundle
+		NewBundleFile      *pgxman.Bundle
+		WantBundleFile     *pgxman.Bundle
 	}{
 		{
 			Name: "no existing bundle file",
-			NewBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			NewBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			WantBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
@@ -38,24 +38,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "merge different extensions",
-			ExistingBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			ExistingBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			NewBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pg_ivm",
 						Version: "1.0.0",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			WantBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pg_ivm",
 						Version: "1.0.0",
@@ -69,24 +69,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "override existing extensions",
-			ExistingBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			ExistingBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			NewBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.1",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			WantBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.1",
@@ -96,24 +96,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "merge extension with paths",
-			ExistingBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			ExistingBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name: "pgvector",
 						Path: "path1",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			NewBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "path2",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.PGXManfile{
-				Extensions: []pgxman.InstallExtension{
+			WantBundleFile: &pgxman.Bundle{
+				Extensions: []pgxman.BundleExtension{
 					{
 						Name:    "pgvector",
 						Version: "path2",
@@ -143,7 +143,7 @@ func Test_mergeBundleFile(t *testing.T) {
 			b, err := os.ReadFile(filepath.Join(dir, "pgxman.yaml"))
 			assert.NoError(err)
 
-			var got pgxman.PGXManfile
+			var got pgxman.Bundle
 			err = yaml.Unmarshal(b, &got)
 			assert.NoError(err)
 			assert.Equal(c.WantBundleFile, &got)

@@ -7,8 +7,27 @@ import (
 	"path/filepath"
 
 	"dario.cat/mergo"
+	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
+
+type IO struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+func (i IO) IsTerminal() bool {
+	return term.IsTerminal(int(os.Stdout.Fd()))
+}
+
+func NewStdIO() IO {
+	return IO{
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+}
 
 func WriteExtension(path string, ext Extension) error {
 	b, err := yaml.Marshal(ext)
@@ -19,11 +38,11 @@ func WriteExtension(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func ReadPGXManfile(path string) (*PGXManfile, error) {
+func ReadBundleFile(path string) (*Bundle, error) {
 	var (
-		pgxmanf PGXManfile
-		b       []byte
-		err     error
+		bundle Bundle
+		b      []byte
+		err    error
 	)
 
 	if path == "-" {
@@ -35,11 +54,11 @@ func ReadPGXManfile(path string) (*PGXManfile, error) {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(b, &pgxmanf); err != nil {
+	if err := yaml.Unmarshal(b, &bundle); err != nil {
 		return nil, err
 	}
 
-	return &pgxmanf, nil
+	return &bundle, nil
 }
 
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {

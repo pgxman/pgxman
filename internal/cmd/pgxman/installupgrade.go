@@ -1,10 +1,8 @@
 package pgxman
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -116,7 +114,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		pgVer := pgxman.PGVersion(flagInstallOrUpgradePGVersion)
-		if err := validatePGVer(cmd.Context(), pgVer); err != nil {
+		if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 			return err
 		}
 
@@ -124,74 +122,40 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			PGVer:  pgVer,
 			Logger: log.NewTextLogger(),
 		}
-		f, err := p.Parse(cmd.Context(), args)
+		exts, err := p.Parse(cmd.Context(), args)
 		if err != nil {
 			return err
 		}
 
-		s := newSpinner()
-		defer s.Stop()
+		if !flagInstallOrUpgradeYes {
+			checkFunc := i.PreInstallCheck
+			if upgrade {
+				checkFunc = i.PreUpgradeCheck
+			}
 
-		exts := extNames(f.Extensions)
-		var (
-			action     = "Installing"
-			actionVerb = "install"
-		)
+			if err := checkFunc(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
+				return err
+			}
+		}
+
+		action := "Installing"
 		if upgrade {
 			action = "Upgrading"
-			actionVerb = "upgrade"
 		}
 
-		s.Suffix = fmt.Sprintf(" %s %s for PostgreSQL %s...\n", action, exts, pgVer)
-
-		var opts []pgxman.InstallerOptionsFunc
-		if flagInstallOrUpgradeYes {
-			s.Start()
-		} else {
-			opts = append(opts, pgxman.WithBeforeRunHook(func(debPkgs []string, sources []string) error {
-				if err := promptInstallOrUpgrade(debPkgs, sources, upgrade); err != nil {
-					return err
-				}
-
-				s.Start()
-				return nil
-			}))
-		}
-
-		handleErr := func(err error) error {
-			if errors.Is(err, pgxman.ErrRootAccessRequired) {
-				return fmt.Errorf("must run command as root: sudo %s", strings.Join(os.Args, " "))
+		fmt.Printf("%s extensions for PostgreSQL %s...\n", action, pgVer)
+		for _, ext := range exts {
+			if err := installOrUpgrade(cmd.Context(), i, ext, upgrade); err != nil {
+				return err
 			}
-
-			return fmt.Errorf("failed to %s %s, run with `--debug` to see the full error: %w", actionVerb, exts, err)
 		}
 
 		if upgrade {
-			if err := i.Upgrade(
-				cmd.Context(),
-				*f,
-				opts...,
-			); err != nil {
-				return handleErr(err)
-			}
+			fmt.Println(`After restarting PostgreSQL, update extensions in each database by running in the psql shell:
 
-			s.FinalMSG = fmt.Sprintf(`%s
-After restarting PostgreSQL, update extensions in each database by running in the psql shell:
-
-    ALTER EXTENSION name UPDATE
-`, extOutput(f))
-			return nil
+    ALTER EXTENSION name UPDATE`)
 		}
 
-		if err := i.Install(
-			cmd.Context(),
-			*f,
-			opts...,
-		); err != nil {
-			return handleErr(err)
-		}
-
-		s.FinalMSG = extOutput(f)
 		return nil
 	}
 }
@@ -222,10 +186,11 @@ type ArgsParser struct {
 	Logger *log.Logger
 }
 
-func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfile, error) {
+func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.InstallExtension, error) {
 	if err := pgxman.ValidatePGVersion(p.PGVer); err != nil {
 		return nil, err
 	}
+
 	var exts []pgxman.InstallExtension
 	for _, arg := range args {
 		ext, err := parseInstallExtension(arg)
@@ -233,39 +198,33 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) (*pgxman.PGXManfi
 			return nil, err
 		}
 
-		exts = append(exts, *ext)
+		exts = append(exts, pgxman.InstallExtension{
+			BundleExtension: *ext,
+			PGVersion:       p.PGVer,
+		})
 	}
 
-	f := &pgxman.PGXManfile{
-		APIVersion: pgxman.DefaultPGXManfileAPIVersion,
-		Extensions: exts,
-		Postgres: pgxman.Postgres{
-			Version: p.PGVer,
-		},
-	}
-	if err := LockPGXManfile(f, p.Logger); err != nil {
+	var err error
+	exts, err = LockExtensions(exts, p.Logger)
+	if err != nil {
 		return nil, err
 	}
 
-	return f, nil
+	return exts, nil
 }
 
-func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
-	if err := f.Validate(); err != nil {
-		return err
-	}
-
+func LockExtensions(exts []pgxman.InstallExtension, logger *log.Logger) ([]pgxman.InstallExtension, error) {
 	installableExts, err := buildkit.Extensions()
 	if err != nil {
-		return fmt.Errorf("fetch installable extensions: %w", err)
+		return nil, fmt.Errorf("fetch installable extensions: %w", err)
 	}
 
-	var exts []pgxman.InstallExtension
-	for _, ext := range f.Extensions {
+	var result []pgxman.InstallExtension
+	for _, ext := range exts {
 		if ext.Name != "" {
 			installableExt, ok := installableExts[ext.Name]
 			if !ok {
-				return fmt.Errorf("extension %q not found", ext.Name)
+				return nil, fmt.Errorf("extension %q not found", ext.Name)
 			}
 
 			// if version is not specified, use the latest version
@@ -278,24 +237,22 @@ func LockPGXManfile(f *pgxman.PGXManfile, logger *log.Logger) error {
 				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
 			}
 
-			if !slices.Contains(installableExt.PGVersions, f.Postgres.Version) {
-				return fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, f.Postgres.Version)
+			if !slices.Contains(installableExt.PGVersions, ext.PGVersion) {
+				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
 			}
 		}
 
-		exts = append(exts, ext)
+		result = append(result, ext)
 	}
 
-	f.Extensions = exts
-
-	return nil
+	return result, nil
 }
 
 var (
 	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
 )
 
-func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
+func parseInstallExtension(arg string) (*pgxman.BundleExtension, error) {
 	// install from local file
 	if _, err := os.Stat(arg); err == nil {
 		path, err := filepath.Abs(arg)
@@ -303,7 +260,7 @@ func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 			return nil, err
 		}
 
-		return &pgxman.InstallExtension{
+		return &pgxman.BundleExtension{
 			Path: path,
 		}, nil
 	}
@@ -316,7 +273,7 @@ func parseInstallExtension(arg string) (*pgxman.InstallExtension, error) {
 			version = match[2]
 		)
 
-		return &pgxman.InstallExtension{
+		return &pgxman.BundleExtension{
 			Name:    name,
 			Version: version,
 		}, nil
@@ -334,77 +291,19 @@ func supportedPGVersions() []string {
 	return pgVers
 }
 
-func extOutput(f *pgxman.PGXManfile) string {
-	var lines []string
-	for _, ext := range f.Extensions {
-		lines = append(lines, fmt.Sprintf("[%s] %s: %s", successMark, extName(ext), extLink(ext)))
+func installExts(b pgxman.Bundle) []pgxman.InstallExtension {
+	var installExts []pgxman.InstallExtension
+	for _, ext := range b.Extensions {
+		installExts = append(installExts, pgxman.InstallExtension{
+			BundleExtension: ext,
+			PGVersion:       b.Postgres.Version,
+		})
 	}
 
-	return strings.Join(lines, "\n") + "\n"
+	return installExts
 }
 
-func extNames(exts []pgxman.InstallExtension) string {
-	var names []string
-	for _, ext := range exts {
-		names = append(names, extName(ext))
-	}
-
-	return strings.Join(names, ", ")
-}
-
-func extName(ext pgxman.InstallExtension) string {
-	if ext.Name != "" {
-		return ext.Name
-	}
-
-	return ext.Path
-}
-
-func extLink(ext pgxman.InstallExtension) string {
-	return fmt.Sprintf("https://pgx.sh/%s", ext.Name)
-}
-
-func promptInstallOrUpgrade(debPkgs []string, sources []string, upgrade bool) error {
-	var (
-		action   = "installed"
-		abortMsg = "installation aborted"
-	)
-	if upgrade {
-		action = "upgraded"
-		abortMsg = "upgrade aborted"
-	}
-
-	out := []string{
-		fmt.Sprintf("The following Debian packages will be %s:", action),
-	}
-	for _, debPkg := range debPkgs {
-		out = append(out, "  "+debPkg)
-	}
-
-	if len(sources) > 0 {
-		out = append(out, "The following Apt repositories will be added or updated:")
-		for _, source := range sources {
-			out = append(out, "  "+source)
-		}
-	}
-
-	out = append(out, "Do you want to continue? [Y/n] ")
-	fmt.Print(strings.Join(out, "\n"))
-
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		switch strings.ToLower(scanner.Text()) {
-		case "y", "yes", "":
-			return nil
-		default:
-			return fmt.Errorf(abortMsg)
-		}
-	}
-
-	return nil
-}
-
-func validatePGVer(ctx context.Context, pgVer pgxman.PGVersion) error {
+func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
 		return errInvalidPGVersion{Version: pgVer}
 	}
