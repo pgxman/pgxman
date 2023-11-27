@@ -37,9 +37,9 @@ Components: {{ .Components }}
 Signed-By: {{ .SignedBy }}
 `))
 
-	regexpSourceFileURIs              = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
-	regexpSourceListURIs              = regexp.MustCompile(`\bdeb(?:-src)?\s+(?:\[.*\]\s+)?(http[^\s]+)`)
-	regexpConflictWithPostgresPackage = regexp.MustCompile(`trying to overwrite '(.+)', which is also in package postgresql-(\d+)`)
+	regexpSourceFileURIs = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
+	regexpSourceListURIs = regexp.MustCompile(`\bdeb(?:-src)?\s+(?:\[.*\]\s+)?(http[^\s]+)`)
+	regexpConflictDebPkg = regexp.MustCompile(`trying to overwrite '(.+)', which is also in package`)
 )
 
 type aptSourcesTmplData struct {
@@ -80,10 +80,11 @@ func (a AptSource) String() string {
 }
 
 type AptPackage struct {
-	Pkg     string
-	IsLocal bool
-	Opts    []string
-	Repos   []pgxman.AptRepository
+	Pkg          string
+	IsLocal      bool
+	Opts         []string
+	Repos        []pgxman.AptRepository
+	ForceInstall bool
 }
 
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
@@ -248,11 +249,13 @@ func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrad
 
 	out, oerr := a.runAptCmd(ctx, "apt", opts...)
 	if oerr != nil {
-		// If the package has files that conflict with the postgres-X package,
-		// we know that it's a contrib package, and we want to replace with the one from pgxman
-		if conflictWithPostgresPackage(out) {
-			logger.Debug("Force installing contrib package")
-			_, oerr = a.runAptCmd(ctx, "apt", append(opts, "-o", "Dpkg::Options::=--force-overwrite")...)
+		if conflictDebPkg(out) {
+			if pkg.ForceInstall {
+				logger.Debug("Force installing package")
+				_, oerr = a.runAptCmd(ctx, "apt", append(opts, "-o", "Dpkg::Options::=--force-overwrite")...)
+			} else {
+				return pgxman.ErrConflictExtension
+			}
 		}
 
 		if oerr != nil {
@@ -365,8 +368,8 @@ func isFileDifferent(path string, content []byte) (bool, error) {
 
 }
 
-func conflictWithPostgresPackage(out string) bool {
-	return regexpConflictWithPostgresPackage.MatchString(out)
+func conflictDebPkg(out string) bool {
+	return regexpConflictDebPkg.MatchString(out)
 }
 
 func writeFile(path string, content []byte) error {

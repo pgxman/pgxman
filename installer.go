@@ -61,6 +61,7 @@ type BundleExtension struct {
 	Version string   `json:"version,omitempty"`
 	Path    string   `json:"path,omitempty"`
 	Options []string `json:"options,omitempty"`
+	Force   bool     `json:"force,omitempty"`
 }
 
 func (e BundleExtension) Validate() error {

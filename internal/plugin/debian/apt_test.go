@@ -90,5 +90,5 @@ Errors were encountered while processing:
 E: Sub-process /usr/bin/dpkg returned an error code (1)
 	`
 
-	assert.True(t, conflictWithPostgresPackage(out))
+	assert.True(t, conflictDebPkg(out))
 }

@@ -131,9 +131,10 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 
 	if ext.Path != "" {
 		aptPkg = AptPackage{
-			Pkg:     ext.Path,
-			IsLocal: true,
-			Opts:    ext.Options,
+			Pkg:          ext.Path,
+			IsLocal:      true,
+			Opts:         ext.Options,
+			ForceInstall: ext.Force,
 		}
 	} else {
 		installableExt, ok := installableExts[ext.Name]
@@ -142,9 +143,10 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 		}
 
 		aptPkg = AptPackage{
-			Pkg:   extDebPkgName(ext),
-			Opts:  ext.Options,
-			Repos: coreAptRepos,
+			Pkg:          extDebPkgName(ext),
+			Opts:         ext.Options,
+			Repos:        coreAptRepos,
+			ForceInstall: ext.Force,
 		}
 
 		if builders := installableExt.Builders; builders != nil {

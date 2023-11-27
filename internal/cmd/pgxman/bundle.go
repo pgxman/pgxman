@@ -116,6 +116,10 @@ func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.Instal
 			return fmt.Errorf("must run command as root: sudo %s", strings.Join(os.Args, " "))
 		}
 
+		if errors.Is(err, pgxman.ErrConflictExtension) {
+			return fmt.Errorf("%s has already been installed (outside of pgxman)", ext.Name)
+		}
+
 		return fmt.Errorf("failed to install %s, run with `--debug` to see the full error: %w", ext, err)
 	}
 
