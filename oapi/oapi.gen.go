@@ -84,7 +84,7 @@ type BaseExtension struct {
 
 	// Keywords keywords
 	Keywords  Keywords  `json:"keywords,omitempty" validate:"gte=0,dive,required"`
-	Name      string    `json:"name"`
+	Name      Name      `json:"name"`
 	UpdatedAt Timestamp `json:"updated_at"`
 }
 
@@ -134,7 +134,7 @@ type Extension struct {
 	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
 	License     License     `json:"license,omitempty"`
 	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
-	Name        string      `json:"name"`
+	Name        Name        `json:"name"`
 	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
 	Readme      Readme      `json:"readme,omitempty"`
 	Repository  Repository  `json:"repository" validate:"required,url"`
@@ -153,17 +153,11 @@ type ExtensionVersions struct {
 
 	// Keywords keywords
 	Keywords  Keywords  `json:"keywords,omitempty" validate:"gte=0,dive,required"`
-	Name      string    `json:"name"`
+	Name      Name      `json:"name"`
 	UpdatedAt Timestamp `json:"updated_at"`
 
 	// Versions a list of versions for the extension sorted by created_at descending
 	Versions *[]Version `json:"versions,omitempty"`
-}
-
-// Extensions defines model for Extensions.
-type Extensions struct {
-	// Extensions a list of extensions
-	Extensions []Extension `json:"extensions,omitempty"`
 }
 
 // Homepage defines model for Homepage.
@@ -186,6 +180,9 @@ type Maintainer struct {
 
 // Maintainers defines model for Maintainers.
 type Maintainers = []Maintainer
+
+// Name defines model for Name.
+type Name = string
 
 // PgVersion defines model for PgVersion.
 type PgVersion string
@@ -261,6 +258,22 @@ type SignedKey struct {
 
 // SignedKeyFormat defines model for SignedKey.Format.
 type SignedKeyFormat string
+
+// SimpleExtension defines model for SimpleExtension.
+type SimpleExtension struct {
+	CreatedAt   Timestamp   `json:"created_at"`
+	Description Description `json:"description"`
+	Id          Uuid        `json:"id"`
+	Name        Name        `json:"name"`
+	UpdatedAt   Timestamp   `json:"updated_at"`
+	Version     VersionCode `json:"version" validate:"semver"`
+}
+
+// SimpleExtensions defines model for SimpleExtensions.
+type SimpleExtensions struct {
+	// Extensions a list of extensions
+	Extensions []SimpleExtension `json:"extensions,omitempty"`
+}
 
 // Source defines model for Source.
 type Source = string
@@ -801,7 +814,7 @@ type ClientWithResponsesInterface interface {
 type ListExtensionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Extensions
+	JSON200      *SimpleExtensions
 	JSON500      *Error
 }
 
@@ -1018,7 +1031,7 @@ func ParseListExtensionsResponse(rsp *http.Response) (*ListExtensionsResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Extensions
+		var dest SimpleExtensions
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

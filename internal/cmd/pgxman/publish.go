@@ -159,6 +159,7 @@ func convertPublishExtension(ext pgxman.Extension) oapi.PublishExtension {
 	return oapi.PublishExtension{
 		Description: ext.Description,
 		Homepage:    ext.Homepage,
+		Readme:      ext.Readme,
 		Keywords:    ext.Keywords,
 		License:     ext.License,
 		Maintainers: maintainers,
