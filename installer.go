@@ -57,11 +57,11 @@ func (e InstallExtension) Validate() error {
 }
 
 type BundleExtension struct {
-	Name    string   `json:"name,omitempty"`
-	Version string   `json:"version,omitempty"`
-	Path    string   `json:"path,omitempty"`
-	Options []string `json:"options,omitempty"`
-	Force   bool     `json:"force,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	Version   string   `json:"version,omitempty"`
+	Path      string   `json:"path,omitempty"`
+	Options   []string `json:"options,omitempty"`
+	Overwrite bool     `json:"overwrite,omitempty"`
 }
 
 func (e BundleExtension) Validate() error {

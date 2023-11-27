@@ -80,11 +80,11 @@ func (a AptSource) String() string {
 }
 
 type AptPackage struct {
-	Pkg          string
-	IsLocal      bool
-	Opts         []string
-	Repos        []pgxman.AptRepository
-	ForceInstall bool
+	Pkg       string
+	IsLocal   bool
+	Opts      []string
+	Repos     []pgxman.AptRepository
+	Overwrite bool
 }
 
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
@@ -250,8 +250,8 @@ func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrad
 	out, oerr := a.runAptCmd(ctx, "apt", opts...)
 	if oerr != nil {
 		if conflictDebPkg(out) {
-			if pkg.ForceInstall {
-				logger.Debug("Force installing package")
+			if pkg.Overwrite {
+				logger.Debug("Force overwriting package")
 				_, oerr = a.runAptCmd(ctx, "apt", append(opts, "-o", "Dpkg::Options::=--force-overwrite")...)
 			} else {
 				return pgxman.ErrConflictExtension

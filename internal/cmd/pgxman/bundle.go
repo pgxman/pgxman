@@ -118,7 +118,7 @@ func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.Instal
 		}
 
 		if errors.Is(err, pgxman.ErrConflictExtension) {
-			return fmt.Errorf("has already been installed (outside of pgxman)")
+			return fmt.Errorf("has already been installed outside of pgxman, run with `--overwrite` to overwrite it")
 		}
 
 		return fmt.Errorf("failed to install, run with `--debug` to see the full error: %w", err)

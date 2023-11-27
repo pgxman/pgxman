@@ -50,6 +50,11 @@ postgres:
     - **Description**: Specifies the options to be passed to corresponding package manager when installing the extension.
     - **Type**: List of strings
     - **Required**: No
+  - `overwrite`:
+    - **Description**: Overwrite the existing extension if it is installed outside of pgxman.
+    - **Type**: Boolean
+    - **Required**: No
+    - **Default Value**: false
 
 ### `postgres`
 
