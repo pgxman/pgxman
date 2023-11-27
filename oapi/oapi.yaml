@@ -45,7 +45,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Extensions"
+                $ref: "#/components/schemas/SimpleExtensions"
         "500":
           description: Unexpected error
           content:
@@ -231,13 +231,45 @@ components:
         id:
           $ref: "#/components/schemas/uuid"
         name:
-          type: string
+          $ref: "#/components/schemas/Name"
         keywords:
           $ref: "#/components/schemas/Keywords"
         created_at:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
           $ref: "#/components/schemas/Timestamp"
+    SimpleExtensions:
+      properties:
+        extensions:
+          type: array
+          description: a list of extensions
+          items:
+            $ref: "#/components/schemas/SimpleExtension"
+          minItems: 0
+          x-go-type-skip-optional-pointer: true
+    SimpleExtension:
+      allOf:
+        - type: object
+          required:
+            - id
+            - name
+            - description
+            - version
+            - created_at
+            - updated_at
+          properties:
+            id:
+              $ref: "#/components/schemas/uuid"
+            name:
+              $ref: "#/components/schemas/Name"
+            description:
+              $ref: "#/components/schemas/Description"
+            version:
+              $ref: "#/components/schemas/VersionCode"
+            created_at:
+              $ref: "#/components/schemas/Timestamp"
+            updated_at:
+              $ref: "#/components/schemas/Timestamp"
     Extensions:
       properties:
         extensions:
@@ -305,6 +337,9 @@ components:
       x-go-type-import:
         path: github.com/google/uuid
       example: 123e4567-e89b-12d3-a456-426614174000
+    Name:
+      type: string
+      example: pgvector
     Timestamp:
       type: string
       format: date-time

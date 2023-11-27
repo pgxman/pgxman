@@ -62,6 +62,7 @@ type Extension struct {
 	License           string             `json:"license,omitempty"`
 	Keywords          []string           `json:"keywords,omitempty"`
 	Homepage          string             `json:"homepage,omitempty"`
+	Readme            string             `json:"readme,omitempty"`
 	BuildDependencies []string           `json:"buildDependencies,omitempty"`
 	RunDependencies   []string           `json:"runDependencies,omitempty"`
 

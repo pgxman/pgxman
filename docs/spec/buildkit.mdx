@@ -297,6 +297,12 @@ build: |
 - **Type**: List of strings
 - **Required**: No
 
+## `readme`
+
+- **Description**: Specifies the README content for the extension. The content may include directions for installing, configuring, and using the extension, as well as any other information a user may find helpful. The README will be shown on the registry page. If this field is unspecified, `pgxman` tries to detect a README file at the root of extension source.
+- **Type**: String
+- **Required**: No
+
 ## `builders`
 
 - **Description**: Specify the builders to be used. If not provided, all supported builders are used.
