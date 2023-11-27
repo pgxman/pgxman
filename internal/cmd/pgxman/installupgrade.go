@@ -149,7 +149,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		fmt.Printf("%s extensions for PostgreSQL %s...\n", action, pgVer)
 		for _, ext := range exts {
 			if err := installOrUpgrade(cmd.Context(), i, ext, upgrade); err != nil {
-				return err
+				// Error message is already shown in spinner
+				os.Exit(1)
 			}
 		}
 
