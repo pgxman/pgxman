@@ -94,7 +94,8 @@ func runBundle(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Bundling extensions for PostgreSQL %s...\n", pgVer)
 	for _, ext := range exts {
 		if err := installOrUpgrade(cmd.Context(), i, ext, true); err != nil {
-			return err
+			// Error message is already shown in spinner
+			os.Exit(1)
 		}
 	}
 
@@ -116,13 +117,18 @@ func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.Instal
 			return fmt.Errorf("must run command as root: sudo %s", strings.Join(os.Args, " "))
 		}
 
-		return fmt.Errorf("failed to install %s, run with `--debug` to see the full error: %w", ext, err)
+		if errors.Is(err, pgxman.ErrConflictExtension) {
+			return fmt.Errorf("has already been installed outside of pgxman, run with `--overwrite` to overwrite it")
+		}
+
+		return fmt.Errorf("failed to install, run with `--debug` to see the full error: %w", err)
 	}
 
 	s.Start()
 	if err := f(ctx, ext); err != nil {
-		s.FinalMSG = fmt.Sprintf("[%s] %s\n", errorMark, ext)
-		return handleErr(err)
+		err = handleErr(err)
+		s.FinalMSG = fmt.Sprintf("[%s] %s: %s\n", errorMark, ext, err)
+		return err
 	}
 
 	s.FinalMSG = fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name)

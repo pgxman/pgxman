@@ -39,6 +39,7 @@ Signed-By: {{ .SignedBy }}
 
 	regexpSourceFileURIs = regexp.MustCompile(`(?m)^URIs:\s*(.+)$`)
 	regexpSourceListURIs = regexp.MustCompile(`\bdeb(?:-src)?\s+(?:\[.*\]\s+)?(http[^\s]+)`)
+	regexpConflictDebPkg = regexp.MustCompile(`trying to overwrite '(.+)', which is also in package`)
 )
 
 type aptSourcesTmplData struct {
@@ -79,10 +80,11 @@ func (a AptSource) String() string {
 }
 
 type AptPackage struct {
-	Pkg     string
-	IsLocal bool
-	Opts    []string
-	Repos   []pgxman.AptRepository
+	Pkg       string
+	IsLocal   bool
+	Opts      []string
+	Repos     []pgxman.AptRepository
+	Overwrite bool
 }
 
 func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) ([]AptSource, error) {
@@ -219,7 +221,8 @@ func (a *Apt) aptInstallOrUpgrade(ctx context.Context, pkgs []AptPackage, upgrad
 }
 
 func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrade bool) (err error) {
-	a.Logger.Debug("Running apt install or upgrade", "package", pkg, "upgrade", upgrade)
+	logger := a.Logger.With("package", pkg, "upgrade", upgrade)
+	logger.Debug("Running apt install or upgrade")
 
 	// apt-mark hold and unhold don't work for a local package
 	if !pkg.IsLocal {
@@ -244,34 +247,67 @@ func (a *Apt) aptInstallOrUpgradeOne(ctx context.Context, pkg AptPackage, upgrad
 	opts = append(opts, pkg.Opts...)
 	opts = append(opts, pkg.Pkg)
 
-	err = errors.Join(err, a.runAptCmd(ctx, "apt", opts...))
+	out, oerr := a.runAptCmd(ctx, "apt", opts...)
+	if oerr != nil {
+		if conflictDebPkg(out) {
+			if pkg.Overwrite {
+				logger.Debug("Force overwriting package")
+				_, oerr = a.runAptCmd(ctx, "apt", append(opts, "-o", "Dpkg::Options::=--force-overwrite")...)
+			} else {
+				return pgxman.ErrConflictExtension
+			}
+		}
+
+		if oerr != nil {
+			err = errors.Join(err, oerr)
+		}
+	}
 
 	return err
 }
 
 func (a *Apt) aptUpdate(ctx context.Context) error {
-	return a.runAptCmd(ctx, "apt", "update")
+	_, err := a.runAptCmd(ctx, "apt", "update")
+	if err != nil {
+		return fmt.Errorf("apt update: %w", err)
+	}
+
+	return nil
 }
 
 func (a *Apt) aptMarkHold(ctx context.Context, pkg AptPackage) error {
-	return a.runAptCmd(ctx, "apt-mark", "hold", pkg.Pkg)
+	_, err := a.runAptCmd(ctx, "apt-mark", "hold", pkg.Pkg)
+	if err != nil {
+		return fmt.Errorf("apt-mark hold: %w", err)
+	}
+
+	return nil
 }
 
 func (a *Apt) aptMarkUnhold(ctx context.Context, pkg AptPackage) error {
-	return a.runAptCmd(ctx, "apt-mark", "unhold", pkg.Pkg)
+	_, err := a.runAptCmd(ctx, "apt-mark", "unhold", pkg.Pkg)
+	if err != nil {
+		return fmt.Errorf("apt-mark unhold: %w", err)
+	}
+
+	return nil
 }
 
-func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) error {
+func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) (string, error) {
 	c := append([]string{command}, args...)
 
-	w := a.Logger.Writer(slog.LevelDebug)
+	bw := bytes.NewBuffer(nil)
+	lw := a.Logger.Writer(slog.LevelDebug)
+
 	cmd := exec.CommandContext(ctx, c[0], c[1:]...)
 	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
-	cmd.Stdout = w
-	cmd.Stderr = w
+	cmd.Stdout = io.MultiWriter(lw, bw)
+	cmd.Stderr = io.MultiWriter(lw, bw)
 
 	a.Logger.Debug("Running apt command", "command", cmd.String())
-	return cmd.Run()
+	err := cmd.Run()
+
+	return bw.String(), err
 }
 
 func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*AptSource, error) {
@@ -330,6 +366,10 @@ func isFileDifferent(path string, content []byte) (bool, error) {
 
 	return false, nil
 
+}
+
+func conflictDebPkg(out string) bool {
+	return regexpConflictDebPkg.MatchString(out)
 }
 
 func writeFile(path string, content []byte) error {

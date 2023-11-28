@@ -89,10 +89,11 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		APIVersion: pgxman.DefaultBundleAPIVersion,
 		Extensions: []pgxman.BundleExtension{
 			{
-				Name:    ext.Name,
-				Path:    ext.Path,
-				Version: ext.Version,
-				Options: ext.Options,
+				Name:      ext.Name,
+				Path:      ext.Path,
+				Version:   ext.Version,
+				Options:   ext.Options,
+				Overwrite: true, // always overwrite conflicting pacakge in the container
 			},
 		},
 		Postgres: pgxman.Postgres{

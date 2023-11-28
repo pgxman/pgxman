@@ -27,6 +27,7 @@ import (
 var (
 	flagInstallOrUpgradeYes       bool
 	flagInstallOrUpgradePGVersion string
+	flagInstallOrUpgradeOverwrite bool
 )
 
 func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
@@ -97,7 +98,8 @@ if it exists, or can be specified with the --pg flag.`,
 	}
 
 	cmd.PersistentFlags().BoolVarP(&flagInstallOrUpgradeYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
-	cmd.PersistentFlags().StringVar(&flagInstallOrUpgradePGVersion, "pg", defPGVer, fmt.Sprintf("Install the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().StringVar(&flagInstallOrUpgradePGVersion, "pg", defPGVer, fmt.Sprintf("%s the extension for the PostgreSQL version. It detects the version by pg_config if it exists. Supported values are %s.", c.String(action), strings.Join(supportedPGVersions(), ", ")))
+	cmd.PersistentFlags().BoolVar(&flagInstallOrUpgradeOverwrite, "overwrite", false, "Overwrite the existing extension if it is installed outside of pgxman.")
 
 	return cmd
 }
@@ -119,8 +121,9 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		}
 
 		p := &ArgsParser{
-			PGVer:  pgVer,
-			Logger: log.NewTextLogger(),
+			Overwrite: flagInstallOrUpgradeOverwrite,
+			PGVer:     pgVer,
+			Logger:    log.NewTextLogger(),
 		}
 		exts, err := p.Parse(cmd.Context(), args)
 		if err != nil {
@@ -146,7 +149,8 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 		fmt.Printf("%s extensions for PostgreSQL %s...\n", action, pgVer)
 		for _, ext := range exts {
 			if err := installOrUpgrade(cmd.Context(), i, ext, upgrade); err != nil {
-				return err
+				// Error message is already shown in spinner
+				os.Exit(1)
 			}
 		}
 
@@ -182,8 +186,9 @@ func (e errInvalidPGVersion) Error() string {
 }
 
 type ArgsParser struct {
-	PGVer  pgxman.PGVersion
-	Logger *log.Logger
+	PGVer     pgxman.PGVersion
+	Overwrite bool
+	Logger    *log.Logger
 }
 
 func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.InstallExtension, error) {
@@ -197,6 +202,7 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.Install
 		if err != nil {
 			return nil, err
 		}
+		ext.Overwrite = p.Overwrite
 
 		exts = append(exts, pgxman.InstallExtension{
 			BundleExtension: *ext,

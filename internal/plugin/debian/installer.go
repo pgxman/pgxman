@@ -131,9 +131,10 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 
 	if ext.Path != "" {
 		aptPkg = AptPackage{
-			Pkg:     ext.Path,
-			IsLocal: true,
-			Opts:    ext.Options,
+			Pkg:       ext.Path,
+			IsLocal:   true,
+			Opts:      ext.Options,
+			Overwrite: ext.Overwrite,
 		}
 	} else {
 		installableExt, ok := installableExts[ext.Name]
@@ -142,9 +143,10 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 		}
 
 		aptPkg = AptPackage{
-			Pkg:   extDebPkgName(ext),
-			Opts:  ext.Options,
-			Repos: coreAptRepos,
+			Pkg:       extDebPkgName(ext),
+			Opts:      ext.Options,
+			Repos:     coreAptRepos,
+			Overwrite: ext.Overwrite,
 		}
 
 		if builders := installableExt.Builders; builders != nil {
@@ -208,20 +210,6 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 			return fmt.Errorf(abortMsg)
 		}
 	}
-
-	// scanner := bufio.NewScanner(io.Stdin)
-	// for scanner.Scan() {
-	// 	switch strings.ToLower(scanner.Text()) {
-	// 	case "y", "yes", "":
-	// 		return nil
-	// 	default:
-	// 		return fmt.Errorf(abortMsg)
-	// 	}
-	// }
-	// if scanner.Err() != nil {
-	// 	return scanner.Err()
-	// }
-	// fmt.Println("ffffff")
 
 	return nil
 }

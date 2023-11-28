@@ -39,8 +39,14 @@ func TestContainer(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(pgxman.Bundle{
 		APIVersion: pgxman.DefaultBundleAPIVersion,
-		Extensions: []pgxman.BundleExtension{wantExt.BundleExtension},
-		Postgres:   info.Postgres,
+		Extensions: []pgxman.BundleExtension{
+			{
+				Name:      wantExt.Name,
+				Version:   wantExt.Version,
+				Overwrite: true,
+			},
+		},
+		Postgres: info.Postgres,
 	}, gotFile)
 
 	err = c.Teardown(context.TODO(), pgxman.PGVersion15)
