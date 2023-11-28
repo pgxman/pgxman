@@ -21,7 +21,7 @@ func TestContainer(t *testing.T) {
 		container.WithConfigDir(configDir),
 	)
 	wantExt := pgxman.InstallExtension{
-		BundleExtension: pgxman.BundleExtension{
+		PackExtension: pgxman.PackExtension{
 			Name:    "pgvector",
 			Version: "0.5.1",
 		},
@@ -34,12 +34,12 @@ func TestContainer(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(info.RunnerDir, "pgxman.yaml"))
 	assert.NoError(err)
 
-	var gotFile pgxman.Bundle
+	var gotFile pgxman.Pack
 	err = yaml.Unmarshal(b, &gotFile)
 	assert.NoError(err)
-	assert.Equal(pgxman.Bundle{
-		APIVersion: pgxman.DefaultBundleAPIVersion,
-		Extensions: []pgxman.BundleExtension{
+	assert.Equal(pgxman.Pack{
+		APIVersion: pgxman.DefaultPackAPIVersion,
+		Extensions: []pgxman.PackExtension{
 			{
 				Name:      wantExt.Name,
 				Version:   wantExt.Version,

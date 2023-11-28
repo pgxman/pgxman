@@ -205,8 +205,8 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.Install
 		ext.Overwrite = p.Overwrite
 
 		exts = append(exts, pgxman.InstallExtension{
-			BundleExtension: *ext,
-			PGVersion:       p.PGVer,
+			PackExtension: *ext,
+			PGVersion:     p.PGVer,
 		})
 	}
 
@@ -258,7 +258,7 @@ var (
 	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
 )
 
-func parseInstallExtension(arg string) (*pgxman.BundleExtension, error) {
+func parseInstallExtension(arg string) (*pgxman.PackExtension, error) {
 	// install from local file
 	if _, err := os.Stat(arg); err == nil {
 		path, err := filepath.Abs(arg)
@@ -266,7 +266,7 @@ func parseInstallExtension(arg string) (*pgxman.BundleExtension, error) {
 			return nil, err
 		}
 
-		return &pgxman.BundleExtension{
+		return &pgxman.PackExtension{
 			Path: path,
 		}, nil
 	}
@@ -279,7 +279,7 @@ func parseInstallExtension(arg string) (*pgxman.BundleExtension, error) {
 			version = match[2]
 		)
 
-		return &pgxman.BundleExtension{
+		return &pgxman.PackExtension{
 			Name:    name,
 			Version: version,
 		}, nil
@@ -297,12 +297,12 @@ func supportedPGVersions() []string {
 	return pgVers
 }
 
-func installExts(b pgxman.Bundle) []pgxman.InstallExtension {
+func installExts(b pgxman.Pack) []pgxman.InstallExtension {
 	var installExts []pgxman.InstallExtension
 	for _, ext := range b.Extensions {
 		installExts = append(installExts, pgxman.InstallExtension{
-			BundleExtension: ext,
-			PGVersion:       b.Postgres.Version,
+			PackExtension: ext,
+			PGVersion:     b.Postgres.Version,
 		})
 	}
 

@@ -16,27 +16,38 @@ import (
 )
 
 var (
-	flagBundleYes  bool
-	flagBundleFile string
+	flagPackInstallYes  bool
+	flagPackInstallFile string
 )
 
-func newBundleCmd() *cobra.Command {
+func newPackCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bundle",
-		Short: "Manage PostgreSQL extensions from a bundle file",
-		Long: `Install or upgrade PostgreSQL extensions based on a specified bundle file (e.g., pgxman.yaml).
-This ensures consistency across extensions by synchronizing them with the definitions provided in the bundle file.`,
-		Example: `  # Install or upgrade extensions from the pgxman.yaml file in the current directory
-  pgxman bundle
+		Use:   "pack",
+		Short: "Manage PostgreSQL extensions from a pack file",
+	}
+
+	cmd.AddCommand(newPackInstallCmd())
+
+	return cmd
+}
+
+func newPackInstallCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "install",
+		Short: "Install PostgreSQL extensions from a pack file",
+		Long: `Install PostgreSQL extensions based on a specified pack file (e.g., pgxman.yaml).
+This ensures consistency across extensions by synchronizing them with the definitions provided in the pack file.`,
+		Example: `  # Install extensions from the pgxman.yaml file in the current directory
+  pgxman pack install
 
   # Suppress prompts for automatic installation or upgrade
-  pgxman bundle -y
+  pgxman pack install -y
 
   # Specify a different location for the pgxman.yaml file
-  pgxman bundle -f /PATH_TO/pgxman.yaml
+  pgxman pack install -f /PATH_TO/pgxman.yaml
 
   # Read the pgxman.yaml file from STDIN
-  cat <<EOF | pgxman bundle -f -
+  cat <<EOF | pgxman pack install -f -
     apiVersion: v1
     extensions:
       - name: "pgvector"
@@ -46,7 +57,7 @@ This ensures consistency across extensions by synchronizing them with the defini
       version: "14"
   EOF
   `,
-		RunE: runBundle,
+		RunE: runPackInstall,
 	}
 
 	pwd, err := os.Getwd()
@@ -54,19 +65,19 @@ This ensures consistency across extensions by synchronizing them with the defini
 		panic(err.Error())
 	}
 
-	cmd.PersistentFlags().StringVarP(&flagBundleFile, "file", "f", filepath.Join(pwd, "pgxman.yaml"), "The bundle file to use.")
-	cmd.PersistentFlags().BoolVarP(&flagBundleYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
+	cmd.PersistentFlags().StringVarP(&flagPackInstallFile, "file", "f", filepath.Join(pwd, "pgxman.yaml"), "The pack file to use.")
+	cmd.PersistentFlags().BoolVarP(&flagPackInstallYes, "yes", "y", false, `Automatic yes to prompts and run install non-interactively.`)
 
 	return cmd
 }
 
-func runBundle(cmd *cobra.Command, args []string) error {
+func runPackInstall(cmd *cobra.Command, args []string) error {
 	i, err := plugin.GetInstaller()
 	if err != nil {
 		return errorsx.Pretty(err)
 	}
 
-	b, err := pgxman.ReadBundleFile(flagBundleFile)
+	b, err := pgxman.ReadPackFile(flagPackInstallFile)
 	if err != nil {
 		return err
 	}
@@ -85,7 +96,7 @@ func runBundle(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !flagBundleYes {
+	if !flagPackInstallYes {
 		if err := i.PreInstallCheck(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
 			return err
 		}

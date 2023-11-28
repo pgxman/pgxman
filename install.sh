@@ -46,7 +46,7 @@ install_extensions() {
     if [ "$#" -ne "0" ]; then
         for _file in "$@"; do
             echo "Installing extensions from ${_file}..."
-            ensure pgxman bundle --file "$_file" --yes || exit 1
+            ensure pgxman pack install --file "$_file" --yes || exit 1
         done
     fi
 }

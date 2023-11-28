@@ -38,11 +38,11 @@ func WriteExtension(path string, ext Extension) error {
 	return os.WriteFile(path, b, 0644)
 }
 
-func ReadBundleFile(path string) (*Bundle, error) {
+func ReadPackFile(path string) (*Pack, error) {
 	var (
-		bundle Bundle
-		b      []byte
-		err    error
+		pack Pack
+		b    []byte
+		err  error
 	)
 
 	if path == "-" {
@@ -54,11 +54,11 @@ func ReadBundleFile(path string) (*Bundle, error) {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(b, &bundle); err != nil {
+	if err := yaml.Unmarshal(b, &pack); err != nil {
 		return nil, err
 	}
 
-	return &bundle, nil
+	return &pack, nil
 }
 
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {

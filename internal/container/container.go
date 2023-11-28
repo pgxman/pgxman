@@ -85,9 +85,9 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		return nil, err
 	}
 
-	b := pgxman.Bundle{
-		APIVersion: pgxman.DefaultBundleAPIVersion,
-		Extensions: []pgxman.BundleExtension{
+	pack := pgxman.Pack{
+		APIVersion: pgxman.DefaultPackAPIVersion,
+		Extensions: []pgxman.PackExtension{
 			{
 				Name:      ext.Name,
 				Path:      ext.Path,
@@ -106,27 +106,27 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		},
 	}
 
-	runnerDir := filepath.Join(c.Config.configDir, "runner", string(b.Postgres.Version))
+	runnerDir := filepath.Join(c.Config.configDir, "runner", string(pack.Postgres.Version))
 	if err := os.MkdirAll(runnerDir, 0755); err != nil {
 		return nil, err
 	}
 
 	runnerImage := c.Config.runnerImage
 	if runnerImage == "" {
-		runnerImage = fmt.Sprintf("%s/%s:%s", defaultRunnerImageBase, b.Postgres.Version, pgxman.ImageTag())
+		runnerImage = fmt.Sprintf("%s/%s:%s", defaultRunnerImageBase, pack.Postgres.Version, pgxman.ImageTag())
 	}
 
 	info := ContainerInfo{
 		RunnerImage:   runnerImage,
 		RunnerDir:     runnerDir,
-		ContainerName: fmt.Sprintf("pgxman_runner_%s", b.Postgres.Version),
-		Postgres:      b.Postgres,
+		ContainerName: fmt.Sprintf("pgxman_runner_%s", pack.Postgres.Version),
+		Postgres:      pack.Postgres,
 	}
 	if c.Config.debug {
-		info.BundleArgs = "--debug"
+		info.PackInstallArgs = "--debug"
 	}
 
-	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", b.Postgres.Version)
+	c.Logger.Debug("Exporting template files", "dir", runnerDir, "image", runnerImage, "pg_version", pack.Postgres.Version)
 	if err := tmpl.ExportFS(
 		runner.FS,
 		runnerTemplater{
@@ -139,11 +139,11 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 
 	localFilesDir := filepath.Join(runnerDir, "files")
 	c.Logger.Debug("Copying local files", "dir", localFilesDir)
-	if err := copyLocalFiles(b, localFilesDir); err != nil {
+	if err := copyLocalFiles(pack, localFilesDir); err != nil {
 		return nil, err
 	}
 
-	if err := mergeBundleFile(&b, runnerDir); err != nil {
+	if err := mergePackFile(&pack, runnerDir); err != nil {
 		return nil, err
 	}
 
@@ -200,12 +200,12 @@ func (c *Container) checkDocker(ctx context.Context) error {
 	return docker.CheckInstall(ctx)
 }
 
-func copyLocalFiles(f pgxman.Bundle, dstDir string) error {
+func copyLocalFiles(f pgxman.Pack, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}
 
-	var exts []pgxman.BundleExtension
+	var exts []pgxman.PackExtension
 	for _, ext := range f.Extensions {
 		if src := ext.Path; src != "" {
 			dst := filepath.Join(dstDir, filepath.Base(src))
@@ -225,29 +225,29 @@ func copyLocalFiles(f pgxman.Bundle, dstDir string) error {
 	return nil
 }
 
-func mergeBundleFile(new *pgxman.Bundle, dstDir string) error {
-	bundleFile := filepath.Join(dstDir, "pgxman.yaml")
+func mergePackFile(new *pgxman.Pack, dstDir string) error {
+	packFile := filepath.Join(dstDir, "pgxman.yaml")
 
-	b, err := os.ReadFile(bundleFile)
+	b, err := os.ReadFile(packFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return writeBundleFile(new, bundleFile)
+			return writePackFile(new, packFile)
 		} else {
 			return err
 		}
 	}
 
-	var existing pgxman.Bundle
+	var existing pgxman.Pack
 	if err := yaml.Unmarshal(b, &existing); err != nil {
 		return err
 	}
 
 	// new extensions overwrite existing extensions
-	extsMap := make(map[string]pgxman.BundleExtension)
+	extsMap := make(map[string]pgxman.PackExtension)
 	for _, ext := range append(existing.Extensions, new.Extensions...) {
 		extsMap[ext.Name] = ext
 	}
-	var result []pgxman.BundleExtension
+	var result []pgxman.PackExtension
 	for _, ext := range extsMap {
 		result = append(result, ext)
 	}
@@ -260,10 +260,10 @@ func mergeBundleFile(new *pgxman.Bundle, dstDir string) error {
 	new.Extensions = result
 	new.Postgres = existing.Postgres // always preserve existing postgres config
 
-	return writeBundleFile(new, bundleFile)
+	return writePackFile(new, packFile)
 }
 
-func writeBundleFile(f *pgxman.Bundle, dst string) error {
+func writePackFile(f *pgxman.Pack, dst string) error {
 	bb, err := yaml.Marshal(f)
 	if err != nil {
 		return err
@@ -277,11 +277,11 @@ func writeBundleFile(f *pgxman.Bundle, dst string) error {
 }
 
 type ContainerInfo struct {
-	RunnerImage   string
-	RunnerDir     string
-	ContainerName string
-	Postgres      pgxman.Postgres
-	BundleArgs    string
+	RunnerImage     string
+	RunnerDir       string
+	ContainerName   string
+	Postgres        pgxman.Postgres
+	PackInstallArgs string
 }
 
 type runnerTemplater struct {
