@@ -3,6 +3,7 @@ package pgxman
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/container"
+	"github.com/pgxman/pgxman/internal/docker"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
@@ -215,6 +217,13 @@ func installInContainer(ctx context.Context, c *container.Container, ext pgxman.
 	s.Start()
 	info, err := c.Install(ctx, ext)
 	if err != nil {
+		if errors.Is(err, docker.ErrDockerNotFound) {
+			return nil, fmt.Errorf("docker is not installed, visit https://docs.docker.com/engine/install for more info")
+		}
+		if errors.Is(err, docker.ErrDockerNotRunning) {
+			return nil, fmt.Errorf("docker daemon is not running, visit https://docs.docker.com/config/daemon/start for more info")
+		}
+
 		s.FinalMSG = fmt.Sprintf("[%s] %s\n", errorMark, ext)
 		return nil, fmt.Errorf("failed to install %s in a container, run with `--debug` to see the full error: %w", ext, err)
 	}
