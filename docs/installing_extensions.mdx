@@ -41,7 +41,7 @@ pgxman install pgvector=0.5.0@15 --sudo
 
 ## Batch Installation using a pgxman file
 
-You can also utilize a [pgxman bundle](spec/bundle) file to install or upgrade
+You can also utilize a [pgxman pack](spec/pack) file to install or upgrade
 multiple extensions at once:
 
 ```console
@@ -56,7 +56,7 @@ pgVersions:
   - "15"
 EOF
 
-$ pgxman bundle -f pgxman.yaml
+$ pgxman pack install -f pgxman.yaml
 ```
 
 ## Verification

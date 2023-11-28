@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - PGXMAN_BUNDLE_ARGS={{ .BundleArgs }}
+        - PGXMAN_PACK_INSTALL_ARGS={{ .PackInstallArgs }}
     ports:
       - {{ .Postgres.Port }}:5432
     environment:

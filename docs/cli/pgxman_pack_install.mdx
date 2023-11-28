@@ -1,0 +1,58 @@
+---
+title: pgxman pack install
+---
+
+Install PostgreSQL extensions from a pack file
+
+### Synopsis
+
+Install PostgreSQL extensions based on a specified pack file (e.g., pgxman.yaml).
+This ensures consistency across extensions by synchronizing them with the definitions provided in the pack file.
+
+```
+pgxman pack install [flags]
+```
+
+### Examples
+
+```
+  # Install extensions from the pgxman.yaml file in the current directory
+  pgxman pack install
+
+  # Suppress prompts for automatic installation or upgrade
+  pgxman pack install -y
+
+  # Specify a different location for the pgxman.yaml file
+  pgxman pack install -f /PATH_TO/pgxman.yaml
+
+  # Read the pgxman.yaml file from STDIN
+  cat <<EOF | pgxman pack install -f -
+    apiVersion: v1
+    extensions:
+      - name: "pgvector"
+        version: "0.5.0"
+      - path: "/local/path/to/extension"
+    postgres:
+      version: "14"
+  EOF
+  
+```
+
+### Options
+
+```
+  -f, --file string   The pack file to use. (default "/src/pgxman.yaml")
+  -h, --help          help for install
+  -y, --yes           Automatic yes to prompts and run install non-interactively.
+```
+
+### Options inherited from parent commands
+
+```
+      --debug   enable debug logging
+```
+
+### SEE ALSO
+
+* [pgxman pack](/cli/pgxman_pack)	 - Manage PostgreSQL extensions from a pack file
+

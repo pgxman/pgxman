@@ -10,25 +10,25 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func Test_mergeBundleFile(t *testing.T) {
+func Test_mergePackFile(t *testing.T) {
 	cases := []struct {
-		Name               string
-		ExistingBundleFile *pgxman.Bundle
-		NewBundleFile      *pgxman.Bundle
-		WantBundleFile     *pgxman.Bundle
+		Name             string
+		ExistingPackFile *pgxman.Pack
+		NewPackFile      *pgxman.Pack
+		WantPackFile     *pgxman.Pack
 	}{
 		{
-			Name: "no existing bundle file",
-			NewBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			Name: "no existing pack file",
+			NewPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			WantPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
@@ -38,24 +38,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "merge different extensions",
-			ExistingBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			ExistingPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			NewPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pg_ivm",
 						Version: "1.0.0",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			WantPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pg_ivm",
 						Version: "1.0.0",
@@ -69,24 +69,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "override existing extensions",
-			ExistingBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			ExistingPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.0",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			NewPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.1",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			WantPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "1.0.1",
@@ -96,24 +96,24 @@ func Test_mergeBundleFile(t *testing.T) {
 		},
 		{
 			Name: "merge extension with paths",
-			ExistingBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			ExistingPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name: "pgvector",
 						Path: "path1",
 					},
 				},
 			},
-			NewBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			NewPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "path2",
 					},
 				},
 			},
-			WantBundleFile: &pgxman.Bundle{
-				Extensions: []pgxman.BundleExtension{
+			WantPackFile: &pgxman.Pack{
+				Extensions: []pgxman.PackExtension{
 					{
 						Name:    "pgvector",
 						Version: "path2",
@@ -129,24 +129,24 @@ func Test_mergeBundleFile(t *testing.T) {
 			assert := assert.New(t)
 
 			dir := t.TempDir()
-			if c.ExistingBundleFile != nil {
-				b, err := yaml.Marshal(c.ExistingBundleFile)
+			if c.ExistingPackFile != nil {
+				b, err := yaml.Marshal(c.ExistingPackFile)
 				assert.NoError(err)
 
 				err = os.WriteFile(filepath.Join(dir, "pgxman.yaml"), b, 0644)
 				assert.NoError(err)
 			}
 
-			err := mergeBundleFile(c.NewBundleFile, dir)
+			err := mergePackFile(c.NewPackFile, dir)
 			assert.NoError(err)
 
 			b, err := os.ReadFile(filepath.Join(dir, "pgxman.yaml"))
 			assert.NoError(err)
 
-			var got pgxman.Bundle
+			var got pgxman.Pack
 			err = yaml.Unmarshal(b, &got)
 			assert.NoError(err)
-			assert.Equal(c.WantBundleFile, &got)
+			assert.Equal(c.WantPackFile, &got)
 		})
 	}
 }

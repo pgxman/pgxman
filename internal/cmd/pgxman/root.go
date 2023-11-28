@@ -32,7 +32,7 @@ func Command() *cobra.Command {
 	root.AddCommand(newBuildCmd())
 	root.AddCommand(newInstallCmd())
 	root.AddCommand(newUpgradeCmd())
-	root.AddCommand(newBundleCmd())
+	root.AddCommand(newPackCmd())
 	root.AddCommand(newPublishCmd())
 	root.AddCommand(newContainerCmd())
 	root.AddCommand(newDoctorCmd())

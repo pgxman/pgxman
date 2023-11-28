@@ -5,16 +5,16 @@ import (
 	"fmt"
 )
 
-const DefaultBundleAPIVersion = "v1"
+const DefaultPackAPIVersion = "v1"
 
-type Bundle struct {
-	APIVersion string            `json:"apiVersion"`
-	Extensions []BundleExtension `json:"extensions"`
-	Postgres   Postgres          `json:"postgres"`
+type Pack struct {
+	APIVersion string          `json:"apiVersion"`
+	Extensions []PackExtension `json:"extensions"`
+	Postgres   Postgres        `json:"postgres"`
 }
 
-func (b Bundle) Validate() error {
-	if b.APIVersion != DefaultBundleAPIVersion {
+func (b Pack) Validate() error {
+	if b.APIVersion != DefaultPackAPIVersion {
 		return fmt.Errorf("invalid api version: %s", b.APIVersion)
 	}
 
@@ -32,7 +32,7 @@ func (b Bundle) Validate() error {
 }
 
 type InstallExtension struct {
-	BundleExtension
+	PackExtension
 	PGVersion PGVersion
 }
 
@@ -45,7 +45,7 @@ func (e InstallExtension) String() string {
 }
 
 func (e InstallExtension) Validate() error {
-	if err := e.BundleExtension.Validate(); err != nil {
+	if err := e.PackExtension.Validate(); err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func (e InstallExtension) Validate() error {
 	return nil
 }
 
-type BundleExtension struct {
+type PackExtension struct {
 	Name      string   `json:"name,omitempty"`
 	Version   string   `json:"version,omitempty"`
 	Path      string   `json:"path,omitempty"`
@@ -64,7 +64,7 @@ type BundleExtension struct {
 	Overwrite bool     `json:"overwrite,omitempty"`
 }
 
-func (e BundleExtension) Validate() error {
+func (e PackExtension) Validate() error {
 	if e.Name == "" && e.Path == "" {
 		return fmt.Errorf("name or path is required")
 	}

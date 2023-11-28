@@ -19,13 +19,13 @@ func Test_parseInstallExtension(t *testing.T) {
 	cases := []struct {
 		Name   string
 		Arg    string
-		GotExt *pgxman.BundleExtension
+		GotExt *pgxman.PackExtension
 		Err    error
 	}{
 		{
 			Name: "valid with name & version",
 			Arg:  "pgvector=0.5.0",
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Name:    "pgvector",
 				Version: "0.5.0",
 			},
@@ -33,7 +33,7 @@ func Test_parseInstallExtension(t *testing.T) {
 		{
 			Name: "valid with sha as version",
 			Arg:  "parquet_s3_fdw=5298b7f0254923f52d15e554ec8a5fdc0474f059",
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Name:    "parquet_s3_fdw",
 				Version: "5298b7f0254923f52d15e554ec8a5fdc0474f059",
 			},
@@ -41,7 +41,7 @@ func Test_parseInstallExtension(t *testing.T) {
 		{
 			Name: "valid with empty version",
 			Arg:  "pgvector=",
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Name:    "pgvector",
 				Version: "",
 			},
@@ -49,7 +49,7 @@ func Test_parseInstallExtension(t *testing.T) {
 		{
 			Name: "valid with latest as version",
 			Arg:  "pgvector=latest",
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Name:    "pgvector",
 				Version: "latest",
 			},
@@ -57,7 +57,7 @@ func Test_parseInstallExtension(t *testing.T) {
 		{
 			Name: "valid with only name",
 			Arg:  "pgvector",
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Name:    "pgvector",
 				Version: "",
 			},
@@ -65,7 +65,7 @@ func Test_parseInstallExtension(t *testing.T) {
 		{
 			Name: "valid file path",
 			Arg:  debFile,
-			GotExt: &pgxman.BundleExtension{
+			GotExt: &pgxman.PackExtension{
 				Path: debFile,
 			},
 		},
