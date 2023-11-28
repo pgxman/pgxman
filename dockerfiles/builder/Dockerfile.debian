@@ -14,29 +14,33 @@ RUN set -eux; \
     ; \
     sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
     apt-get update; \
-    apt-get upgrade -y; \
+    echo "----- Remove old postgres -----"; \
+    apt remove -y '^postgres.*' '^libpq.*' '^clang.*' '^llvm.*' '^libclang.*' '^libllvm.*' ; \
+    echo "----- Install system dependencies -----"; \
+    apt-get install -y \
+    build-essential \
+    llvm-15-dev libclang-15-dev clang-15 \
+    gcc \
+    libssl-dev \
+    libz-dev \
+    make \
+    pkg-config \
+    strace \
+    zlib1g-dev; \
+    echo "----- Install extra dependencies -----"; \
     apt-get install -y --no-install-recommends \
     autoconf \
     binutils \
-    clang-14 \
     cmake \
     curl \
     debhelper \
     devscripts \
     dh-make \
-    gcc \
     git \
-    libclang-14-dev \
     libcurl4-openssl-dev \
-    libpq-dev \
-    libssl-dev \
-    libz-dev \
-    llvm-14-dev \
     locales \
     lsb-release \
-    make \
     ninja-build \
-    pkg-config \
     postgresql-all \
     postgresql-server-dev-all \
     python3.11 \
@@ -44,7 +48,6 @@ RUN set -eux; \
     python3.11-venv \
     sudo \
     wget \
-    zlib1g-dev \
     ; \
     apt-get clean
 
