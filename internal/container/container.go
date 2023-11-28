@@ -139,7 +139,7 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 
 	localFilesDir := filepath.Join(runnerDir, "files")
 	c.Logger.Debug("Copying local files", "dir", localFilesDir)
-	if err := copyLocalFiles(pack, localFilesDir); err != nil {
+	if err := copyLocalFiles(&pack, localFilesDir); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +200,7 @@ func (c *Container) checkDocker(ctx context.Context) error {
 	return docker.CheckInstall(ctx)
 }
 
-func copyLocalFiles(f pgxman.Pack, dstDir string) error {
+func copyLocalFiles(f *pgxman.Pack, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}
