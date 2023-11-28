@@ -2,12 +2,19 @@
 
 [![GitHub release](https://img.shields.io/github/release/pgxman/pgxman.svg)](https://github.com/pgxman/pgxman/releases)
 
-**pgxman is npm for Postgres extensions. pgxman simplifies the discovery and use of extensions so modern hackers can easily enhance the capabilities of their applications.**
+pgxman is npm for Postgres extensions. pgxman simplifies the discovery and use of extensions so modern hackers
+can easily enhance the capabilities of their applications.
 
-Instead of managing extension versions, build & run dependencies, operating system, platform architecture, pgxman automatically detects and streamlines extension operations (xOps) based on the local development environment. 
-With pgxman, we've streamlined the installation process to one simple step: run `> pgxman install [extension name]`. 
+Instead of managing extension versions, build & run dependencies, operating system, platform architecture, pgxman
+automatically detects and streamlines extension operations (xOps) based on the local development environment.
 
-pgxman integrates with the system package manager, ensuring the correct versions are installed without extra packages from any shared dependencies between extensions. pgxman’s automated build system creates [[APT](https://en.wikipedia.org/wiki/APT_(software))] packages for each Postgres version, platform, and OS supported by the extension. Extensions are built from a “buildkit” formula, written in YAML, and are contributed through GitHub.
+With pgxman, we've streamlined the installation process to one simple step: run `pgxman install [extension name]`.
+
+pgxman integrates with the system package manager, ensuring the correct versions are installed without extra packages
+from any shared dependencies between extensions. pgxman’s automated build system creates
+[APT](https://en.wikipedia.org/wiki/APT_(software)) packages for each Postgres version, platform, and OS supported
+by the extension. Extensions are built from a buildkit formula, written in YAML, and are contributed
+[through GitHub](https://github.com/pgxman/buildkit).
 
 ## More Documentation
 
