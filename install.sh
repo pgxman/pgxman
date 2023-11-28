@@ -9,7 +9,7 @@
 set -u
 set -o noglob
 
-PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/release/releases/latest/download}"
+PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/pgxman/releases/latest/download}"
 
 main() {
     downloader --check
