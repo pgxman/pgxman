@@ -52,14 +52,14 @@ You can specify multiple extensions, specific extension versions, and a PG versi
 pgxman install --pg 15 pgvector=0.5.1 pg_ivm=1.7.0
 ```
 
-You can also utilize a [pgxman bundle](https://docs.pgxman.com/spec/bundle) file to install multiple extensions at once:
+You can also utilize a [pack file](https://docs.pgxman.com/spec/pack) to install multiple extensions at once:
 
 ```sh
-pgxman bundle -f pgxman.yaml
+pgxman pack install # installs from pgxman.yaml from current directory
+pgxman pack install -f /path/to/pgxman.yaml
 ```
 
 Once installed, restart Postgres, then use `CREATE EXTENSION`.
-
 
 ### `init`, `build`
 

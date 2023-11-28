@@ -69,7 +69,7 @@
     {
       "group": "Specifications",
       "pages": [
-        "spec/bundle",
+        "spec/pack",
         "spec/buildkit"
       ]
     },
@@ -78,7 +78,7 @@
       "pages": [
         "cli/pgxman",
         "cli/pgxman_build",
-        "cli/pgxman_bundle",
+        "cli/pgxman_pack",
         "cli/pgxman_container_install",
         "cli/pgxman_container_teardown",
         "cli/pgxman_container_upgrade",

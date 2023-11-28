@@ -78,8 +78,8 @@ pgxman c teardown pgxman_runner_15
 
 ## How it works
 
-* pgxman generates a Dockerfile, a docker-compose file, and a pgxman bundle file. The configuration is stored in
+* pgxman generates a Dockerfile, a docker-compose file, and a pgxman pack file. The configuration is stored in
 `USER_CONFIG_DIR/pgxman/runner/PG_VERSION`.
   * On Linux, `USER_CONFIG_DIR` is `~/.config/pgxman`
   * On MacOS, `USER_CONFIG_DIR` is `~/Library/Application Support/pgxman`
-* `pgxman c install` updates the pgxman bundle file, rebuilds the image, and restarts the container.
+* `pgxman c install` updates the pgxman pack file, rebuilds the image, and restarts the container.

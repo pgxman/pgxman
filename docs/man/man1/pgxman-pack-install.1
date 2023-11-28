@@ -3,28 +3,28 @@
 
 .SH NAME
 .PP
-pgxman-bundle - Manage PostgreSQL extensions from a bundle file
+pgxman-pack-install - Install PostgreSQL extensions from a pack file
 
 
 .SH SYNOPSIS
 .PP
-\fBpgxman bundle [flags]\fP
+\fBpgxman pack install [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-Install or upgrade PostgreSQL extensions based on a specified bundle file (e.g., pgxman.yaml).
-This ensures consistency across extensions by synchronizing them with the definitions provided in the bundle file.
+Install PostgreSQL extensions based on a specified pack file (e.g., pgxman.yaml).
+This ensures consistency across extensions by synchronizing them with the definitions provided in the pack file.
 
 
 .SH OPTIONS
 .PP
-\fB-f\fP, \fB--file\fP=""
-	The pgxman.yaml file to use. Defaults to pgxman.yaml in the current directory.
+\fB-f\fP, \fB--file\fP="/src/pgxman.yaml"
+	The pack file to use.
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for bundle
+	help for install
 
 .PP
 \fB-y\fP, \fB--yes\fP[=false]
@@ -39,17 +39,17 @@ This ensures consistency across extensions by synchronizing them with the defini
 
 .SH EXAMPLE
 .EX
-  # Install or upgrade extensions from the pgxman.yaml file in the current directory
-  pgxman bundle
+  # Install extensions from the pgxman.yaml file in the current directory
+  pgxman pack install
 
   # Suppress prompts for automatic installation or upgrade
-  pgxman bundle -y
+  pgxman pack install -y
 
   # Specify a different location for the pgxman.yaml file
-  pgxman bundle -f /PATH_TO/pgxman.yaml
+  pgxman pack install -f /PATH_TO/pgxman.yaml
 
   # Read the pgxman.yaml file from STDIN
-  cat <<EOF | pgxman bundle -f -
+  cat <<EOF | pgxman pack install -f -
     apiVersion: v1
     extensions:
       - name: "pgvector"
@@ -65,4 +65,4 @@ This ensures consistency across extensions by synchronizing them with the defini
 
 .SH SEE ALSO
 .PP
-\fBpgxman(1)\fP
+\fBpgxman-pack(1)\fP
