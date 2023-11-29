@@ -29,7 +29,7 @@ release:
   name_template: "pgxman {{.Version}}"
   github:
     owner: pgxman
-    name: release
+    name: pgxman
 changelog:
   skip: true
 nfpms: #build:linux
