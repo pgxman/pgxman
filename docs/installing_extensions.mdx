@@ -59,22 +59,6 @@ EOF
 $ pgxman pack install -f pgxman.yaml
 ```
 
-## Verification
+## Next steps
 
-<Warning>Postgres needs to be restarted to see newly installed extensions.</Warning>
-
-To verify the successful installation of extensions, execute the following
-command on your PostgreSQL instance:
-
-```psql
-postgres=# \dx
-                                            List of installed extensions
-        Name        | Version |   Schema   |                              Description
---------------------+---------+------------+----------------------------------------------------------------
- vector             | 0.5.0   |   public   | vector data type and ivfflat access method
- ...
-(9 rows)
-```
-
-To install the extension into a database, use [CREATE
-EXTENSION](https://www.postgresql.org/docs/current/sql-createextension.html).
+Now you're ready to start [using the extensions](using_extensions)!

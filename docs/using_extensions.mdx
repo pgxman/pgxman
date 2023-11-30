@@ -1,0 +1,38 @@
+---
+title: "Using extensions"
+sidebarTitle: "Using extensions"
+---
+
+After installation, in order to use an extension, you typically need to do two things:
+
+* Restart Postgres if on Linux
+* Use `CREATE EXTENSION` in the Postgres database of your choice
+
+On MacOS, pgxman's container support will automatically restart the container
+as needed.
+
+## Restart Postgres (Linux only)
+
+Postgres cannot detect newly installed extensions until it is restarted. The common way
+to restart Postgres is:
+
+```sh
+sudo service postgresql restart
+```
+
+## Load into a database
+
+First, connect to the database you wish to use, using `psql` or a Postgres client of your
+choice.
+
+Then, most extensions can be loaded using:
+
+```sql
+CREATE EXTENSION extension_name;
+```
+
+<Note>The name of the extension may be different than the pgxman package name. To view the
+list of extensions you have installed, use the query `SELECT * FROM pg_available_extensions;`</Note>
+
+Some extensions use `LOAD` or require other configuration. Check the documentation on
+[pgxman.com](https://pgxman.com) for more information.

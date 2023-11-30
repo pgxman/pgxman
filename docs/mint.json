@@ -55,6 +55,7 @@
         "installing_pgxman",
         "installing_postgres",
         "installing_extensions",
+        "using_extensions",
         "container",
         "uninstalling_pgxman"
       ]
