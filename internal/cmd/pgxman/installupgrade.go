@@ -10,9 +10,7 @@ import (
 	"slices"
 	"strings"
 	"text/template"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/errorsx"
@@ -315,8 +313,4 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	}
 
 	return nil
-}
-
-func newSpinner() *spinner.Spinner {
-	return spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/plugin"
+	"github.com/pgxman/pgxman/internal/tui/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -114,8 +115,8 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 }
 
 func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.InstallExtension, upgrade bool) error {
-	s := newSpinner()
-	s.Suffix = fmt.Sprintf(" Installing %s...\n", ext)
+	s := spinner.New(flagDebug)
+	s.WithIndicator(fmt.Sprintf("Installing %s...\n", ext))
 	defer s.Stop()
 
 	f := i.Install
@@ -138,11 +139,11 @@ func installOrUpgrade(ctx context.Context, i pgxman.Installer, ext pgxman.Instal
 	s.Start()
 	if err := f(ctx, ext); err != nil {
 		err = handleErr(err)
-		s.FinalMSG = fmt.Sprintf("[%s] %s: %s\n", errorMark, ext, err)
+		s.WithDone(fmt.Sprintf("[%s] %s: %s\n", errorMark, ext, err))
 		return err
 	}
 
-	s.FinalMSG = fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name)
+	s.WithDone(fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name))
 
 	return nil
 }
