@@ -13,7 +13,7 @@ func New(disable bool) Spinner {
 	}
 
 	return &spinnerImpl{
-		Spinner: spinner.New(spinner.CharSets[9], 100*time.Millisecond),
+		Spinner: spinner.New(spinner.CharSets[24], 100*time.Millisecond),
 	}
 }
 
