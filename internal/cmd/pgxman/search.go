@@ -6,7 +6,7 @@ import (
 
 	"github.com/cli/go-gh/v2/pkg/term"
 	"github.com/pgxman/pgxman/internal/buildkit"
-	"github.com/pgxman/pgxman/internal/tableprinter"
+	"github.com/pgxman/pgxman/internal/tui/tableprinter"
 	"github.com/spf13/cobra"
 )
 

@@ -14,6 +14,7 @@ import (
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/docker"
 	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/tui/spinner"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -197,8 +198,8 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		s := newSpinner()
-		s.Suffix = fmt.Sprintf(" Tearing down container for PostgreSQL %s...\n", pgVer)
+		s := spinner.New(flagDebug)
+		s.WithIndicator(fmt.Sprintf("Tearing down container for PostgreSQL %s...\n", pgVer))
 		s.Start()
 		if err := c.Teardown(cmd.Context(), pgVer); err != nil {
 			return err
@@ -210,8 +211,8 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 }
 
 func installInContainer(ctx context.Context, c *container.Container, ext pgxman.InstallExtension) (*container.ContainerInfo, error) {
-	s := newSpinner()
-	s.Suffix = fmt.Sprintf(" Installing %s...\n", ext)
+	s := spinner.New(flagDebug)
+	s.WithIndicator(fmt.Sprintf("Installing %s...\n", ext))
 	defer s.Stop()
 
 	s.Start()
@@ -224,11 +225,11 @@ func installInContainer(ctx context.Context, c *container.Container, ext pgxman.
 			return nil, fmt.Errorf("docker daemon is not running, visit https://docs.docker.com/config/daemon/start for more info")
 		}
 
-		s.FinalMSG = fmt.Sprintf("[%s] %s\n", errorMark, ext)
+		s.WithDone(fmt.Sprintf("[%s] %s\n", errorMark, ext))
 		return nil, fmt.Errorf("failed to install %s in a container, run with `--debug` to see the full error: %w", ext, err)
 	}
 
-	s.FinalMSG = fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name)
+	s.WithDone(fmt.Sprintf("[%s] %s: https://pgx.sh/%s\n", successMark, ext, ext.Name))
 
 	return info, nil
 }
