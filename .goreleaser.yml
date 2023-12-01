@@ -45,7 +45,15 @@ release:
     docker pull ghcr.io/pgxman/runner/postgres/13:{{ .Tag }}
     ````
 changelog:
-  skip: true
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^script:"
+      - "^go.mod:"
+      - "^.github:"
+      - Merge branch
 nfpms: #build:linux
   - license: Apache-2.0
     maintainer: Owen Ou <o@hydra.so>
