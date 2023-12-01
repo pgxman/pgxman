@@ -217,10 +217,13 @@ func installInContainer(ctx context.Context, c *container.Container, ext pgxman.
 	s.Start()
 	info, err := c.Install(ctx, ext)
 	if err != nil {
-		if errors.Is(err, docker.ErrDockerNotFound) {
+		if errors.Is(err, docker.ErrClientNotFound) {
 			return nil, fmt.Errorf("docker is not installed, visit https://docs.docker.com/engine/install for more info")
 		}
-		if errors.Is(err, docker.ErrDockerNotRunning) {
+		if errors.Is(err, docker.ErrMinVersion) {
+			return nil, fmt.Errorf("docker minimum version is %d, visit https://docs.docker.com/engine/install for more info", docker.MinMajorVersion)
+		}
+		if errors.Is(err, docker.ErrDaemonNotRunning) {
 			return nil, fmt.Errorf("docker daemon is not running, visit https://docs.docker.com/config/daemon/start for more info")
 		}
 
