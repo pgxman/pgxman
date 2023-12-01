@@ -126,6 +126,7 @@ install_pgxman_darwin() {
 
     if brew ls pgxman >/dev/null 2>&1; then
         echo "Upgrading pgxman for macOS..."
+        ensure brew update
         ensure brew upgrade pgxman/tap/pgxman
     else
         echo "Installing pgxman for macOS..."
