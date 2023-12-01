@@ -95,76 +95,85 @@ func (v *dockerValidator) Validate(ctx context.Context) []ValidationResult {
 
 	dockerErr := docker.CheckInstall(ctx)
 	if dockerErr != nil {
-		if errors.Is(dockerErr, docker.ErrDockerNotRunning) || errors.Is(dockerErr, docker.ErrDockerNotFound) {
-			if errors.Is(dockerErr, docker.ErrDockerNotFound) {
-				var (
-					lines      []string
-					resultType ValidationResultType
-				)
-				if runtime.GOOS == "linux" {
-					lines = []string{
-						"To use the `pgxman container` commands, you'll need to install Docker.",
-						"Visit https://docs.docker.com/engine/install for more info.",
-					}
-					resultType = ValidationWarning
-				} else if runtime.GOOS == "darwin" {
-					lines = []string{
-						"pgxman emulates the production experience on macOS.",
-						"To use the `pgxman install` & `pgxman container` commands, you'll need to install Docker.",
-						"Visit https://docs.docker.com/engine/install for more info.",
-					}
-					resultType = ValiationError
-				} else {
-					lines = []string{
-						"Visit https://docs.docker.com/engine/install for more info.",
-					}
-					resultType = ValiationError
-					category = ValidationCategoryRequired
+		if errors.Is(dockerErr, docker.ErrClientNotFound) {
+			var (
+				lines      []string
+				resultType ValidationResultType
+			)
+			if runtime.GOOS == "linux" {
+				lines = []string{
+					"To use the `pgxman container` commands, you'll need to install Docker.",
+					"Visit https://docs.docker.com/engine/install for more info.",
 				}
-
-				results = append(results, ValidationResult{
-					Type:     resultType,
-					Category: category,
-					Message:  "Docker is not installed\n" + addPrefixedSpaces(lines, 4),
-				})
+				resultType = ValidationWarning
+			} else if runtime.GOOS == "darwin" {
+				lines = []string{
+					"pgxman emulates the production experience on macOS.",
+					"To use the `pgxman install` & `pgxman container` commands, you'll need to install Docker.",
+					"Visit https://docs.docker.com/engine/install for more info.",
+				}
+				resultType = ValiationError
 			} else {
-				results = append(results, dockerIsInstalled)
+				lines = []string{
+					"Visit https://docs.docker.com/engine/install for more info.",
+				}
+				resultType = ValiationError
+				category = ValidationCategoryRequired
 			}
 
-			if errors.Is(dockerErr, docker.ErrDockerNotRunning) {
-				var (
-					lines      []string
-					resultType ValidationResultType
-				)
-				if runtime.GOOS == "linux" {
-					lines = []string{
-						"To use the `pgxman container` commands, you'll need to start the Docker daemon.",
-						"Visit https://docs.docker.com/config/daemon/start for more info.",
-					}
-					resultType = ValidationWarning
-				} else if runtime.GOOS == "darwin" {
-					lines = []string{
-						"pgxman emulates the production experience on macOS.",
-						"To use the `pgxman install` & `pgxman container` commands, you'll need to start the Docker daemon.",
-						"Visit https://docs.docker.com/config/daemon/start for more info.",
-					}
-					resultType = ValiationError
-				} else {
-					lines = []string{
-						"Visit https://docs.docker.com/config/daemon/start for more info.",
-					}
-					resultType = ValiationError
-				}
-
-				results = append(results, ValidationResult{
-					Type:     resultType,
-					Category: category,
-					Message:  "Docker daemon is not running\n" + addPrefixedSpaces(lines, 4),
-				})
-			} else {
-				results = append(results, dockerIsRunning)
+			results = append(results, ValidationResult{
+				Type:     resultType,
+				Category: category,
+				Message:  "Docker is not installed\n" + addPrefixedSpaces(lines, 4),
+			})
+		} else if errors.Is(dockerErr, docker.ErrMinVersion) {
+			lines := []string{
+				"Visit https://docs.docker.com/engine/install to install the latest version.",
 			}
+			results = append(results, ValidationResult{
+				Type:     ValiationError,
+				Category: category,
+				Message:  fmt.Sprintf("Docker is installed but minimum version must be %d.\n", docker.MinMajorVersion) + addPrefixedSpaces(lines, 4),
+			})
 		} else {
+			results = append(results, dockerIsInstalled)
+		}
+
+		if errors.Is(dockerErr, docker.ErrDaemonNotRunning) {
+			var (
+				lines      []string
+				resultType ValidationResultType
+			)
+			if runtime.GOOS == "linux" {
+				lines = []string{
+					"To use the `pgxman container` commands, you'll need to start the Docker daemon.",
+					"Visit https://docs.docker.com/config/daemon/start for more info.",
+				}
+				resultType = ValidationWarning
+			} else if runtime.GOOS == "darwin" {
+				lines = []string{
+					"pgxman emulates the production experience on macOS.",
+					"To use the `pgxman install` & `pgxman container` commands, you'll need to start the Docker daemon.",
+					"Visit https://docs.docker.com/config/daemon/start for more info.",
+				}
+				resultType = ValiationError
+			} else {
+				lines = []string{
+					"Visit https://docs.docker.com/config/daemon/start for more info.",
+				}
+				resultType = ValiationError
+			}
+
+			results = append(results, ValidationResult{
+				Type:     resultType,
+				Category: category,
+				Message:  "Docker daemon is not running\n" + addPrefixedSpaces(lines, 4),
+			})
+		} else {
+			results = append(results, dockerIsRunning)
+		}
+
+		if len(results) == 0 {
 			results = append(results, ValidationResult{
 				Type:     ValiationError,
 				Category: category,
