@@ -284,9 +284,9 @@ func buildSHA(ext Extension) string {
 	return fmt.Sprintf("%x", sha1.Sum(extb))
 }
 
-func dockerDebugImage(bt ExtensionBuilderType, ext Extension) string {
+func dockerDebugImage(p Platform, ext Extension) string {
 	var (
-		imagePath = strings.ReplaceAll(string(bt), ":", "/")
+		imagePath = strings.ReplaceAll(string(p), "_", "/")
 		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
 		tag = strings.ReplaceAll(ext.Version, "+", "-")
 	)
@@ -303,8 +303,8 @@ func dockerBakeTargets(ext Extension) []string {
 	return result
 }
 
-func dockerBakeTargetFromBuilderID(bt ExtensionBuilderType) string {
-	return strings.ReplaceAll(string(bt), ":", "-")
+func dockerBakeTargetFromBuilderID(p Platform) string {
+	return strings.ReplaceAll(string(p), "_", "-")
 }
 
 type dockerFileExtension struct {
@@ -313,7 +313,7 @@ type dockerFileExtension struct {
 
 func (e dockerFileExtension) ExportDebianBookwormArtifacts() bool {
 	if builders := e.Builders; builders != nil {
-		return builders.HasBuilder(ExtensionBuilderDebianBookworm)
+		return builders.HasBuilder(PlatformDebianBookworm)
 	}
 
 	return false
@@ -321,7 +321,7 @@ func (e dockerFileExtension) ExportDebianBookwormArtifacts() bool {
 
 func (e dockerFileExtension) ExportUbuntuJammyArtifacts() bool {
 	if builders := e.Builders; builders != nil {
-		return builders.HasBuilder(ExtensionBuilderUbuntuJammy)
+		return builders.HasBuilder(PlatformUbuntuJammy)
 	}
 
 	return false

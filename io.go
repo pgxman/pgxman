@@ -93,11 +93,11 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	// Remove default builders that aren't declared
 	// so that mergo only merges those that are declared
 	if builders := ext.Builders; builders != nil {
-		if !builders.HasBuilder(ExtensionBuilderDebianBookworm) {
+		if !builders.HasBuilder(PlatformDebianBookworm) {
 			defExt.Builders.DebianBookworm = nil
 		}
 
-		if !builders.HasBuilder(ExtensionBuilderUbuntuJammy) {
+		if !builders.HasBuilder(PlatformUbuntuJammy) {
 			defExt.Builders.UbuntuJammy = nil
 		}
 	}

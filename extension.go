@@ -23,19 +23,18 @@ func NewDefaultExtension() Extension {
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
 		Arch:       []Arch{Arch(runtime.GOARCH)},
-		Platform:   SupprtedPlatforms,
 		Formats:    SupportedFormats,
 		Builders: &ExtensionBuilders{
 			DebianBookworm: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{
-					Type:  ExtensionBuilderDebianBookworm,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderDebianBookworm], ImageTag()),
+					Type:  PlatformDebianBookworm,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformDebianBookworm], ImageTag()),
 				},
 			},
 			UbuntuJammy: &AptExtensionBuilder{
 				ExtensionBuilder: ExtensionBuilder{
-					Type:  ExtensionBuilderUbuntuJammy,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[ExtensionBuilderUbuntuJammy], ImageTag()),
+					Type:  PlatformUbuntuJammy,
+					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformUbuntuJammy], ImageTag()),
 				},
 			},
 		},
@@ -56,7 +55,6 @@ type Extension struct {
 	// optional
 	Builders          *ExtensionBuilders `json:"builders,omitempty"`
 	Arch              []Arch             `json:"arch,omitempty"`
-	Platform          []Platform         `json:"platform,omitempty"`
 	Formats           []Format           `json:"formats,omitempty"`
 	Description       string             `json:"description,omitempty"`
 	License           string             `json:"license,omitempty"`
@@ -142,12 +140,6 @@ func (ext Extension) Validate() error {
 		}
 	}
 
-	for _, p := range ext.Platform {
-		if !slices.Contains(SupprtedPlatforms, p) {
-			return fmt.Errorf("unsupported platform: %s", p)
-		}
-	}
-
 	builders := ext.Builders.Available()
 	if len(builders) == 0 {
 		return fmt.Errorf("at least one extension builder is required")
@@ -227,16 +219,6 @@ var (
 	SupportedFormats = []Format{FormatDeb}
 )
 
-type Platform string
-
-const (
-	PlatformLinux Platform = "linux"
-)
-
-var (
-	SupprtedPlatforms = []Platform{PlatformLinux}
-)
-
 type PGVersion string
 
 const (
@@ -311,33 +293,24 @@ func (s BuildScript) Validate() error {
 }
 
 var (
-	extensionBuilderImages = map[ExtensionBuilderType]string{
-		ExtensionBuilderDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
-		ExtensionBuilderUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
+	extensionBuilderImages = map[Platform]string{
+		PlatformDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
+		PlatformUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
 	}
 )
 
-type ExtensionBuilderType string
-
-const (
-	ExtensionBuilderUnsupported    ExtensionBuilderType = "unsupported"
-	ExtensionBuilderDebianBookworm ExtensionBuilderType = "debian:bookworm"
-	ExtensionBuilderUbuntuJammy    ExtensionBuilderType = "ubuntu:jammy"
-	ExtensionBuilderDarwin         ExtensionBuilderType = "darwin"
-)
-
-type ErrUnsupportedExtensionBuilder struct {
+type ErrUnsupportedPlatform struct {
 	osVendor  string
 	osVersion string
 }
 
-func (e *ErrUnsupportedExtensionBuilder) Error() string {
+func (e *ErrUnsupportedPlatform) Error() string {
 	builder := e.osVendor
 	if e.osVersion != "" {
 		builder += ":" + e.osVersion
 	}
 
-	return fmt.Sprintf("Unsupported builder: %s", builder)
+	return fmt.Sprintf("Unsupported platform: %s", builder)
 }
 
 type ExtensionBuilders struct {
@@ -345,11 +318,11 @@ type ExtensionBuilders struct {
 	UbuntuJammy    *AptExtensionBuilder `json:"ubuntu:jammy,omitempty"`
 }
 
-func (ebs ExtensionBuilders) HasBuilder(bt ExtensionBuilderType) bool {
-	switch bt {
-	case ExtensionBuilderDebianBookworm:
+func (ebs ExtensionBuilders) HasBuilder(p Platform) bool {
+	switch p {
+	case PlatformDebianBookworm:
 		return ebs.DebianBookworm != nil
-	case ExtensionBuilderUbuntuJammy:
+	case PlatformUbuntuJammy:
 		return ebs.UbuntuJammy != nil
 	}
 
@@ -361,10 +334,10 @@ func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
 	var result []AptExtensionBuilder
 
 	if builder := ebs.DebianBookworm; builder != nil {
-		result = append(result, ebs.newBuilder(ExtensionBuilderDebianBookworm, builder))
+		result = append(result, ebs.newBuilder(PlatformDebianBookworm, builder))
 	}
 	if builder := ebs.UbuntuJammy; builder != nil {
-		result = append(result, ebs.newBuilder(ExtensionBuilderUbuntuJammy, builder))
+		result = append(result, ebs.newBuilder(PlatformUbuntuJammy, builder))
 	}
 
 	return result
@@ -373,31 +346,33 @@ func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
 // Current returns the extension builder for the current os.
 // It panics if no extension builder is available.
 func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
-	bt, err := DetectExtensionBuilder()
+	p, err := DetectPlatform()
 	if err != nil {
 		panic(err.Error())
 	}
 
 	var builder *AptExtensionBuilder
-	switch bt {
-	case ExtensionBuilderDebianBookworm:
+	switch p {
+	case PlatformDebianBookworm:
 		builder = ebs.DebianBookworm
-	case ExtensionBuilderUbuntuJammy:
+	case PlatformUbuntuJammy:
 		builder = ebs.UbuntuJammy
+	default:
+		panic("unsupported platform: " + p)
 	}
 
-	return ebs.newBuilder(bt, builder)
+	return ebs.newBuilder(p, builder)
 }
 
-func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *AptExtensionBuilder) AptExtensionBuilder {
+func (ebs ExtensionBuilders) newBuilder(p Platform, builder *AptExtensionBuilder) AptExtensionBuilder {
 	image := builder.Image
 	if image == "" {
-		image = extensionBuilderImages[os]
+		image = extensionBuilderImages[p]
 	}
 
 	return AptExtensionBuilder{
 		ExtensionBuilder: ExtensionBuilder{
-			Type:              os,
+			Type:              p,
 			Image:             image,
 			BuildDependencies: builder.BuildDependencies,
 			RunDependencies:   builder.RunDependencies,
@@ -407,10 +382,10 @@ func (ebs ExtensionBuilders) newBuilder(os ExtensionBuilderType, builder *AptExt
 }
 
 type ExtensionBuilder struct {
-	Type              ExtensionBuilderType `json:"-"`
-	Image             string               `json:"image,omitempty"`
-	BuildDependencies []string             `json:"buildDependencies,omitempty"`
-	RunDependencies   []string             `json:"runDependencies,omitempty"`
+	Type              Platform `json:"-"`
+	Image             string   `json:"image,omitempty"`
+	BuildDependencies []string `json:"buildDependencies,omitempty"`
+	RunDependencies   []string `json:"runDependencies,omitempty"`
 }
 
 type AptExtensionBuilder struct {
@@ -544,7 +519,16 @@ const (
 	AptRepositorySignedKeyFormatGpg AptRepositorySignedKeyFormat = "gpg"
 )
 
-func DetectExtensionBuilder() (ExtensionBuilderType, error) {
+type Platform string
+
+const (
+	PlatformUnsupported    Platform = "unsupported"
+	PlatformDebianBookworm Platform = "debian_bookworm"
+	PlatformUbuntuJammy    Platform = "ubuntu_jammy"
+	PlatformDarwin         Platform = "darwin"
+)
+
+func DetectPlatform() (Platform, error) {
 	info := osx.Sysinfo()
 
 	var (
@@ -557,18 +541,18 @@ func DetectExtensionBuilder() (ExtensionBuilderType, error) {
 	}
 
 	if vendor == "debian" && version == "12" {
-		return ExtensionBuilderDebianBookworm, nil
+		return PlatformDebianBookworm, nil
 	}
 
 	if vendor == "ubuntu" && version == "22.04" {
-		return ExtensionBuilderUbuntuJammy, nil
+		return PlatformUbuntuJammy, nil
 	}
 
 	if vendor == "darwin" {
-		return ExtensionBuilderDarwin, nil
+		return PlatformDarwin, nil
 	}
 
-	return ExtensionBuilderUnsupported, &ErrUnsupportedExtensionBuilder{osVendor: vendor, osVersion: version}
+	return PlatformUnsupported, &ErrUnsupportedPlatform{osVendor: vendor, osVersion: version}
 }
 
 type fileExtensionSource struct {

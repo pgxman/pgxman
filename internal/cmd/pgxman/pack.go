@@ -92,7 +92,11 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	exts, err := LockExtensions(installExts(*b), log.NewTextLogger())
+	locker, err := NewExtensionLocker(log.NewTextLogger())
+	if err != nil {
+		return err
+	}
+	exts, err := locker.Lock(cmd.Context(), installExts(*b))
 	if err != nil {
 		return err
 	}

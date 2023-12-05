@@ -381,7 +381,7 @@ func writeFile(path string, content []byte) error {
 }
 
 func coreAptRepos() ([]pgxman.AptRepository, error) {
-	bt, err := pgxman.DetectExtensionBuilder()
+	p, err := pgxman.DetectPlatform()
 	if err != nil {
 		return nil, fmt.Errorf("detect platform: %s", err)
 	}
@@ -391,11 +391,11 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 		codename string
 	)
 
-	switch bt {
-	case pgxman.ExtensionBuilderDebianBookworm:
+	switch p {
+	case pgxman.PlatformDebianBookworm:
 		prefix = "debian"
 		codename = "bookworm"
-	case pgxman.ExtensionBuilderUbuntuJammy:
+	case pgxman.PlatformUbuntuJammy:
 		prefix = "ubuntu"
 		codename = "jammy"
 	default:
