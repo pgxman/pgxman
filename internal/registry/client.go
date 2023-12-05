@@ -51,3 +51,26 @@ func (c *Client) FindExtension(ctx context.Context, args []string) ([]oapi.Simpl
 
 	return resp.JSON200.Extensions, nil
 }
+
+func (c *Client) PublishExtension(ctx context.Context, ext oapi.PublishExtension) error {
+	resp, err := c.PublishExtensionWithResponse(
+		ctx,
+		ext,
+	)
+	if err != nil {
+		return err
+	}
+
+	var errMsg string
+	if resp.JSON400 != nil {
+		errMsg = resp.JSON400.Message
+	}
+	if resp.JSON500 != nil {
+		errMsg = resp.JSON500.Message
+	}
+	if errMsg != "" {
+		return fmt.Errorf("error publishing %s: %s", ext.Name, errMsg)
+	}
+
+	return nil
+}
