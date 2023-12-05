@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	flagDebug bool
+	flagDebug       bool
+	flagRegistryURL string
 )
 
 func Command() *cobra.Command {
@@ -38,6 +39,7 @@ func Command() *cobra.Command {
 	root.AddCommand(newDoctorCmd())
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
+	root.PersistentFlags().StringVar(&flagRegistryURL, "registry", "https://registry.pgxman.com/v1", "registry URL")
 
 	return root
 }

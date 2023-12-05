@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	flagPublishRegistryURL string
-	flagPublishLatest      bool
+	flagPublishLatest bool
 )
 
 func newPublishCmd() *cobra.Command {
@@ -27,7 +26,6 @@ func newPublishCmd() *cobra.Command {
 		Hidden: true,
 	}
 
-	cmd.PersistentFlags().StringVar(&flagPublishRegistryURL, "url", "https://registry.pgxman.com/v1", "Registry URL")
 	cmd.PersistentFlags().BoolVar(&flagPublishLatest, "latest", false, "Make the published version the latest version")
 
 	return cmd
@@ -37,7 +35,7 @@ func runPublish(c *cobra.Command, args []string) error {
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
-	client, err := oapi.NewClientWithResponses(flagPublishRegistryURL, oapi.WithHTTPClient(httpClient))
+	client, err := oapi.NewClientWithResponses(flagRegistryURL, oapi.WithHTTPClient(httpClient))
 	if err != nil {
 		return err
 	}
