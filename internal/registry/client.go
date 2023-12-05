@@ -2,17 +2,37 @@ package registry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/oapi"
 )
 
 const (
 	defaultHTTPTimeout = 10 * time.Second
 )
+
+var (
+	ErrExtensionNotFound = errors.New("extension not found")
+)
+
+type Extension struct {
+	oapi.Extension
+}
+
+func (e *Extension) GetPlatform(p pgxman.Platform) (*oapi.Platform, error) {
+	for _, platform := range e.Platforms {
+		if string(platform.Os) == string(p) {
+			return &platform, nil
+		}
+	}
+
+	return nil, fmt.Errorf("platform %q not found", p)
+}
 
 func NewClient(baseURL string) (*Client, error) {
 	c, err := oapi.NewClientWithResponses(
@@ -34,6 +54,30 @@ func NewClient(baseURL string) (*Client, error) {
 
 type Client struct {
 	oapi.ClientWithResponsesInterface
+}
+
+func (c *Client) GetExtension(ctx context.Context, name string) (*Extension, error) {
+	resp, err := c.ClientWithResponsesInterface.FindExtensionWithResponse(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.JSON404 != nil {
+		return nil, ErrExtensionNotFound
+	}
+
+	var errMsg string
+	if resp.JSON400 != nil {
+		errMsg = resp.JSON400.Message
+	}
+	if resp.JSON500 != nil {
+		errMsg = resp.JSON500.Message
+	}
+	if errMsg != "" {
+		return nil, fmt.Errorf("error getting %s: %s", name, errMsg)
+	}
+
+	return &Extension{Extension: *resp.JSON200}, nil
 }
 
 func (c *Client) FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error) {

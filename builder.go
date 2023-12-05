@@ -286,7 +286,7 @@ func buildSHA(ext Extension) string {
 
 func dockerDebugImage(p Platform, ext Extension) string {
 	var (
-		imagePath = strings.ReplaceAll(string(p), ":", "/")
+		imagePath = strings.ReplaceAll(string(p), "_", "/")
 		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
 		tag = strings.ReplaceAll(ext.Version, "+", "-")
 	)
@@ -304,7 +304,7 @@ func dockerBakeTargets(ext Extension) []string {
 }
 
 func dockerBakeTargetFromBuilderID(p Platform) string {
-	return strings.ReplaceAll(string(p), ":", "-")
+	return strings.ReplaceAll(string(p), "_", "-")
 }
 
 type dockerFileExtension struct {

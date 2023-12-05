@@ -362,15 +362,15 @@ func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
 	return ebs.newBuilder(p, builder)
 }
 
-func (ebs ExtensionBuilders) newBuilder(os Platform, builder *AptExtensionBuilder) AptExtensionBuilder {
+func (ebs ExtensionBuilders) newBuilder(p Platform, builder *AptExtensionBuilder) AptExtensionBuilder {
 	image := builder.Image
 	if image == "" {
-		image = extensionBuilderImages[os]
+		image = extensionBuilderImages[p]
 	}
 
 	return AptExtensionBuilder{
 		ExtensionBuilder: ExtensionBuilder{
-			Type:              os,
+			Type:              p,
 			Image:             image,
 			BuildDependencies: builder.BuildDependencies,
 			RunDependencies:   builder.RunDependencies,
@@ -521,8 +521,8 @@ type Platform string
 
 const (
 	PlatformUnsupported    Platform = "unsupported"
-	PlatformDebianBookworm Platform = "debian:bookworm"
-	PlatformUbuntuJammy    Platform = "ubuntu:jammy"
+	PlatformDebianBookworm Platform = "debian_bookworm"
+	PlatformUbuntuJammy    Platform = "ubuntu_jammy"
 	PlatformDarwin         Platform = "darwin"
 )
 

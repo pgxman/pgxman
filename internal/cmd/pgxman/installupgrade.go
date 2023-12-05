@@ -3,6 +3,7 @@ package pgxman
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,11 +13,12 @@ import (
 	"text/template"
 
 	"github.com/pgxman/pgxman"
-	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/errorsx"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
+	"github.com/pgxman/pgxman/internal/registry"
+	"github.com/pgxman/pgxman/oapi"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -208,27 +210,45 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.Install
 		})
 	}
 
-	var err error
-	exts, err = LockExtensions(exts, p.Logger)
+	locker, err := NewExtensionLocker(p.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return exts, nil
+	return locker.Lock(ctx, exts)
 }
 
-func LockExtensions(exts []pgxman.InstallExtension, logger *log.Logger) ([]pgxman.InstallExtension, error) {
-	installableExts, err := buildkit.Extensions()
+func NewExtensionLocker(logger *log.Logger) (*ExtensionLocker, error) {
+	c, err := registry.NewClient(flagRegistryURL)
 	if err != nil {
-		return nil, fmt.Errorf("fetch installable extensions: %w", err)
+		return nil, err
+	}
+
+	return &ExtensionLocker{
+		Client: c,
+		Logger: logger,
+	}, nil
+}
+
+type ExtensionLocker struct {
+	Client *registry.Client
+	Logger *log.Logger
+}
+
+func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtension) ([]pgxman.InstallExtension, error) {
+	p, err := pgxman.DetectPlatform()
+	if err != nil {
+		return nil, fmt.Errorf("detect platform: %s", err)
 	}
 
 	var result []pgxman.InstallExtension
 	for _, ext := range exts {
 		if ext.Name != "" {
-			installableExt, ok := installableExts[ext.Name]
-			if !ok {
-				return nil, fmt.Errorf("extension %q not found", ext.Name)
+			installableExt, err := l.Client.GetExtension(ctx, ext.Name)
+			if err != nil {
+				if errors.Is(err, registry.ErrExtensionNotFound) {
+					return nil, fmt.Errorf("extension %q not found", ext.Name)
+				}
 			}
 
 			// if version is not specified, use the latest version
@@ -238,10 +258,15 @@ func LockExtensions(exts []pgxman.InstallExtension, logger *log.Logger) ([]pgxma
 
 			if installableExt.Version != ext.Version {
 				// TODO(owenthereal): validate old version when api is ready
-				logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
+				l.Logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
 			}
 
-			if !slices.Contains(installableExt.PGVersions, ext.PGVersion) {
+			platform, err := installableExt.GetPlatform(p)
+			if err != nil {
+				return nil, err
+			}
+
+			if !slices.Contains(platform.PgVersions, convertPGVersion(ext.PGVersion)) {
 				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
 			}
 		}
@@ -313,4 +338,19 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	}
 
 	return nil
+}
+
+func convertPGVersion(pgVer pgxman.PGVersion) oapi.PgVersion {
+	switch pgVer {
+	case pgxman.PGVersion13:
+		return oapi.Pg13
+	case pgxman.PGVersion14:
+		return oapi.Pg14
+	case pgxman.PGVersion15:
+		return oapi.Pg15
+	case pgxman.PGVersion16:
+		return oapi.Pg16
+	default:
+		panic(fmt.Sprintf("invalid pg version: %s", pgVer))
+	}
 }
