@@ -13,61 +13,61 @@ func init() {
 	debPkg := &debian.DebianPackager{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterPackager(pgxman.ExtensionBuilderDebianBookworm, debPkg)
-	RegisterPackager(pgxman.ExtensionBuilderUbuntuJammy, debPkg)
+	RegisterPackager(pgxman.PlatformDebianBookworm, debPkg)
+	RegisterPackager(pgxman.PlatformUbuntuJammy, debPkg)
 
 	debInstaller := &debian.DebianInstaller{
 		Logger: log.NewTextLogger(),
 	}
-	RegisterInstaller(pgxman.ExtensionBuilderDebianBookworm, debInstaller)
-	RegisterInstaller(pgxman.ExtensionBuilderUbuntuJammy, debInstaller)
+	RegisterInstaller(pgxman.PlatformDebianBookworm, debInstaller)
+	RegisterInstaller(pgxman.PlatformUbuntuJammy, debInstaller)
 }
 
 var (
-	packagers  = make(map[pgxman.ExtensionBuilderType]pgxman.Packager)
-	installers = make(map[pgxman.ExtensionBuilderType]pgxman.Installer)
+	packagers  = make(map[pgxman.Platform]pgxman.Packager)
+	installers = make(map[pgxman.Platform]pgxman.Installer)
 )
 
-func RegisterPackager(bt pgxman.ExtensionBuilderType, packager pgxman.Packager) {
-	packagers[bt] = packager
+func RegisterPackager(p pgxman.Platform, packager pgxman.Packager) {
+	packagers[p] = packager
 }
 
 func GetPackager() (pgxman.Packager, error) {
-	bt, err := pgxman.DetectExtensionBuilder()
+	bt, err := pgxman.DetectPlatform()
 	if err != nil {
 		return nil, err
 	}
 
 	pkg := packagers[bt]
 	if pkg == nil {
-		return nil, &ErrUnsupportedPlugin{bt: bt}
+		return nil, &ErrUnsupportedPlugin{p: bt}
 	}
 
 	return pkg, nil
 }
 
-func RegisterInstaller(bt pgxman.ExtensionBuilderType, installer pgxman.Installer) {
-	installers[bt] = installer
+func RegisterInstaller(p pgxman.Platform, installer pgxman.Installer) {
+	installers[p] = installer
 }
 
 func GetInstaller() (pgxman.Installer, error) {
-	bt, err := pgxman.DetectExtensionBuilder()
+	bt, err := pgxman.DetectPlatform()
 	if err != nil {
 		return nil, err
 	}
 
 	i := installers[bt]
 	if i == nil {
-		return nil, &ErrUnsupportedPlugin{bt: bt}
+		return nil, &ErrUnsupportedPlugin{p: bt}
 	}
 
 	return i, nil
 }
 
 type ErrUnsupportedPlugin struct {
-	bt pgxman.ExtensionBuilderType
+	p pgxman.Platform
 }
 
 func (e *ErrUnsupportedPlugin) Error() string {
-	return fmt.Sprintf("Unsupported plugin: %s", e.bt)
+	return fmt.Sprintf("Unsupported plugin: %s", e.p)
 }
