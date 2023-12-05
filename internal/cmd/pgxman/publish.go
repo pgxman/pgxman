@@ -2,20 +2,18 @@ package pgxman
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/oapi-codegen/runtime/types"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/pgxman/pgxman/oapi"
 	"github.com/spf13/cobra"
 )
 
 var (
-	flagPublishRegistryURL string
-	flagPublishLatest      bool
+	flagPublishLatest bool
 )
 
 func newPublishCmd() *cobra.Command {
@@ -27,53 +25,28 @@ func newPublishCmd() *cobra.Command {
 		Hidden: true,
 	}
 
-	cmd.PersistentFlags().StringVar(&flagPublishRegistryURL, "url", "https://registry.pgxman.com/v1", "Registry URL")
 	cmd.PersistentFlags().BoolVar(&flagPublishLatest, "latest", false, "Make the published version the latest version")
 
 	return cmd
 }
 
 func runPublish(c *cobra.Command, args []string) error {
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-	client, err := oapi.NewClientWithResponses(flagPublishRegistryURL, oapi.WithHTTPClient(httpClient))
+	client, err := registry.NewClient(flagRegistryURL)
 	if err != nil {
 		return err
 	}
 
 	logger := log.NewTextLogger()
-
 	for _, arg := range args {
 		ext, err := pgxman.ReadExtension(arg, nil)
 		if err != nil {
 			return err
 		}
-
 		pext := convertPublishExtension(ext)
 
-		logger.Debug("Publish extension start", "ext", pext)
-		resp, err := client.PublishExtensionWithResponse(
-			c.Context(),
-			pext,
-		)
-		if err != nil {
+		logger.Debug("Publishing extension", "ext", pext)
+		if err := client.PublishExtension(c.Context(), pext); err != nil {
 			return err
-		}
-		logger.Debug("Publish extension end", "response", resp.Body)
-
-		var errMsg string
-		if resp.HTTPResponse.StatusCode >= 300 {
-			errMsg = strings.TrimSpace(string(resp.Body))
-		}
-		if resp.JSON400 != nil {
-			errMsg = resp.JSON400.Message
-		}
-		if resp.JSON500 != nil {
-			errMsg = resp.JSON500.Message
-		}
-		if errMsg != "" {
-			return fmt.Errorf("error publishing %s: %s", ext.Name, errMsg)
 		}
 
 		fmt.Printf("Published %s.\n", ext.Name)

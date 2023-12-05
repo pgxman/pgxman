@@ -2,10 +2,9 @@ package pgxman
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/cli/go-gh/v2/pkg/term"
-	"github.com/pgxman/pgxman/internal/buildkit"
+	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/pgxman/pgxman/internal/tui/tableprinter"
 	"github.com/spf13/cobra"
 )
@@ -30,17 +29,17 @@ against the extension name and description.`,
 	return cmd
 }
 
-func runSearch(c *cobra.Command, args []string) error {
+func runSearch(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("no search terms provided")
 	}
 
-	re, err := regexp.Compile(args[0])
+	client, err := registry.NewClient(flagRegistryURL)
 	if err != nil {
 		return err
 	}
 
-	exts, err := buildkit.Extensions()
+	exts, err := client.FindExtension(cmd.Context(), args)
 	if err != nil {
 		return err
 	}
@@ -55,9 +54,7 @@ func runSearch(c *cobra.Command, args []string) error {
 
 	var rows [][]string
 	for _, ext := range exts {
-		if re.MatchString(ext.Name) || re.MatchString(ext.Description) {
-			rows = append(rows, []string{ext.Name, ext.Version, ext.Description})
-		}
+		rows = append(rows, []string{ext.Name, ext.Version, ext.Description})
 	}
 	tp.AppendBluk(rows)
 
