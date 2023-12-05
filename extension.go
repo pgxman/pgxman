@@ -357,6 +357,8 @@ func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
 		builder = ebs.DebianBookworm
 	case PlatformUbuntuJammy:
 		builder = ebs.UbuntuJammy
+	default:
+		panic("unsupported platform: " + p)
 	}
 
 	return ebs.newBuilder(p, builder)
