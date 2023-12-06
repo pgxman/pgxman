@@ -116,7 +116,7 @@ func (ext Extension) Validate() error {
 	}
 
 	for _, pgv := range ext.PGVersions {
-		if err := ValidatePGVersion(pgv); err != nil {
+		if err := pgv.Validate(); err != nil {
 			return err
 		}
 	}
@@ -219,8 +219,6 @@ var (
 	SupportedFormats = []Format{FormatDeb}
 )
 
-type PGVersion string
-
 const (
 	PGVersionUnknown PGVersion = "unknown"
 	PGVersion13      PGVersion = "13"
@@ -229,18 +227,20 @@ const (
 	PGVersion16      PGVersion = "16"
 )
 
-var (
-	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
-	DefaultPGVersion    = PGVersion15
-)
+type PGVersion string
 
-func ValidatePGVersion(v PGVersion) error {
+func (v PGVersion) Validate() error {
 	if slices.Contains(SupportedPGVersions, v) {
 		return nil
 	}
 
 	return fmt.Errorf("unsupported PostgreSQL version: %s", v)
 }
+
+var (
+	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
+	DefaultPGVersion    = PGVersion15
+)
 
 type Maintainer struct {
 	Name  string `json:"name"`
