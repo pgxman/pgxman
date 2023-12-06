@@ -13,22 +13,34 @@ type Pack struct {
 	Postgres   Postgres        `json:"postgres"`
 }
 
-func (b Pack) Validate() error {
-	if b.APIVersion != DefaultPackAPIVersion {
-		return fmt.Errorf("invalid api version: %s", b.APIVersion)
+func (p Pack) Validate() error {
+	if p.APIVersion != DefaultPackAPIVersion {
+		return fmt.Errorf("invalid api version: %s", p.APIVersion)
 	}
 
-	for _, ext := range b.Extensions {
+	for _, ext := range p.Extensions {
 		if err := ext.Validate(); err != nil {
 			return err
 		}
 	}
 
-	if err := b.Postgres.Validate(); err != nil {
+	if err := p.Postgres.Validate(); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (p Pack) InstallExtensions() []InstallExtension {
+	var exts []InstallExtension
+	for _, ext := range p.Extensions {
+		exts = append(exts, InstallExtension{
+			PackExtension: ext,
+			PGVersion:     p.Postgres.Version,
+		})
+	}
+
+	return exts
 }
 
 type InstallExtension struct {
@@ -49,7 +61,7 @@ func (e InstallExtension) Validate() error {
 		return err
 	}
 
-	if err := ValidatePGVersion(e.PGVersion); err != nil {
+	if err := e.PGVersion.Validate(); err != nil {
 		return err
 	}
 
@@ -81,7 +93,7 @@ type Postgres struct {
 }
 
 func (p Postgres) Validate() error {
-	return ValidatePGVersion(p.Version)
+	return p.Version.Validate()
 }
 
 type Installer interface {

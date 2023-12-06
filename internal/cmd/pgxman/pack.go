@@ -78,25 +78,24 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 		return errorsx.Pretty(err)
 	}
 
-	b, err := pgxman.ReadPackFile(flagPackInstallFile)
+	p, err := pgxman.ReadPackFile(flagPackInstallFile)
 	if err != nil {
 		return err
 	}
-
-	if err := b.Validate(); err != nil {
+	if err := p.Validate(); err != nil {
 		return err
 	}
 
-	pgVer := b.Postgres.Version
+	pgVer := p.Postgres.Version
 	if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 		return err
 	}
 
-	locker, err := NewExtensionLocker(log.NewTextLogger())
+	locker, err := NewExtensionLocker(DefaultPlatformDetector, log.NewTextLogger())
 	if err != nil {
 		return err
 	}
-	exts, err := locker.Lock(cmd.Context(), installExts(*b))
+	exts, err := locker.Lock(cmd.Context(), p.InstallExtensions())
 	if err != nil {
 		return err
 	}
@@ -107,10 +106,11 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	logger := log.NewTextLogger()
 	fmt.Printf("Bundling extensions for PostgreSQL %s...\n", pgVer)
 	for _, ext := range exts {
 		if err := installOrUpgrade(cmd.Context(), i, ext, true); err != nil {
-			// Error message is already shown in spinner
+			logger.Debug("failed to install extension", "error", err)
 			os.Exit(1)
 		}
 	}

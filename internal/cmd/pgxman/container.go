@@ -13,7 +13,6 @@ import (
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/container"
 	"github.com/pgxman/pgxman/internal/docker"
-	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/tui/spinner"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
@@ -107,10 +106,11 @@ is NAME=VERSION.`, action),
 
 func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		p := &ArgsParser{
-			PGVer:  pgxman.PGVersion(flagContainerInstallPGVersion),
-			Logger: log.NewTextLogger(),
-		}
+		p := NewArgsParser(
+			ContainerPlatformDetector,
+			pgxman.PGVersion(flagContainerInstallPGVersion),
+			true,
+		)
 		exts, err := p.Parse(cmd.Context(), args)
 		if err != nil {
 			return err
@@ -194,7 +194,7 @@ func runContainerTeardown(cmd *cobra.Command, args []string) error {
 		}
 
 		pgVer := pgxman.PGVersion(match[1])
-		if err := pgxman.ValidatePGVersion(pgVer); err != nil {
+		if err := pgVer.Validate(); err != nil {
 			return err
 		}
 

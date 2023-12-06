@@ -3,12 +3,8 @@ package pgxman
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"regexp"
-	"slices"
 	"strings"
 	"text/template"
 
@@ -17,8 +13,6 @@ import (
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
-	"github.com/pgxman/pgxman/internal/registry"
-	"github.com/pgxman/pgxman/oapi"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -120,11 +114,11 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		p := &ArgsParser{
-			Overwrite: flagInstallOrUpgradeOverwrite,
-			PGVer:     pgVer,
-			Logger:    log.NewTextLogger(),
-		}
+		p := NewArgsParser(
+			DefaultPlatformDetector,
+			pgVer,
+			flagInstallOrUpgradeOverwrite,
+		)
 		exts, err := p.Parse(cmd.Context(), args)
 		if err != nil {
 			return err
@@ -146,10 +140,11 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			action = "Upgrading"
 		}
 
+		logger := log.NewTextLogger()
 		fmt.Printf("%s extensions for PostgreSQL %s...\n", action, pgVer)
 		for _, ext := range exts {
 			if err := installOrUpgrade(cmd.Context(), i, ext, upgrade); err != nil {
-				// Error message is already shown in spinner
+				logger.Debug("failed to install extension", "error", err, "extension", ext)
 				os.Exit(1)
 			}
 		}
@@ -185,132 +180,6 @@ func (e errInvalidPGVersion) Error() string {
 	return fmt.Sprintf("%s. For information on installing Postgres, see: https://docs.pgxman.com/installing_postgres.", msg)
 }
 
-type ArgsParser struct {
-	PGVer     pgxman.PGVersion
-	Overwrite bool
-	Logger    *log.Logger
-}
-
-func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.InstallExtension, error) {
-	if err := pgxman.ValidatePGVersion(p.PGVer); err != nil {
-		return nil, err
-	}
-
-	var exts []pgxman.InstallExtension
-	for _, arg := range args {
-		ext, err := parseInstallExtension(arg)
-		if err != nil {
-			return nil, err
-		}
-		ext.Overwrite = p.Overwrite
-
-		exts = append(exts, pgxman.InstallExtension{
-			PackExtension: *ext,
-			PGVersion:     p.PGVer,
-		})
-	}
-
-	locker, err := NewExtensionLocker(p.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return locker.Lock(ctx, exts)
-}
-
-func NewExtensionLocker(logger *log.Logger) (*ExtensionLocker, error) {
-	c, err := registry.NewClient(flagRegistryURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ExtensionLocker{
-		Client: c,
-		Logger: logger,
-	}, nil
-}
-
-type ExtensionLocker struct {
-	Client *registry.Client
-	Logger *log.Logger
-}
-
-func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtension) ([]pgxman.InstallExtension, error) {
-	p, err := pgxman.DetectPlatform()
-	if err != nil {
-		return nil, fmt.Errorf("detect platform: %s", err)
-	}
-
-	var result []pgxman.InstallExtension
-	for _, ext := range exts {
-		if ext.Name != "" {
-			installableExt, err := l.Client.GetExtension(ctx, ext.Name)
-			if err != nil {
-				if errors.Is(err, registry.ErrExtensionNotFound) {
-					return nil, fmt.Errorf("extension %q not found", ext.Name)
-				}
-			}
-
-			// if version is not specified, use the latest version
-			if ext.Version == "" || ext.Version == "latest" {
-				ext.Version = installableExt.Version
-			}
-
-			if installableExt.Version != ext.Version {
-				// TODO(owenthereal): validate old version when api is ready
-				l.Logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
-			}
-
-			platform, err := installableExt.GetPlatform(p)
-			if err != nil {
-				return nil, err
-			}
-
-			if !slices.Contains(platform.PgVersions, convertPGVersion(ext.PGVersion)) {
-				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
-			}
-		}
-
-		result = append(result, ext)
-	}
-
-	return result, nil
-}
-
-var (
-	extRegexp = regexp.MustCompile(`^([^=@\s]+)(?:=([^@]*))?$`)
-)
-
-func parseInstallExtension(arg string) (*pgxman.PackExtension, error) {
-	// install from local file
-	if _, err := os.Stat(arg); err == nil {
-		path, err := filepath.Abs(arg)
-		if err != nil {
-			return nil, err
-		}
-
-		return &pgxman.PackExtension{
-			Path: path,
-		}, nil
-	}
-
-	// install from apt
-	if extRegexp.MatchString(arg) {
-		var (
-			match   = extRegexp.FindStringSubmatch(arg)
-			name    = match[1]
-			version = match[2]
-		)
-
-		return &pgxman.PackExtension{
-			Name:    name,
-			Version: version,
-		}, nil
-	}
-
-	return nil, errInvalidExtensionFormat{Arg: arg}
-}
-
 func supportedPGVersions() []string {
 	var pgVers []string
 	for _, v := range pgxman.SupportedPGVersions {
@@ -320,37 +189,10 @@ func supportedPGVersions() []string {
 	return pgVers
 }
 
-func installExts(b pgxman.Pack) []pgxman.InstallExtension {
-	var installExts []pgxman.InstallExtension
-	for _, ext := range b.Extensions {
-		installExts = append(installExts, pgxman.InstallExtension{
-			PackExtension: ext,
-			PGVersion:     b.Postgres.Version,
-		})
-	}
-
-	return installExts
-}
-
 func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
 		return errInvalidPGVersion{Version: pgVer}
 	}
 
 	return nil
-}
-
-func convertPGVersion(pgVer pgxman.PGVersion) oapi.PgVersion {
-	switch pgVer {
-	case pgxman.PGVersion13:
-		return oapi.Pg13
-	case pgxman.PGVersion14:
-		return oapi.Pg14
-	case pgxman.PGVersion15:
-		return oapi.Pg15
-	case pgxman.PGVersion16:
-		return oapi.Pg16
-	default:
-		panic(fmt.Sprintf("invalid pg version: %s", pgVer))
-	}
 }

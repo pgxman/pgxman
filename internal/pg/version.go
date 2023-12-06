@@ -40,7 +40,7 @@ func pgConfigVersion(ctx context.Context, path string) (pgxman.PGVersion, error)
 	}
 
 	def := pgxman.PGVersion(matches[1])
-	if err := pgxman.ValidatePGVersion(def); err != nil {
+	if err := def.Validate(); err != nil {
 		return pgxman.PGVersionUnknown, fmt.Errorf("invalid PostgreSQL version: %w", err)
 	}
 
