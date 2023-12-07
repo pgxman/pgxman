@@ -110,8 +110,14 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			}
 
 			if installableExt.Version != ext.Version {
-				// TODO(owenthereal): validate old version when api is ready
-				l.Logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
+				_, err := l.Client.GetVersion(ctx, ext.Name, ext.Version)
+				if err != nil {
+					if errors.Is(err, registry.ErrExtensionNotFound) {
+						return nil, fmt.Errorf("extension %q version %q not found", ext.Name, ext.Version)
+					}
+
+					return nil, err
+				}
 			}
 
 			platform, err := installableExt.GetPlatform(p)
