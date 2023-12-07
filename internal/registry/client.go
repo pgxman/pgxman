@@ -34,7 +34,7 @@ func (e *Extension) GetPlatform(p pgxman.Platform) (*oapi.Platform, error) {
 	return nil, fmt.Errorf("platform %q not found", p)
 }
 
-func NewClient(baseURL string) (*Client, error) {
+func NewClient(baseURL string) (Client, error) {
 	c, err := oapi.NewClientWithResponses(
 		baseURL,
 		oapi.WithHTTPClient(
@@ -47,16 +47,23 @@ func NewClient(baseURL string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{
+	return &client{
 		ClientWithResponsesInterface: c,
 	}, nil
 }
 
-type Client struct {
+type Client interface {
+	GetExtension(ctx context.Context, name string) (*Extension, error)
+	FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error)
+	PublishExtension(ctx context.Context, ext oapi.PublishExtension) error
+	GetVersion(ctx context.Context, name, version string) (*Extension, error)
+}
+
+type client struct {
 	oapi.ClientWithResponsesInterface
 }
 
-func (c *Client) GetExtension(ctx context.Context, name string) (*Extension, error) {
+func (c *client) GetExtension(ctx context.Context, name string) (*Extension, error) {
 	resp, err := c.ClientWithResponsesInterface.FindExtensionWithResponse(ctx, name)
 	if err != nil {
 		return nil, err
@@ -80,7 +87,7 @@ func (c *Client) GetExtension(ctx context.Context, name string) (*Extension, err
 	return &Extension{Extension: *resp.JSON200}, nil
 }
 
-func (c *Client) FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error) {
+func (c *client) FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error) {
 	term := strings.Join(args, " ")
 	resp, err := c.ListExtensionsWithResponse(ctx, &oapi.ListExtensionsParams{
 		Term: &term,
@@ -96,7 +103,7 @@ func (c *Client) FindExtension(ctx context.Context, args []string) ([]oapi.Simpl
 	return resp.JSON200.Extensions, nil
 }
 
-func (c *Client) PublishExtension(ctx context.Context, ext oapi.PublishExtension) error {
+func (c *client) PublishExtension(ctx context.Context, ext oapi.PublishExtension) error {
 	resp, err := c.PublishExtensionWithResponse(
 		ctx,
 		ext,
@@ -119,7 +126,7 @@ func (c *Client) PublishExtension(ctx context.Context, ext oapi.PublishExtension
 	return nil
 }
 
-func (c *Client) GetVersion(ctx context.Context, name, version string) (*Extension, error) {
+func (c *client) GetVersion(ctx context.Context, name, version string) (*Extension, error) {
 	resp, err := c.ClientWithResponsesInterface.FindVersionWithResponse(ctx, name, version)
 	if err != nil {
 		return nil, err

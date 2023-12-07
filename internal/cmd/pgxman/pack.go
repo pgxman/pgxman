@@ -91,10 +91,12 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	locker, err := NewExtensionLocker(DefaultPlatformDetector, log.NewTextLogger())
+	client, err := newReigstryClient()
 	if err != nil {
 		return err
 	}
+
+	locker := NewExtensionLocker(client, DefaultPlatformDetector, log.NewTextLogger())
 	exts, err := locker.Lock(cmd.Context(), p.InstallExtensions())
 	if err != nil {
 		return err

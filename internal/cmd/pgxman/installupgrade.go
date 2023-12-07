@@ -13,6 +13,7 @@ import (
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
+	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -114,7 +115,13 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
+		client, err := newReigstryClient()
+		if err != nil {
+			return err
+		}
+
 		p := NewArgsParser(
+			client,
 			DefaultPlatformDetector,
 			pgVer,
 			flagInstallOrUpgradeOverwrite,
@@ -195,4 +202,8 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	}
 
 	return nil
+}
+
+func newReigstryClient() (registry.Client, error) {
+	return registry.NewClient(flagRegistryURL)
 }
