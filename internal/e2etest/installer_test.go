@@ -18,7 +18,7 @@ func TestDebianInstaller_Install(t *testing.T) {
 	}{
 		{
 			Extension: "pgvector",
-			Version:   "0.5.0",
+			Version:   "0.5.1",
 			PGVersion: "15",
 		},
 		{
@@ -121,11 +121,11 @@ apt-get update
 apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-pgxman install pgvector=0.5.0 --yes
+pgxman install hydra_columnar=1.0.1 --yes
 # upgrade
-pgxman upgrade pgvector=0.5.1 --yes
+pgxman upgrade hydra_columnar=1.0.2 --yes
 # downgrade
-pgxman upgrade pgvector=0.5.0 --yes
+pgxman upgrade hydra_columnar=1.0.1 --yes
 `,
 	)
 
