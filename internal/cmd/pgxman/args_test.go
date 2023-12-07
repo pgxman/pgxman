@@ -97,7 +97,15 @@ func Test_ExtensionLocker(t *testing.T) {
 
 	aptRepos := []oapi.AptRepository{
 		{
-			Uris: []string{"https://apt.postgresql.org/pub/repos/apt"},
+			Id:         "pgdg",
+			Types:      []oapi.AptRepositoryType{oapi.DebSrc, oapi.Deb},
+			Uris:       []string{"https://apt.postgresql.org/pub/repos/apt"},
+			Components: []string{"main"},
+			Suites:     []string{"bookworm-pgdg"},
+			SignedKey: oapi.SignedKey{
+				Format: oapi.Asc,
+				Url:    "https://www.postgresql.org/media/keys/ACCC4CF8.asc",
+			},
 		},
 	}
 	stubbedClient := StubbedRegistryClient{
