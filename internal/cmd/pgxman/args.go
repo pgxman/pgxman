@@ -233,18 +233,41 @@ func convertAptRepo(aptRepo oapi.AptRepository) pgxman.AptRepository {
 		URIs:       aptRepo.Uris,
 		Components: aptRepo.Components,
 		Suites:     aptRepo.Suites,
-		SignedKey: pgxman.AptRepositorySignedKey{
-			URL:    aptRepo.SignedKey.Url,
-			Format: pgxman.AptRepositorySignedKeyFormat(aptRepo.SignedKey.Format),
-		},
+		SignedKey:  convertAptRepoSignedKey(aptRepo.SignedKey),
 	}
 }
 
 func convertAptRepoTypes(types []oapi.AptRepositoryType) []pgxman.AptRepositoryType {
 	var result []pgxman.AptRepositoryType
 	for _, t := range types {
-		result = append(result, pgxman.AptRepositoryType(t))
+		var tt pgxman.AptRepositoryType
+		switch t {
+		case oapi.Deb:
+			tt = pgxman.AptRepositoryTypeDeb
+		case oapi.DebSrc:
+			tt = pgxman.AptRepositoryTypeDebSrc
+		default:
+			panic(fmt.Sprintf("invalid apt repo type: %s", t))
+		}
+		result = append(result, tt)
 	}
 
 	return result
+}
+
+func convertAptRepoSignedKey(signedKey oapi.SignedKey) pgxman.AptRepositorySignedKey {
+	var format pgxman.AptRepositorySignedKeyFormat
+	switch signedKey.Format {
+	case oapi.Gpg:
+		format = pgxman.AptRepositorySignedKeyFormatGpg
+	case oapi.Asc:
+		format = pgxman.AptRepositorySignedKeyFormatAsc
+	default:
+		panic(fmt.Sprintf("invalid apt repo signed key format: %s", signedKey.Format))
+	}
+
+	return pgxman.AptRepositorySignedKey{
+		URL:    signedKey.Url,
+		Format: format,
+	}
 }

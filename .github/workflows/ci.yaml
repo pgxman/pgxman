@@ -108,7 +108,6 @@ jobs:
     name: Linux Install Test
     needs: [build, test, vet]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
