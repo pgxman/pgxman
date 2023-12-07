@@ -109,7 +109,7 @@ func TestDebianInstaller_Upgrade(t *testing.T) {
 		"DEBIAN_FRONTEND=noninteractive",
 		"-v",
 		flagPGXManBin+":/usr/local/bin/pgxman",
-		"postgres:16",
+		"postgres:15",
 		"bash",
 		"--noprofile",
 		"--norc",
