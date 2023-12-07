@@ -414,6 +414,17 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 				Format: pgxman.AptRepositorySignedKeyFormatGpg,
 			},
 		},
+		{
+			ID:         "pgdg",
+			Types:      []pgxman.AptRepositoryType{pgxman.AptRepositoryTypeDeb},
+			URIs:       []string{"https://apt.postgresql.org/pub/repos/apt"},
+			Suites:     []string{fmt.Sprintf("%s-pgdg", codename)},
+			Components: []string{"main"},
+			SignedKey: pgxman.AptRepositorySignedKey{
+				URL:    "https://www.postgresql.org/media/keys/ACCC4CF8.asc",
+				Format: pgxman.AptRepositorySignedKeyFormatAsc,
+			},
+		},
 	}, nil
 }
 
