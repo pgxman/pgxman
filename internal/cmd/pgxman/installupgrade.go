@@ -26,9 +26,13 @@ var (
 )
 
 func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
-	action := "install"
+	var (
+		action = "install"
+		alias  = "i"
+	)
 	if upgrade {
 		action = "upgrade"
+		alias = "u"
 	}
 
 	var defPGVer string
@@ -82,8 +86,9 @@ func newInstallOrUpgradeCmd(upgrade bool) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   action,
-		Short: c.String(action) + " PostgreSQL extensions",
+		Use:     action,
+		Aliases: []string{alias},
+		Short:   c.String(action) + " PostgreSQL extensions",
 		Long: c.String(action) + ` PostgreSQL extensions from commandline arguments. The argument
 format is NAME=VERSION. The PostgreSQL version is detected from pg_config
 if it exists, or can be specified with the --pg flag.`,
