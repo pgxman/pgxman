@@ -122,6 +122,12 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			if !slices.Contains(platform.PgVersions, convertPGVersion(ext.PGVersion)) {
 				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
 			}
+
+			var aptRepos []pgxman.AptRepository
+			for _, aptRepo := range platform.AptRepositories {
+				aptRepos = append(aptRepos, convertAptRepo(aptRepo))
+			}
+			ext.AptRepositories = aptRepos
 		}
 
 		result = append(result, ext)
@@ -177,4 +183,27 @@ func convertPGVersion(pgVer pgxman.PGVersion) oapi.PgVersion {
 	default:
 		panic(fmt.Sprintf("invalid pg version: %s", pgVer))
 	}
+}
+
+func convertAptRepo(aptRepo oapi.AptRepository) pgxman.AptRepository {
+	return pgxman.AptRepository{
+		ID:         aptRepo.Id,
+		Types:      convertAptRepoTypes(aptRepo.Types),
+		URIs:       aptRepo.Uris,
+		Components: aptRepo.Components,
+		Suites:     aptRepo.Suites,
+		SignedKey: pgxman.AptRepositorySignedKey{
+			URL:    aptRepo.SignedKey.Url,
+			Format: pgxman.AptRepositorySignedKeyFormat(aptRepo.SignedKey.Format),
+		},
+	}
+}
+
+func convertAptRepoTypes(types []oapi.AptRepositoryType) []pgxman.AptRepositoryType {
+	var result []pgxman.AptRepositoryType
+	for _, t := range types {
+		result = append(result, pgxman.AptRepositoryType(t))
+	}
+
+	return result
 }

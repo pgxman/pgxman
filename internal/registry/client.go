@@ -90,7 +90,7 @@ func (c *Client) FindExtension(ctx context.Context, args []string) ([]oapi.Simpl
 	}
 
 	if resp.JSON500 != nil {
-		return nil, fmt.Errorf("server error: %s", resp.JSON500.Message)
+		return nil, fmt.Errorf("error finding extension: %s", resp.JSON500.Message)
 	}
 
 	return resp.JSON200.Extensions, nil
@@ -117,4 +117,28 @@ func (c *Client) PublishExtension(ctx context.Context, ext oapi.PublishExtension
 	}
 
 	return nil
+}
+
+func (c *Client) GetVersion(ctx context.Context, name, version string) (*Extension, error) {
+	resp, err := c.ClientWithResponsesInterface.FindVersionWithResponse(ctx, name, version)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.JSON404 != nil {
+		return nil, ErrExtensionNotFound
+	}
+
+	var errMsg string
+	if resp.JSON400 != nil {
+		errMsg = resp.JSON400.Message
+	}
+	if resp.JSON500 != nil {
+		errMsg = resp.JSON500.Message
+	}
+	if errMsg != "" {
+		return nil, fmt.Errorf("error getting extension version %s: %s", name, errMsg)
+	}
+
+	return &Extension{Extension: *resp.JSON200}, nil
 }
