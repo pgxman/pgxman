@@ -94,9 +94,7 @@ paths:
           description: Slug of the extension. This can be the extension name or the extension uuid
           required: true
           schema:
-            type: string
-            pattern: "^[a-zA-Z0-9-_]+$"
-            minLength: 1
+            $ref: "#/components/schemas/ExtensionName"
       responses:
         "200":
           description: Extension response
@@ -122,28 +120,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-  /extensions/{slug}/versions:
+  /extensions/{slug}/versions/{version}:
     get:
-      summary: List all versions for an extension
-      operationId: list_extension_versions
+      summary: Find extension by slug and version
+      operationId: find_version
       parameters:
         - name: slug
           in: path
-          description: Slug of the extension. This is the buildkit name
+          description: Slug of the extension. This can be the extension name or the extension uuid
           required: true
           schema:
-            type: string
-            pattern: "^[a-zA-Z0-9-]+$"
-            minLength: 0
+            $ref: "#/components/schemas/ExtensionName"
+        - name: version
+          in: path
+          description: Extension version
+          required: true
+          schema:
+            $ref: "#/components/schemas/VersionCode"
       responses:
         "200":
           description: Extension response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExtensionVersions"
-        default:
-          description: Unexpected error
+                $ref: "#/components/schemas/Extension"
+        "404":
+          description: Extension not found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -231,7 +245,7 @@ components:
         id:
           $ref: "#/components/schemas/uuid"
         name:
-          $ref: "#/components/schemas/Name"
+          $ref: "#/components/schemas/ExtensionName"
         keywords:
           $ref: "#/components/schemas/Keywords"
         created_at:
@@ -261,7 +275,7 @@ components:
             id:
               $ref: "#/components/schemas/uuid"
             name:
-              $ref: "#/components/schemas/Name"
+              $ref: "#/components/schemas/ExtensionName"
             description:
               $ref: "#/components/schemas/Description"
             version:
@@ -337,9 +351,6 @@ components:
       x-go-type-import:
         path: github.com/google/uuid
       example: 123e4567-e89b-12d3-a456-426614174000
-    Name:
-      type: string
-      example: pgvector
     Timestamp:
       type: string
       format: date-time
