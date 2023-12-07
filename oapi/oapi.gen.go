@@ -83,9 +83,9 @@ type BaseExtension struct {
 	Id        Uuid      `json:"id"`
 
 	// Keywords keywords
-	Keywords  Keywords  `json:"keywords,omitempty" validate:"gte=0,dive,required"`
-	Name      Name      `json:"name"`
-	UpdatedAt Timestamp `json:"updated_at"`
+	Keywords  Keywords      `json:"keywords,omitempty" validate:"gte=0,dive,required"`
+	Name      ExtensionName `json:"name" validate:"required,urlsafe"`
+	UpdatedAt Timestamp     `json:"updated_at"`
 }
 
 // CommonExtension defines model for CommonExtension.
@@ -132,33 +132,19 @@ type Extension struct {
 	Keywords Keywords `json:"keywords,omitempty" validate:"gte=0,dive,required"`
 
 	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
-	License     License     `json:"license,omitempty"`
-	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
-	Name        Name        `json:"name"`
-	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
-	Readme      Readme      `json:"readme,omitempty"`
-	Repository  Repository  `json:"repository" validate:"required,url"`
-	Source      Source      `json:"source" validate:"required,url,extension_source"`
-	UpdatedAt   Timestamp   `json:"updated_at"`
-	Version     VersionCode `json:"version" validate:"semver"`
+	License     License       `json:"license,omitempty"`
+	Maintainers Maintainers   `json:"maintainers" validate:"gt=0,dive,required"`
+	Name        ExtensionName `json:"name" validate:"required,urlsafe"`
+	Platforms   Platforms     `json:"platforms" validate:"required,min=1,dive"`
+	Readme      Readme        `json:"readme,omitempty"`
+	Repository  Repository    `json:"repository" validate:"required,url"`
+	Source      Source        `json:"source" validate:"required,url,extension_source"`
+	UpdatedAt   Timestamp     `json:"updated_at"`
+	Version     VersionCode   `json:"version" validate:"semver"`
 }
 
 // ExtensionName defines model for ExtensionName.
 type ExtensionName = string
-
-// ExtensionVersions defines model for ExtensionVersions.
-type ExtensionVersions struct {
-	CreatedAt Timestamp `json:"created_at"`
-	Id        Uuid      `json:"id"`
-
-	// Keywords keywords
-	Keywords  Keywords  `json:"keywords,omitempty" validate:"gte=0,dive,required"`
-	Name      Name      `json:"name"`
-	UpdatedAt Timestamp `json:"updated_at"`
-
-	// Versions a list of versions for the extension sorted by created_at descending
-	Versions *[]Version `json:"versions,omitempty"`
-}
 
 // Homepage defines model for Homepage.
 type Homepage = string
@@ -180,9 +166,6 @@ type Maintainer struct {
 
 // Maintainers defines model for Maintainers.
 type Maintainers = []Maintainer
-
-// Name defines model for Name.
-type Name = string
 
 // PgVersion defines model for PgVersion.
 type PgVersion string
@@ -261,12 +244,12 @@ type SignedKeyFormat string
 
 // SimpleExtension defines model for SimpleExtension.
 type SimpleExtension struct {
-	CreatedAt   Timestamp   `json:"created_at"`
-	Description Description `json:"description"`
-	Id          Uuid        `json:"id"`
-	Name        Name        `json:"name"`
-	UpdatedAt   Timestamp   `json:"updated_at"`
-	Version     VersionCode `json:"version" validate:"semver"`
+	CreatedAt   Timestamp     `json:"created_at"`
+	Description Description   `json:"description"`
+	Id          Uuid          `json:"id"`
+	Name        ExtensionName `json:"name" validate:"required,urlsafe"`
+	UpdatedAt   Timestamp     `json:"updated_at"`
+	Version     VersionCode   `json:"version" validate:"semver"`
 }
 
 // SimpleExtensions defines model for SimpleExtensions.
@@ -280,23 +263,6 @@ type Source = string
 
 // Timestamp defines model for Timestamp.
 type Timestamp = time.Time
-
-// Version defines model for Version.
-type Version struct {
-	CreatedAt   *Timestamp  `json:"created_at,omitempty"`
-	Description Description `json:"description,omitempty"`
-	Homepage    Homepage    `json:"homepage,omitempty"`
-	Id          *Uuid       `json:"id,omitempty"`
-
-	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
-	License     License     `json:"license,omitempty"`
-	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
-	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
-	Readme      Readme      `json:"readme,omitempty"`
-	Repository  Repository  `json:"repository" validate:"required,url"`
-	Source      Source      `json:"source" validate:"required,url,extension_source"`
-	Version     VersionCode `json:"version" validate:"semver"`
-}
 
 // VersionCode defines model for VersionCode.
 type VersionCode = string
@@ -401,10 +367,10 @@ type ClientInterface interface {
 	PublishExtension(ctx context.Context, body PublishExtensionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// FindExtension request
-	FindExtension(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	FindExtension(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListExtensionVersions request
-	ListExtensionVersions(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// FindVersion request
+	FindVersion(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProviders request
 	ListProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -449,7 +415,7 @@ func (c *Client) PublishExtension(ctx context.Context, body PublishExtensionJSON
 	return c.Client.Do(req)
 }
 
-func (c *Client) FindExtension(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) FindExtension(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFindExtensionRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
@@ -461,8 +427,8 @@ func (c *Client) FindExtension(ctx context.Context, slug string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListExtensionVersions(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListExtensionVersionsRequest(c.Server, slug)
+func (c *Client) FindVersion(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFindVersionRequest(c.Server, slug, version)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +585,7 @@ func NewPublishExtensionRequestWithBody(server string, contentType string, body 
 }
 
 // NewFindExtensionRequest generates requests for FindExtension
-func NewFindExtensionRequest(server string, slug string) (*http.Request, error) {
+func NewFindExtensionRequest(server string, slug ExtensionName) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -652,8 +618,8 @@ func NewFindExtensionRequest(server string, slug string) (*http.Request, error) 
 	return req, nil
 }
 
-// NewListExtensionVersionsRequest generates requests for ListExtensionVersions
-func NewListExtensionVersionsRequest(server string, slug string) (*http.Request, error) {
+// NewFindVersionRequest generates requests for FindVersion
+func NewFindVersionRequest(server string, slug ExtensionName, version VersionCode) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -663,12 +629,19 @@ func NewListExtensionVersionsRequest(server string, slug string) (*http.Request,
 		return nil, err
 	}
 
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "version", runtime.ParamLocationPath, version)
+	if err != nil {
+		return nil, err
+	}
+
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/extensions/%s/versions", pathParam0)
+	operationPath := fmt.Sprintf("/extensions/%s/versions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -799,10 +772,10 @@ type ClientWithResponsesInterface interface {
 	PublishExtensionWithResponse(ctx context.Context, body PublishExtensionJSONRequestBody, reqEditors ...RequestEditorFn) (*PublishExtensionResponse, error)
 
 	// FindExtensionWithResponse request
-	FindExtensionWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*FindExtensionResponse, error)
+	FindExtensionWithResponse(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*FindExtensionResponse, error)
 
-	// ListExtensionVersionsWithResponse request
-	ListExtensionVersionsWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*ListExtensionVersionsResponse, error)
+	// FindVersionWithResponse request
+	FindVersionWithResponse(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*FindVersionResponse, error)
 
 	// ListProvidersWithResponse request
 	ListProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListProvidersResponse, error)
@@ -883,15 +856,17 @@ func (r FindExtensionResponse) StatusCode() int {
 	return 0
 }
 
-type ListExtensionVersionsResponse struct {
+type FindVersionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ExtensionVersions
-	JSONDefault  *Error
+	JSON200      *Extension
+	JSON400      *Error
+	JSON404      *Error
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r ListExtensionVersionsResponse) Status() string {
+func (r FindVersionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -899,7 +874,7 @@ func (r ListExtensionVersionsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListExtensionVersionsResponse) StatusCode() int {
+func (r FindVersionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -981,7 +956,7 @@ func (c *ClientWithResponses) PublishExtensionWithResponse(ctx context.Context, 
 }
 
 // FindExtensionWithResponse request returning *FindExtensionResponse
-func (c *ClientWithResponses) FindExtensionWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*FindExtensionResponse, error) {
+func (c *ClientWithResponses) FindExtensionWithResponse(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*FindExtensionResponse, error) {
 	rsp, err := c.FindExtension(ctx, slug, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -989,13 +964,13 @@ func (c *ClientWithResponses) FindExtensionWithResponse(ctx context.Context, slu
 	return ParseFindExtensionResponse(rsp)
 }
 
-// ListExtensionVersionsWithResponse request returning *ListExtensionVersionsResponse
-func (c *ClientWithResponses) ListExtensionVersionsWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*ListExtensionVersionsResponse, error) {
-	rsp, err := c.ListExtensionVersions(ctx, slug, reqEditors...)
+// FindVersionWithResponse request returning *FindVersionResponse
+func (c *ClientWithResponses) FindVersionWithResponse(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*FindVersionResponse, error) {
+	rsp, err := c.FindVersion(ctx, slug, version, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListExtensionVersionsResponse(rsp)
+	return ParseFindVersionResponse(rsp)
 }
 
 // ListProvidersWithResponse request returning *ListProvidersResponse
@@ -1136,33 +1111,47 @@ func ParseFindExtensionResponse(rsp *http.Response) (*FindExtensionResponse, err
 	return response, nil
 }
 
-// ParseListExtensionVersionsResponse parses an HTTP response from a ListExtensionVersionsWithResponse call
-func ParseListExtensionVersionsResponse(rsp *http.Response) (*ListExtensionVersionsResponse, error) {
+// ParseFindVersionResponse parses an HTTP response from a FindVersionWithResponse call
+func ParseFindVersionResponse(rsp *http.Response) (*FindVersionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListExtensionVersionsResponse{
+	response := &FindVersionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ExtensionVersions
+		var dest Extension
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSONDefault = &dest
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 

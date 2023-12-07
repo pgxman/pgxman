@@ -59,8 +59,6 @@ nfpms: #build:linux
     maintainer: Owen Ou <o@hydra.so>
     homepage: https://github.com/pgxman/pgxman
     bindir: /usr
-    dependencies:
-      - git
     description: PostgreSQL Extensions Manager
     file_name_template: '{{ .PackageName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     formats:
@@ -80,8 +78,6 @@ brews:
     license: "Apache 2.0"
     custom_block: |
       head "https://github.com/pgxman/pgxman.git"
-    dependencies:
-      - git
     install: |
       bin.install "bin/pgxman"
       man1.install Dir["docs/man/man1/pgxman*.1"]

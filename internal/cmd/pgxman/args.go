@@ -15,6 +15,43 @@ import (
 	"github.com/pgxman/pgxman/oapi"
 )
 
+type ErrExtNotFound struct {
+	Name string
+}
+
+func (e *ErrExtNotFound) Error() string {
+	return fmt.Sprintf("extension %q not found", e.Name)
+}
+
+type ErrExtVerNotFound struct {
+	Name    string
+	Version string
+}
+
+func (e *ErrExtVerNotFound) Error() string {
+	return fmt.Sprintf("extension %q version %q not found", e.Name, e.Version)
+}
+
+type ErrExtIncompatiblePG struct {
+	Name      string
+	Version   string
+	PGVersion pgxman.PGVersion
+}
+
+func (e *ErrExtIncompatiblePG) Error() string {
+	return fmt.Sprintf("extension %q version %q is incompatible with PostgreSQL %s", e.Name, e.Version, e.PGVersion)
+}
+
+type ErrExtIncompatiblePlatform struct {
+	Name     string
+	Version  string
+	Platform pgxman.Platform
+}
+
+func (e *ErrExtIncompatiblePlatform) Error() string {
+	return fmt.Sprintf("extension %q version %q is incompatible with platform %s", e.Name, e.Version, e.Platform)
+}
+
 // ContainerPlatformDetector returns a platform detector for the container environment which is alwasys Debian Bookworm.
 func ContainerPlatformDetector() (pgxman.Platform, error) {
 	return pgxman.PlatformDebianBookworm, nil
@@ -24,8 +61,9 @@ func DefaultPlatformDetector() (pgxman.Platform, error) {
 	return pgxman.DetectPlatform()
 }
 
-func NewArgsParser(d PlatformDetector, pgver pgxman.PGVersion, overwrite bool) *ArgsParser {
+func NewArgsParser(c registry.Client, d PlatformDetector, pgver pgxman.PGVersion, overwrite bool) *ArgsParser {
 	return &ArgsParser{
+		Client:           c,
 		PlatformDetector: d,
 		PGVer:            pgver,
 		Overwrite:        overwrite,
@@ -37,6 +75,7 @@ type PlatformDetector func() (pgxman.Platform, error)
 
 type ArgsParser struct {
 	PlatformDetector PlatformDetector
+	Client           registry.Client
 	PGVer            pgxman.PGVersion
 	Overwrite        bool
 	Logger           *log.Logger
@@ -61,29 +100,20 @@ func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.Install
 		})
 	}
 
-	locker, err := NewExtensionLocker(p.PlatformDetector, p.Logger)
-	if err != nil {
-		return nil, err
-	}
-
+	locker := NewExtensionLocker(p.Client, p.PlatformDetector, p.Logger)
 	return locker.Lock(ctx, exts)
 }
 
-func NewExtensionLocker(d PlatformDetector, logger *log.Logger) (*ExtensionLocker, error) {
-	c, err := registry.NewClient(flagRegistryURL)
-	if err != nil {
-		return nil, err
-	}
-
+func NewExtensionLocker(c registry.Client, d PlatformDetector, logger *log.Logger) *ExtensionLocker {
 	return &ExtensionLocker{
 		Client:           c,
 		PlatformDetector: d,
 		Logger:           logger,
-	}, nil
+	}
 }
 
 type ExtensionLocker struct {
-	Client           *registry.Client
+	Client           registry.Client
 	PlatformDetector PlatformDetector
 	Logger           *log.Logger
 }
@@ -100,7 +130,7 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			installableExt, err := l.Client.GetExtension(ctx, ext.Name)
 			if err != nil {
 				if errors.Is(err, registry.ErrExtensionNotFound) {
-					return nil, fmt.Errorf("extension %q not found", ext.Name)
+					return nil, &ErrExtNotFound{Name: ext.Name}
 				}
 			}
 
@@ -110,18 +140,26 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			}
 
 			if installableExt.Version != ext.Version {
-				// TODO(owenthereal): validate old version when api is ready
-				l.Logger.Debug("extension version does not match the latest", "extension", ext.Name, "version", ext.Version, "latest", installableExt.Version)
+				installableExt, err = l.Client.GetVersion(ctx, ext.Name, ext.Version)
+				if err != nil {
+					if errors.Is(err, registry.ErrExtensionNotFound) {
+						return nil, &ErrExtVerNotFound{Name: ext.Name, Version: ext.Version}
+					}
+
+					return nil, err
+				}
 			}
 
 			platform, err := installableExt.GetPlatform(p)
 			if err != nil {
-				return nil, err
+				return nil, &ErrExtIncompatiblePlatform{Name: ext.Name, Version: ext.Version, Platform: p}
 			}
 
 			if !slices.Contains(platform.PgVersions, convertPGVersion(ext.PGVersion)) {
-				return nil, fmt.Errorf("%s %s is incompatible with PostgreSQL %s", ext.Name, ext.Version, ext.PGVersion)
+				return nil, &ErrExtIncompatiblePG{Name: ext.Name, Version: ext.Version, PGVersion: ext.PGVersion}
 			}
+
+			ext.AptRepositories = convertAptRepos(platform.AptRepositories)
 		}
 
 		result = append(result, ext)
@@ -177,4 +215,36 @@ func convertPGVersion(pgVer pgxman.PGVersion) oapi.PgVersion {
 	default:
 		panic(fmt.Sprintf("invalid pg version: %s", pgVer))
 	}
+}
+
+func convertAptRepos(aptRepos []oapi.AptRepository) []pgxman.AptRepository {
+	var result []pgxman.AptRepository
+	for _, aptRepo := range aptRepos {
+		result = append(result, convertAptRepo(aptRepo))
+	}
+
+	return result
+}
+
+func convertAptRepo(aptRepo oapi.AptRepository) pgxman.AptRepository {
+	return pgxman.AptRepository{
+		ID:         aptRepo.Id,
+		Types:      convertAptRepoTypes(aptRepo.Types),
+		URIs:       aptRepo.Uris,
+		Components: aptRepo.Components,
+		Suites:     aptRepo.Suites,
+		SignedKey: pgxman.AptRepositorySignedKey{
+			URL:    aptRepo.SignedKey.Url,
+			Format: pgxman.AptRepositorySignedKeyFormat(aptRepo.SignedKey.Format),
+		},
+	}
+}
+
+func convertAptRepoTypes(types []oapi.AptRepositoryType) []pgxman.AptRepositoryType {
+	var result []pgxman.AptRepositoryType
+	for _, t := range types {
+		result = append(result, pgxman.AptRepositoryType(t))
+	}
+
+	return result
 }

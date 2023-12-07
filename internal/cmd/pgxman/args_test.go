@@ -1,11 +1,15 @@
 package pgxman
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/registry"
+	"github.com/pgxman/pgxman/oapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,5 +90,198 @@ func Test_parseInstallExtension(t *testing.T) {
 			assert.Equal(c.GotExt, gotExt)
 		})
 	}
+}
+
+func Test_ExtensionLocker(t *testing.T) {
+	assert := assert.New(t)
+
+	aptRepos := []oapi.AptRepository{
+		{
+			Uris: []string{"https://apt.postgresql.org/pub/repos/apt"},
+		},
+	}
+	stubbedClient := StubbedRegistryClient{
+		ExtGetExtension: &registry.Extension{
+			Extension: oapi.Extension{
+				Name:    "pgvector",
+				Version: "0.5.1",
+				Platforms: []oapi.Platform{
+					{
+						Os:              oapi.DebianBookworm,
+						AptRepositories: aptRepos,
+						PgVersions:      []oapi.PgVersion{oapi.Pg16},
+					},
+				},
+			},
+		},
+		ExtGetVersion: &registry.Extension{
+			Extension: oapi.Extension{
+				Name:    "pgvector",
+				Version: "0.5.0",
+				Platforms: []oapi.Platform{
+					{
+						Os:              oapi.DebianBookworm,
+						AptRepositories: aptRepos,
+						PgVersions:      []oapi.PgVersion{oapi.Pg16},
+					},
+				},
+			},
+		},
+	}
+	stubbedPlatformDetector := func() (pgxman.Platform, error) {
+		return pgxman.PlatformDebianBookworm, nil
+	}
+
+	cases := []struct {
+		Name             string
+		PlatformDetector PlatformDetector
+		InstallExts      []pgxman.InstallExtension
+		WantInstallExts  []pgxman.InstallExtension
+		WantErr          error
+	}{
+		{
+			Name:             "install old version",
+			PlatformDetector: stubbedPlatformDetector,
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.0",
+					},
+					PGVersion: pgxman.PGVersion16,
+				},
+			},
+			WantInstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.0",
+					},
+					PGVersion:       pgxman.PGVersion16,
+					AptRepositories: convertAptRepos(aptRepos),
+				},
+			},
+		},
+		{
+			Name:             "install latest version",
+			PlatformDetector: stubbedPlatformDetector,
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name: "pgvector",
+					},
+					PGVersion: pgxman.PGVersion16,
+				},
+			},
+			WantInstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.1",
+					},
+					PGVersion:       pgxman.PGVersion16,
+					AptRepositories: convertAptRepos(aptRepos),
+				},
+			},
+		},
+		{
+			Name:             "version doesn't exist",
+			PlatformDetector: stubbedPlatformDetector,
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.2",
+					},
+					PGVersion: pgxman.PGVersion16,
+				},
+			},
+			WantErr: &ErrExtVerNotFound{Name: "pgvector", Version: "0.5.2"},
+		},
+		{
+			Name:             "extension doesn't exist",
+			PlatformDetector: stubbedPlatformDetector,
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "hello-world",
+						Version: "0.5.2",
+					},
+					PGVersion: pgxman.PGVersion16,
+				},
+			},
+			WantErr: &ErrExtNotFound{Name: "hello-world"},
+		},
+		{
+			Name:             "extension incompatible with pg",
+			PlatformDetector: stubbedPlatformDetector,
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.1",
+					},
+					PGVersion: pgxman.PGVersion13,
+				},
+			},
+			WantErr: &ErrExtIncompatiblePG{Name: "pgvector", Version: "0.5.1", PGVersion: pgxman.PGVersion13},
+		},
+		{
+			Name: "extension incompatible with platform",
+			PlatformDetector: func() (pgxman.Platform, error) {
+				return pgxman.PlatformDarwin, nil
+			},
+			InstallExts: []pgxman.InstallExtension{
+				{
+					PackExtension: pgxman.PackExtension{
+						Name:    "pgvector",
+						Version: "0.5.1",
+					},
+					PGVersion: pgxman.PGVersion13,
+				},
+			},
+			WantErr: &ErrExtIncompatiblePlatform{Name: "pgvector", Version: "0.5.1", Platform: pgxman.PlatformDarwin},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			locker := NewExtensionLocker(stubbedClient, c.PlatformDetector, log.NewTextLogger())
+			gotExts, gotErr := locker.Lock(context.TODO(), c.InstallExts)
+
+			assert.Equal(c.WantErr, gotErr)
+			assert.Equal(c.WantInstallExts, gotExts)
+		})
+	}
+}
+
+type StubbedRegistryClient struct {
+	ExtGetExtension *registry.Extension
+	ExtGetVersion   *registry.Extension
+}
+
+func (s StubbedRegistryClient) GetExtension(ctx context.Context, name string) (*registry.Extension, error) {
+	if name == s.ExtGetExtension.Name {
+		return s.ExtGetExtension, nil
+	}
+
+	return nil, registry.ErrExtensionNotFound
+}
+
+func (s StubbedRegistryClient) FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error) {
+	return nil, nil
+}
+
+func (s StubbedRegistryClient) PublishExtension(ctx context.Context, ext oapi.PublishExtension) error {
+	return nil
+}
+
+func (s StubbedRegistryClient) GetVersion(ctx context.Context, name, version string) (*registry.Extension, error) {
+	if name == s.ExtGetVersion.Name && version == s.ExtGetVersion.Version {
+		return s.ExtGetVersion, nil
+	}
+
+	return nil, registry.ErrExtensionNotFound
 
 }

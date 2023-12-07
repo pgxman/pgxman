@@ -106,7 +106,13 @@ is NAME=VERSION.`, action),
 
 func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		client, err := newReigstryClient()
+		if err != nil {
+			return err
+		}
+
 		p := NewArgsParser(
+			client,
 			ContainerPlatformDetector,
 			pgxman.PGVersion(flagContainerInstallPGVersion),
 			true,

@@ -8,7 +8,6 @@ import (
 
 	"github.com/eiannone/keyboard"
 	"github.com/pgxman/pgxman"
-	"github.com/pgxman/pgxman/internal/buildkit"
 	"github.com/pgxman/pgxman/internal/log"
 )
 
@@ -119,11 +118,6 @@ func checkRootAccess() error {
 func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 	var aptPkg AptPackage
 
-	installableExts, err := buildkit.Extensions()
-	if err != nil {
-		return aptPkg, fmt.Errorf("fetch installable extensions: %w", err)
-	}
-
 	coreAptRepos, err := coreAptRepos()
 	if err != nil {
 		return aptPkg, err
@@ -137,11 +131,6 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 			Overwrite: ext.Overwrite,
 		}
 	} else {
-		installableExt, ok := installableExts[ext.Name]
-		if !ok {
-			return aptPkg, fmt.Errorf("extension %q not found", ext.Name)
-		}
-
 		aptPkg = AptPackage{
 			Pkg:       extDebPkgName(ext),
 			Opts:      ext.Options,
@@ -149,12 +138,7 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 			Overwrite: ext.Overwrite,
 		}
 
-		if builders := installableExt.Builders; builders != nil {
-			builder := builders.Current()
-			if ar := builder.AptRepositories; len(ar) > 0 {
-				aptPkg.Repos = append(aptPkg.Repos, ar...)
-			}
-		}
+		aptPkg.Repos = append(aptPkg.Repos, ext.AptRepositories...)
 	}
 
 	return aptPkg, nil

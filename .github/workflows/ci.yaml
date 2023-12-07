@@ -104,6 +104,27 @@ jobs:
       - name: Run tests
         run: |
           make tools installer_test
+  linux_install_test:
+    name: Linux Install Test
+    needs: [build, test, vet]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Run tests
+        run: |
+          sudo apt update
+          sudo apt install gnupg2 postgresql-common -y
+          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt install postgresql-15 -y
+
+          make build
+          bin/pgxman doctor
+          sudo bin/pgxman install pgvector postgis parquet_s3_fdw --yes --debug
   mac_install_test:
     name: Mac Install Test
     needs: [build, test, vet]

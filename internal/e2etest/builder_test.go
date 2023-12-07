@@ -175,7 +175,7 @@ cat <<EOS | pgxman pack install -f -
 apiVersion: v1
 extensions:
 - name: "pg_ivm"
-  version: "1.5.1"
+  version: "1.7.0"
 - path: "/out/%s"
 postgres:
   version: "15"
