@@ -118,7 +118,9 @@ jobs:
       - name: Run tests
         run: |
           sudo apt update
-          sudo apt install postgresql
+          sudo apt install gnupg2 postgresql-common -y
+          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt install postgresql-15 -y
 
           make build
           bin/pgxman doctor
