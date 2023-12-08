@@ -39,9 +39,13 @@ func newContainerCmd() *cobra.Command {
 }
 
 func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Command {
-	action := "install"
+	var (
+		action = "install"
+		alias  = "i"
+	)
 	if upgrade {
 		action = "upgrade"
+		alias = "u"
 	}
 
 	exampleTmpl := `  # {{ title .Action }} the latest pgvector in a container.
@@ -86,8 +90,9 @@ func newContainerInstallOrUpgradeCmd(cmdPrefix string, upgrade bool) *cobra.Comm
 	}
 
 	cmd := &cobra.Command{
-		Use:   action,
-		Short: c.String(action) + " PostgreSQL extensions in a container",
+		Use:     action,
+		Aliases: []string{alias},
+		Short:   c.String(action) + " PostgreSQL extensions in a container",
 		Long: fmt.Sprintf(`Start a container with the specified PostgreSQL version and %s
 PostgreSQL extension from commandline arguments. The argument format
 is NAME=VERSION.`, action),

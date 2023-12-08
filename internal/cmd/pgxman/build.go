@@ -19,9 +19,10 @@ var (
 
 func newBuildCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Build extension according to the configuration file",
-		RunE:  runBuild,
+		Use:     "build",
+		Aliases: []string{"b"},
+		Short:   "Build extension according to the configuration file",
+		RunE:    runBuild,
 	}
 
 	cmd.PersistentFlags().StringVarP(&flagBuildExtensionFile, "file", "f", "extension.yaml", "Path to the extension manifest file")
