@@ -10,6 +10,8 @@ for _file in "$@"; do
         --prefix cli \
         --codename stable \
         --visibility public \
+        --suite stable \
+        --component main \
         --sign "$GPG_SIGNING_KEY_ID" \
         --preserve_versions \
         "$_file"
