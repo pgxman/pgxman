@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for _file in "$@"; do
+    echo "Uploading deb packages $_file"
+    deb-s3 upload \
+        --lock \
+        --bucket "$AWS_DEBIAN_S3_BUCKET" \
+        --prefix cli \
+        --codename stable \
+        --visibility public \
+        --sign "$GPG_SIGNING_KEY_ID" \
+        --preserve_versions \
+        "$_file"
+done
