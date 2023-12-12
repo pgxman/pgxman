@@ -1,10 +1,22 @@
 FROM postgres:15
 
-WORKDIR /src
+ENV DEBIAN_FRONTEND noninteractive
+ARG USER=myuser
+ARG UID=1000
+ARG GID=100
 
-RUN apt update && apt install -y curl
+RUN apt update && apt install -y curl sudo
 
-COPY dist /tmp/dist
+RUN useradd -m -s /bin/bash -N -u $UID $USER && \
+  echo "${USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+  chmod 0440 /etc/sudoers && \
+  chmod g+w /etc/passwd
+
+USER ${USER}
+ENV USER ${USER}
+ENV HOME /home/${USER}
+WORKDIR /home/${USER}
+
 COPY install.sh /tmp/install.sh
 
 RUN cat <<EOS > /tmp/pgxman.yaml
@@ -15,6 +27,6 @@ extensions:
   - name: "pgvector"
     version: "0.5.1"
 EOS
-RUN PGXMAN_DOWNLOAD_URL=file:///tmp/dist sh /tmp/install.sh /tmp/pgxman.yaml
+RUN sh /tmp/install.sh /tmp/pgxman.yaml
 
 RUN pgxman --version
