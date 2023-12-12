@@ -112,7 +112,7 @@ install_pgxman_linux() {
     fi
 
     echo "Installing pgxman for Linux ${_arch}..."
-    ensure downloader https://pgxman.github.io/buildkit/pgxman.gpg /usr/share/keyrings/pgxman-cli.gpg
+    ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
     ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
     ensure ${SUDO} apt update
     ensure ${SUDO} apt install -y pgxman
