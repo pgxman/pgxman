@@ -25,7 +25,7 @@ const (
 	aptKeyRingsDir = "/usr/share/keyrings"
 	aptSourceDir   = "/etc/apt/sources.list.d"
 
-	coreAptSourceGPGKeyURL = "https://pgxman.github.io/buildkit/pgxman.gpg"
+	coreAptSourceGPGKeyURL = "https://apt.pgxman.com/pgxman-keyring.gpg"
 	coreAptSourceURL       = "https://apt.pgxman.com"
 )
 

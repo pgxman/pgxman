@@ -35,6 +35,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI_GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ env.build_version }}
+      - name: Install deb-s3
+        run: |
+          gem install deb-s3
+      - name: Import GPG Key
+        env:
+          GPG_PRIVATE: ${{ secrets.GPG_PRIVATE }}
+          GPG_PUBLIC: ${{ secrets.GPG_PUBLIC }}
+        run: |
+          echo -e "$GPG_PRIVATE" | gpg --import --no-tty --batch --yes
+          echo -e "$GPG_PUBLIC" | gpg --import --no-tty --batch --yes
+          echo "allow-preset-passphrase" > ~/.gnupg/gpg-agent.conf
+          gpg-connect-agent RELOADAGENT /bye
+      - name: Upload debian package
+        env:
+          AWS_DEBIAN_S3_BUCKET: ${{ secrets.AWS_DEBIAN_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GPG_SIGNING_KEY_ID: C9ADBB93237BCD3B
+        run: |
+          script/deb-s3-upload "./dist/pgxman_*.deb"
       - name: Upload install script
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

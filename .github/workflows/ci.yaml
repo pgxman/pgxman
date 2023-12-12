@@ -139,8 +139,8 @@ jobs:
         run: |
           brew install --overwrite python@3.12 docker docker-compose docker-buildx colima
           mkdir -p ~/.docker/cli-plugins
-          ln -sfn $(brew --prefix docker-compose)/bin/docker-compose ~/.docker/cli-plugins/docker-compose
-          ln -sfn $(brew --prefix docker-buildx)/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx
+          ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
+          ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
           colima start
 
           make build docker_load_runner

@@ -2,17 +2,13 @@
 # shellcheck shell=dash
 
 # This is just a little script that can be downloaded from the internet to
-# install pgxman. It just does platform detection, downloads the package
-# and use corresponding package manager to install it.
+# install pgxman. It does platform detection and uses corresponding package manager to install it.
 # Optinally, you can pass a pgxman file to install extensions.
 
 set -u
 set -o noglob
 
-PGXMAN_DOWNLOAD_URL="${PGXMAN_DOWNLOAD_URL:-https://github.com/pgxman/pgxman/releases/latest/download}"
-
 main() {
-    downloader --check
     need_cmd uname
     need_cmd echo
     need_cmd cat
@@ -46,7 +42,7 @@ install_extensions() {
     if [ "$#" -ne "0" ]; then
         for _file in "$@"; do
             echo "Installing extensions from ${_file}..."
-            ensure pgxman pack install --file "$_file" --yes || exit 1
+            ensure "${SUDO}" pgxman pack install --file "$_file" --yes || exit 1
         done
     fi
 }
@@ -96,11 +92,11 @@ get_architecture() {
 }
 
 install_pgxman_linux() {
+    downloader --check
     need_cmd apt
+    need_cmd tee
 
     local _arch="$1"
-    local _url="${PGXMAN_DOWNLOAD_URL}/pgxman_linux_${_arch}.deb"
-    local _file="/tmp/pgxman_linux_${_arch}.deb"
 
     SUDO=""
     if [ "$(id -u)" != "0" ]; then
@@ -116,9 +112,10 @@ install_pgxman_linux() {
     fi
 
     echo "Installing pgxman for Linux ${_arch}..."
-    ensure downloader "$_url" "$_file"
+    ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
+    ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
     ensure ${SUDO} apt update
-    ensure ${SUDO} apt install -y "$_file"
+    ensure ${SUDO} apt install -y pgxman
 }
 
 install_pgxman_darwin() {
@@ -152,15 +149,15 @@ downloader() {
         need_cmd "$_dld"
     elif [ "$_dld" = curl ]; then
         if [ -z "$2" ]; then
-            curl --silent --show-error --fail --location "$1"
+            ${SUDO} curl --silent --show-error --fail --location "$1"
         else
-            curl --silent --show-error --fail --location "$1" --output "$2"
+            ${SUDO} curl --silent --show-error --fail --location "$1" --output "$2"
         fi
     elif [ "$_dld" = wget ]; then
         if [ -z "$2" ]; then
-            wget "$1"
+            ${SUDO} wget "$1"
         else
-            wget "$1" -O "$2"
+            ${SUDO} wget "$1" -O "$2"
         fi
     else
         err "Unknown downloader" # should not reach here

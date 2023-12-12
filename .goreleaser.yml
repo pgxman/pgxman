@@ -28,22 +28,6 @@ release:
   prerelease: auto
   name_template: "pgxman {{.Version}}"
   mode: append
-  footer: |
-    ## Docker images
-
-    To pull the builder image, you can execute the following command:
-    ```
-    docker pull ghcr.io/pgxman/builder/debian/bookworm:{{ .Tag }}
-    docker pull ghcr.io/pgxman/builder/ubuntu/jammy:{{ .Tag }}
-    ````
-
-    To pull the runner image, you can execute the following command:
-    ```
-    docker pull ghcr.io/pgxman/runner/postgres/16:{{ .Tag }}
-    docker pull ghcr.io/pgxman/runner/postgres/15:{{ .Tag }}
-    docker pull ghcr.io/pgxman/runner/postgres/14:{{ .Tag }}
-    docker pull ghcr.io/pgxman/runner/postgres/13:{{ .Tag }}
-    ````
 changelog:
   sort: asc
   use: github

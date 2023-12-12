@@ -109,7 +109,7 @@ docker_push_runner: DOCKER_ARGS=--push
 docker_push_runner: docker_build_runner
 
 .PHONY: installer_test
-installer_test: goreleaser
+installer_test:
 	docker build \
 		--rm \
 		-f $(PWD)/dockerfiles/test/Dockerfile.installer_test \
