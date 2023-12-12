@@ -9,27 +9,10 @@ pgxman will support native homebrew installation in the future.
 
 ## Linux
 
-<Note>At this time, only Ubuntu Jammy and Debian Bookworm are supported.</Note>
+<Note>At this time, only Ubuntu Jammy (22.04) and Debian Bookworm (12.x) are supported.</Note>
 
-pgxman assumes you likely already have Postgres installed, and because there are many ways to install
-Postgres, it does not try to install it for you. pgxman will detect your version of Postgres by looking
-for `pg_config`.
-
-If you do not have Postgres installed, we recommend either using the default version included with the distro,
-or use the Postgres Global Developer Group (`pgdg`) repository.
-
-### Included versions
-
-- Debian Bookworm: Postgres 15
-  - `sudo apt install postgresql-15`
-- Ubuntu Jammy: Postgres 14
-  - `sudo apt install postgresql-14`
-
-
-### Other versions
-
-We highly recommend using the Postgres Global Developer Group (PGDG)
-apt repository to install other versions. To add this repository, run:
+pgxman requires using [the Postgres Global Developer Group (PGDG) apt repository][pgpg-apt] to install Postgres. To add this
+repository, run:
 
 ```sh
 sudo apt install -y postgresql-common gnupg2
@@ -41,3 +24,8 @@ Once the repository is installed, you can install your desired version of Postgr
 ```sh
 sudo apt install postgresql-16
 ```
+
+Support for other Postgres distributions are being considered. Please upvote (or file a new issue) if there is a
+distribution of Postgres you would like to see supported.
+
+[pgpg-apt]: https://wiki.postgresql.org/wiki/Apt
