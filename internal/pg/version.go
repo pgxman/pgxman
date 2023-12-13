@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/pgxman/pgxman"
 )
 
 var (
-	regexpPGVersion = regexp.MustCompile(`^PostgreSQL (\d+)`)
+	regexpPGVersion = regexp.MustCompile(`^PostgreSQL (\d+).+\((.+)\s(.+)\)$`)
+
+	ErrParsingPGVersion     = fmt.Errorf("failed to parse pg version")
+	ErrUnsupportedPGVersion = fmt.Errorf("unsupported pg version")
+	ErrUnsupportedPGDistro  = fmt.Errorf("unsupported pg distribution")
 )
 
 func DetectVersion(ctx context.Context) (pgxman.PGVersion, error) {
@@ -34,14 +39,22 @@ func pgConfigVersion(ctx context.Context, path string) (pgxman.PGVersion, error)
 		return pgxman.PGVersionUnknown, err
 	}
 
-	matches := regexpPGVersion.FindStringSubmatch(string(b))
+	return parsePGVersion(string(b))
+}
+
+func parsePGVersion(s string) (pgxman.PGVersion, error) {
+	matches := regexpPGVersion.FindStringSubmatch(s)
 	if len(matches) == 0 {
-		return pgxman.PGVersionUnknown, fmt.Errorf("failed to parse pg_config --version output: %s", string(b))
+		return pgxman.PGVersionUnknown, ErrParsingPGVersion
+	}
+
+	if !strings.Contains(matches[3], "pgdg") {
+		return pgxman.PGVersionUnknown, ErrUnsupportedPGDistro
 	}
 
 	def := pgxman.PGVersion(matches[1])
 	if err := def.Validate(); err != nil {
-		return pgxman.PGVersionUnknown, fmt.Errorf("invalid PostgreSQL version: %w", err)
+		return pgxman.PGVersionUnknown, ErrUnsupportedPGVersion
 	}
 
 	return def, nil
