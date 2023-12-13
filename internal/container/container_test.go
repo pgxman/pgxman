@@ -129,18 +129,21 @@ func Test_mergePackFile(t *testing.T) {
 			assert := assert.New(t)
 
 			dir := t.TempDir()
+			packFile := filepath.Join(dir, "pgxman.yaml")
+			tmpPackFile := filepath.Join(dir, "pgxman.yaml.tmp")
+
 			if c.ExistingPackFile != nil {
 				b, err := yaml.Marshal(c.ExistingPackFile)
 				assert.NoError(err)
 
-				err = os.WriteFile(filepath.Join(dir, "pgxman.yaml"), b, 0644)
+				err = os.WriteFile(packFile, b, 0644)
 				assert.NoError(err)
 			}
 
-			err := mergePackFile(c.NewPackFile, dir)
+			err := mergePackFile(c.NewPackFile, packFile, tmpPackFile)
 			assert.NoError(err)
 
-			b, err := os.ReadFile(filepath.Join(dir, "pgxman.yaml"))
+			b, err := os.ReadFile(tmpPackFile)
 			assert.NoError(err)
 
 			var got pgxman.Pack

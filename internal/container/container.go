@@ -143,9 +143,14 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		return nil, err
 	}
 
-	if err := mergePackFile(&pack, runnerDir); err != nil {
+	var (
+		packFile    = filepath.Join(runnerDir, "pgxman.yaml")
+		tmpPackFile = filepath.Join(runnerDir, "pgxman.yaml.tmp")
+	)
+	if err := mergePackFile(&pack, packFile, tmpPackFile); err != nil {
 		return nil, err
 	}
+	defer os.Remove(tmpPackFile)
 
 	w := c.Logger.Writer(slog.LevelDebug)
 	dockerCompose := exec.CommandContext(
@@ -163,7 +168,15 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 	dockerCompose.Stdout = w
 	dockerCompose.Stderr = w
 
-	return &info, dockerCompose.Run()
+	if err := dockerCompose.Run(); err != nil {
+		return nil, err
+	}
+
+	if err := cp.Copy(tmpPackFile, packFile); err != nil {
+		return nil, err
+	}
+
+	return &info, nil
 }
 
 func (c *Container) Teardown(ctx context.Context, pgVer pgxman.PGVersion) error {
@@ -225,13 +238,11 @@ func copyLocalFiles(f *pgxman.Pack, dstDir string) error {
 	return nil
 }
 
-func mergePackFile(new *pgxman.Pack, dstDir string) error {
-	packFile := filepath.Join(dstDir, "pgxman.yaml")
-
+func mergePackFile(new *pgxman.Pack, packFile, tmpPackFile string) error {
 	b, err := os.ReadFile(packFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return writePackFile(new, packFile)
+			return writePackFile(new, tmpPackFile)
 		} else {
 			return err
 		}
@@ -260,7 +271,7 @@ func mergePackFile(new *pgxman.Pack, dstDir string) error {
 	new.Extensions = result
 	new.Postgres = existing.Postgres // always preserve existing postgres config
 
-	return writePackFile(new, packFile)
+	return writePackFile(new, tmpPackFile)
 }
 
 func writePackFile(f *pgxman.Pack, dst string) error {

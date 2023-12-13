@@ -128,6 +128,7 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 			Pkg:       ext.Path,
 			IsLocal:   true,
 			Opts:      ext.Options,
+			Repos:     coreAptRepos,
 			Overwrite: ext.Overwrite,
 		}
 	} else {
