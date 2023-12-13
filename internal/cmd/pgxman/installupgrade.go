@@ -3,6 +3,7 @@ package pgxman
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -115,7 +116,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
-		pgVer := pgxman.PGVersion(flagInstallOrUpgradePGVersion)
+		pgVer := pgxman.ParsePGVersion(flagInstallOrUpgradePGVersion)
 		if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 			return err
 		}
@@ -179,18 +180,9 @@ func (e errInvalidExtensionFormat) Error() string {
 	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION...", e.Arg)
 }
 
-type errInvalidPGVersion struct {
-	Version pgxman.PGVersion
-}
-
-func (e errInvalidPGVersion) Error() string {
-	msg := "could not detect an installation of Postgres"
-	if e.Version != pgxman.PGVersionUnknown {
-		msg = fmt.Sprintf("could not detect an installation of Postgres %s", e.Version)
-	}
-
-	return fmt.Sprintf("%s. For information on installing Postgres, see: https://docs.pgxman.com/installing_postgres.", msg)
-}
+var (
+	errCanNotDetectPG = errors.New("could not detect a supported installation of PostgreSQL. For more info, run `pgxman doctor`")
+)
 
 func supportedPGVersions() []string {
 	var pgVers []string
@@ -203,7 +195,7 @@ func supportedPGVersions() []string {
 
 func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
-		return errInvalidPGVersion{Version: pgVer}
+		return errCanNotDetectPG
 	}
 
 	return nil
