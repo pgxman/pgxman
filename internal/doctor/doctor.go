@@ -199,16 +199,35 @@ func (v *postgresValidator) Validate(ctx context.Context) []ValidationResult {
 		results []ValidationResult
 	)
 
-	pgVer, e := pg.DetectVersion(ctx)
-	if e != nil {
-		lines := []string{
-			"To install a PostgreSQL extension, you'll need install PostgreSQL.",
-			"Visit https://docs.pgxman.com/installing_postgres for more info.",
+	pgVer, err := pg.DetectVersion(ctx)
+	if err != nil {
+		var (
+			title  = "PostgreSQL is not installed"
+			reason = []string{
+				"To install a PostgreSQL extension, you'll need to install PostgreSQL.",
+				"Visit https://docs.pgxman.com/installing_postgres for more info.",
+			}
+		)
+		if errors.Is(err, pg.ErrUnsupportedPGDistro) {
+			title = "Installed PostgreSQL is not a supported distribution"
+			reason = []string{
+				"You have installed an unsupported distribution of PostgreSQL.",
+				"pgxman managed extensions are built against the PGDG PostgreSQL.",
+				"Visit https://docs.pgxman.com/installing_postgres for more info.",
+			}
 		}
+		if errors.Is(err, pg.ErrUnsupportedPGVersion) {
+			title = "Installed PostgreSQL version is supported"
+			reason = []string{
+				"You have installed an unsupported PostgreSQL version.",
+				"Visit https://docs.pgxman.com/installing_postgres for more info.",
+			}
+		}
+
 		results = append(results, ValidationResult{
 			Type:     ValiationError,
 			Category: ValidationCategoryRequired,
-			Message:  "PostgreSQL is not installed\n" + addPrefixedSpaces(lines, 4),
+			Message:  title + "\n" + addPrefixedSpaces(reason, 4),
 		})
 	} else {
 		results = append(results, ValidationResult{

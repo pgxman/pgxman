@@ -18,6 +18,7 @@ func Test_parsePGVersion(t *testing.T) {
 			Name:      "happy path",
 			Str:       "PostgreSQL 16.1 (Debian 16.1-1.pgdg120+1)",
 			WantPGVer: pgxman.PGVersion16,
+			WantErr:   nil,
 		},
 		{
 			Name:      "unsupported pg distro",

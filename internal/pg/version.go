@@ -39,7 +39,7 @@ func pgConfigVersion(ctx context.Context, path string) (pgxman.PGVersion, error)
 		return pgxman.PGVersionUnknown, err
 	}
 
-	return parsePGVersion(string(b))
+	return parsePGVersion(strings.TrimSpace(string(b)))
 }
 
 func parsePGVersion(s string) (pgxman.PGVersion, error) {
