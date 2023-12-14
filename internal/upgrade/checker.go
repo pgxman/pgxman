@@ -62,6 +62,10 @@ func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 	if err == nil {
 		lastCheckTime = cfg.LastUpgradeCheckTime
 		cfg.LastUpgradeCheckTime = now
+	} else {
+		cfg = &config.Config{
+			LastUpgradeCheckTime: now,
+		}
 	}
 
 	defer func() {

@@ -1,12 +1,16 @@
 package pgxman
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"runtime"
 
 	"log/slog"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/upgrade"
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +25,12 @@ func Command() *cobra.Command {
 		Short:        "PostgreSQL Extension Manager",
 		Version:      pgxman.Version,
 		SilenceUsage: true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagDebug {
 				log.SetLevel(slog.LevelDebug)
 			}
+
+			return checkUpgrade(cmd.Context())
 		},
 	}
 
@@ -46,4 +52,30 @@ func Command() *cobra.Command {
 
 func Execute() error {
 	return Command().Execute()
+}
+
+func checkUpgrade(ctx context.Context) error {
+	c := upgrade.NewChecker(log.NewTextLogger())
+	result, err := c.Check(ctx)
+	if err != nil {
+		return err
+	}
+
+	if result.HasUpgrade {
+		var upgradeCmd string
+		switch runtime.GOOS {
+		case "darwin":
+			upgradeCmd = "brew upgrade pgxman"
+		case "linux":
+			upgradeCmd = "apt upgrade pgxman"
+		default:
+			// skip upgrade message for unsupported platform
+			return nil
+		}
+
+		msg := fmt.Sprintf("pgxman %s available (%s installed), run `%s` to upgrade", result.LatestVersion, result.CurrentVersion, upgradeCmd)
+		fmt.Println(infoColor.Copy().SetString(msg))
+	}
+
+	return nil
 }

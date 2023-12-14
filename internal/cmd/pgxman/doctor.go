@@ -11,9 +11,13 @@ import (
 )
 
 var (
-	successMark = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000")).SetString("✓")
-	infoMark    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0000FF")).SetString("!")
-	errorMark   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).SetString("x")
+	successColor = lipgloss.NewStyle().Foreground(lipgloss.Color("#008000"))
+	errorColor   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
+	infoColor    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0000FF"))
+
+	successMark = successColor.Copy().SetString("✓")
+	errorMark   = errorColor.Copy().SetString("x")
+	infoMark    = infoColor.Copy().SetString("!")
 )
 
 func newDoctorCmd() *cobra.Command {
