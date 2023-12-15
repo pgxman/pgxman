@@ -13,6 +13,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.16.2
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/github/go-spdx/v2 v2.2.0
+	github.com/google/go-github/v57 v57.0.0
 	github.com/google/uuid v1.4.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/oapi-codegen/runtime v1.1.0
@@ -40,6 +41,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.5 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
