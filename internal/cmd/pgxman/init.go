@@ -19,7 +19,7 @@ func newInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "Create a buildkit file",
 		Long: `Create a buildkit YAML file that specifies how a PostgreSQL extension is built and packaged. The
-specification is available at https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md.`,
+specification is available at https://docs.pgxman.com/spec/buildkit.`,
 		RunE: runInit,
 	}
 
@@ -41,7 +41,7 @@ func runInit(c *cobra.Command, args []string) error {
 					Name: "my build step",
 					Run: `# Uncomment to write the build script for the extension.
 # The built extension must be installed in the $DESTDIR directory.
-# See https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md#build for details.
+# See https://docs.pgxman.com/spec/buildkit#build for details.
 `,
 				},
 			},
@@ -267,7 +267,7 @@ func (m initModel) View() string {
 	}
 	b.WriteString(`This utility will walk you through creating a buildkit file.
 It only covers the most common items and tries to guess sensible defaults.
-See https://github.com/pgxman/pgxman/blob/main/spec/buildkit.md for documentation.
+See https://docs.pgxman.com/spec/buildkit for documentation.
 
 `)
 
