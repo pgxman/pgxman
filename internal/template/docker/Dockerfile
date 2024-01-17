@@ -9,7 +9,6 @@ ARG WORKSPACE_DIR
 
 RUN mkdir ${WORKSPACE_DIR}
 WORKDIR ${WORKSPACE_DIR}
-COPY source.tar.gz ${WORKSPACE_DIR}/source.tar.gz
 COPY extension.yaml ${WORKSPACE_DIR}/extension.yaml
 
 RUN pgxman-pack init $PGXMAN_PACK_ARGS

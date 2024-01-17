@@ -61,10 +61,6 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 	}()
 
 	b.logger.Debug("Building extension", "ext", ext, "workdir", workDir)
-	if err := b.fetchSource(ext, workDir); err != nil {
-		return fmt.Errorf("fetch source: %w", err)
-	}
-
 	if err := b.generateDockerFile(ext, workDir); err != nil {
 		return fmt.Errorf("generate Dockerfile: %w", err)
 	}
@@ -107,15 +103,6 @@ func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) erro
 	}
 
 	return os.WriteFile(filepath.Join(dstDir, "extension.yaml"), e, 0644)
-}
-
-func (b *dockerBuilder) fetchSource(ext Extension, dstDir string) error {
-	source, err := ext.ParseSource()
-	if err != nil {
-		return nil
-	}
-
-	return source.Archive(filepath.Join(dstDir, "source.tar.gz"))
 }
 
 func (b *dockerBuilder) runDockerBuild(ctx context.Context, ext Extension, dstDir string) error {

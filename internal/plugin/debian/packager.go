@@ -15,7 +15,6 @@ import (
 	"log/slog"
 
 	"github.com/mholt/archiver/v3"
-	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
@@ -24,7 +23,6 @@ import (
 
 const (
 	extensionDepPrefix = "pgxman/"
-	sourceTarGzFile    = "source.tar.gz"
 )
 
 type DebianPackager struct {
@@ -92,7 +90,6 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 //
 //   - workspace
 //     -- extension.yaml
-//     -- source.tar.gz
 //     -- target
 //     --- pgvector.orig.tar.gz
 //     --- debian_build
@@ -119,8 +116,31 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	return nil
 }
 
+func (p *DebianPackager) downloadSource(ext pgxman.Extension, targetDir string) (string, error) {
+	logger := p.Logger.With(slog.String("source", ext.Source))
+	logger.Info("Downloading source")
+
+	targetFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
+
+	// file is already downloaded
+	if _, err := os.Stat(targetFile); err == nil {
+		return targetFile, nil
+	}
+
+	source, err := ext.ParseSource()
+	if err != nil {
+		return "", nil
+	}
+
+	if err := source.Archive(targetFile); err != nil {
+		return "", err
+	}
+
+	return targetFile, nil
+}
+
 func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, workDir, targetDir, buildDir string) error {
-	sourceFile, err := p.copySource(ctx, ext, workDir, targetDir)
+	sourceFile, err := p.downloadSource(ext, targetDir)
 	if err != nil {
 		return fmt.Errorf("download source %s: %w", ext.Source, err)
 	}
@@ -130,24 +150,6 @@ func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgx
 	}
 
 	return nil
-}
-
-func (p *DebianPackager) copySource(ctx context.Context, ext pgxman.Extension, workDir, targetDir string) (string, error) {
-	logger := p.Logger.With(slog.String("source", ext.Source))
-	logger.Info("Copying source")
-
-	targetFile := filepath.Join(targetDir, fmt.Sprintf("%s_%s.orig.tar.gz", ext.Name, ext.Version))
-
-	// file is already copied
-	if _, err := os.Stat(targetFile); err == nil {
-		return targetFile, nil
-	}
-
-	if err := cp.Copy(filepath.Join(workDir, sourceTarGzFile), targetFile); err != nil {
-		return "", err
-	}
-
-	return targetFile, nil
 }
 
 func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildDir string) error {
