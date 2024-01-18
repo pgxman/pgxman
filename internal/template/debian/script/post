@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -eo pipefail
-
-echo "---> Running post-build script {{ .Name }} ({{ .Version }})"
-
-{{ .PostBuildScript }}

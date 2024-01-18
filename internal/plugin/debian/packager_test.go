@@ -14,9 +14,11 @@ func Test_debianPackageTemplater(t *testing.T) {
 	ext := pgxman.Extension{
 		Name:              "pgvector",
 		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
+		PGVersions:        []pgxman.PGVersion{pgxman.PGVersion14},
 		BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
 		RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
 	}
+	targetPGVEr := pgxman.PGVersion13
 
 	cases := []struct {
 		Name        string
@@ -43,6 +45,11 @@ func Test_debianPackageTemplater(t *testing.T) {
 			Content:     `{{ .Maintainers }}`,
 			WantContent: "Owen Ou <o@hydra.so>",
 		},
+		{
+			Name:        "target pg versions",
+			Content:     `{{ .PGVersions }}`,
+			WantContent: "[13]",
+		},
 	}
 
 	for _, c := range cases {
@@ -53,7 +60,7 @@ func Test_debianPackageTemplater(t *testing.T) {
 
 			buf := bytes.NewBuffer(nil)
 
-			err := debianPackageTemplater{ext}.Render([]byte(c.Content), buf)
+			err := debianPackageTemplater{ext, targetPGVEr}.Render([]byte(c.Content), buf)
 			assert.NoError(err)
 			assert.Equal(c.WantContent, buf.String())
 		})

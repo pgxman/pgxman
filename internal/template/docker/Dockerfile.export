@@ -5,11 +5,15 @@ FROM ubuntu AS merge
 ARG WORKSPACE_DIR
 
 {{- if .ExportDebianBookwormArtifacts }}
-COPY --from=debian-bookworm ${WORKSPACE_DIR}/target/*.deb  /out/debian/bookworm/
+{{- range .PGVersions }}
+COPY --from=debian-bookworm ${WORKSPACE_DIR}/target/{{ . }}/*.deb  /out/debian/bookworm/
+{{- end }}
 {{- end }}
 
 {{- if .ExportUbuntuJammyArtifacts }}
-COPY --from=ubuntu-jammy ${WORKSPACE_DIR}/target/*.deb  /out/ubuntu/jammy/
+{{- range .PGVersions }}
+COPY --from=ubuntu-jammy ${WORKSPACE_DIR}/target/{{ . }}/*.deb  /out/ubuntu/jammy/
+{{- end }}
 {{- end }}
 
 FROM ubuntu AS export

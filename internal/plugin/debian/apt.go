@@ -294,12 +294,10 @@ func (a *Apt) aptMarkUnhold(ctx context.Context, pkg AptPackage) error {
 }
 
 func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) (string, error) {
-	c := append([]string{command}, args...)
-
 	bw := bytes.NewBuffer(nil)
 	lw := a.Logger.Writer(slog.LevelDebug)
 
-	cmd := exec.CommandContext(ctx, c[0], c[1:]...)
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 	cmd.Stdout = io.MultiWriter(lw, bw)
 	cmd.Stderr = io.MultiWriter(lw, bw)
