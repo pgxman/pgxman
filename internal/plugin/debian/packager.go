@@ -348,7 +348,6 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 
 type extensionData struct {
 	pgxman.Extension
-	pgxman.PGVersion
 }
 
 func (e extensionData) Maintainers() string {
@@ -429,8 +428,8 @@ func concatBuildScript(scripts []pgxman.BuildScript) string {
 }
 
 type debianPackageTemplater struct {
-	ext   pgxman.Extension
-	pgVer pgxman.PGVersion
+	ext         pgxman.Extension
+	targetPGVer pgxman.PGVersion
 }
 
 func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
@@ -440,7 +439,8 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	}
 
 	d.ext.Name = debNormalizedName(d.ext.Name)
-	if err := t.Execute(out, extensionData{d.ext, d.pgVer}); err != nil {
+	d.ext.PGVersions = []pgxman.PGVersion{d.targetPGVer} // FIXME: hardcode to effective pg version for now
+	if err := t.Execute(out, extensionData{d.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
