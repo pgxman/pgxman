@@ -19,6 +19,7 @@ import (
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
+	"github.com/pgxman/pgxman/internal/template/script"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -65,7 +66,7 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 		return fmt.Errorf("install build dependencies: %w", err)
 	}
 
-	if err := p.writePrePostScripts(ext, p.targetScriptDir(opts)); err != nil {
+	if err := p.generatePrePostScripts(ext, p.targetScriptDir(opts)); err != nil {
 		return fmt.Errorf("write pre/post scripts: %w", err)
 	}
 
@@ -79,7 +80,7 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 }
 
 func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	p.Logger.Debug("Pre step", "opts", opts, "ext", ext)
+	p.Logger.Debug("Pre step", "opts", opts, "name", ext.Name)
 
 	if err := checkRootAccess(); err != nil {
 		return err
@@ -89,7 +90,7 @@ func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgx
 }
 
 func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	p.Logger.Debug("Post step", "opts", opts, "ext", ext)
+	p.Logger.Debug("Post step", "opts", opts, "name", ext.Name)
 
 	if err := checkRootAccess(); err != nil {
 		return err
@@ -99,7 +100,7 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 }
 
 func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	p.Logger.Debug("Main step", "opts", opts, "ext", ext)
+	p.Logger.Debug("Main step", "opts", opts, "name", ext.Name)
 
 	if err := checkRootAccess(); err != nil {
 		return err
@@ -132,7 +133,7 @@ func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.Packag
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	p.Logger.Debug("Preparing build", "target", targetPgVerDir, "name", ext.Name)
+	p.Logger.Debug("Preparing build dir", "target", targetPgVerDir, "name", ext.Name, "pgVer", pgVer)
 
 	sourceFile, err := p.downloadSource(ext, targetPgVerDir)
 	if err != nil {
@@ -150,40 +151,11 @@ func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.Packag
 	return nil
 }
 
-func (p *DebianPackager) writePrePostScripts(ext pgxman.Extension, scriptDir string) error {
-	writeScript := func(scripts []pgxman.BuildScript, path string) error {
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			return err
-		}
+func (p *DebianPackager) generatePrePostScripts(ext pgxman.Extension, scriptDir string) error {
+	logger := p.Logger.With("name", ext.Name, "script-dir", scriptDir)
+	logger.Info("Generating pre/post scripts")
 
-		content := fmt.Sprintf(`#!/usr/bin/env bash
-
-		set -eo pipefail
-
-		echo "---> Running pre-build script %s (%s)"
-
-		%s
-		`,
-			ext.Name,
-			ext.Version,
-			concatBuildScript(scripts),
-		)
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	if err := writeScript(ext.Build.Pre, filepath.Join(scriptDir, "pre")); err != nil {
-		return err
-	}
-
-	if err := writeScript(ext.Build.Post, filepath.Join(scriptDir, "post")); err != nil {
-		return err
-	}
-
-	return nil
+	return tmpl.ExportFS(script.FS, scriptTemplater{ext}, scriptDir)
 }
 
 func (p *DebianPackager) targetDir(opts pgxman.PackagerOptions) string {
@@ -260,7 +232,7 @@ func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildD
 
 func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, debianBuildDir string, pgVer pgxman.PGVersion) error {
 	logger := p.Logger.With("name", ext.Name, "debian-build-dir", debianBuildDir)
-	logger.Info("Generating debian package")
+	logger.Info("Generating debian template")
 
 	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext, pgVer}, debianBuildDir)
 }
@@ -465,6 +437,35 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 
 	d.ext.Name = debNormalizedName(d.ext.Name)
 	if err := t.Execute(out, extensionData{d.ext, d.pgVer}); err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	return nil
+}
+
+type scriptData struct {
+	pgxman.Extension
+}
+
+func (s scriptData) PreBuildScript() string {
+	return concatBuildScript(s.Build.Pre)
+}
+
+func (s scriptData) PostBuildScript() string {
+	return concatBuildScript(s.Build.Post)
+}
+
+type scriptTemplater struct {
+	ext pgxman.Extension
+}
+
+func (s scriptTemplater) Render(content []byte, out io.Writer) error {
+	t, err := template.New("").Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("parse template: %w", err)
+	}
+
+	if err := t.Execute(out, scriptData{s.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
