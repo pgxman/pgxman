@@ -19,6 +19,7 @@ import (
 	"github.com/pgxman/pgxman/internal/log"
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -29,28 +30,49 @@ type DebianPackager struct {
 	Logger *log.Logger
 }
 
+// Init generates the following folder structure:
+//
+//   - workspace
+//     -- extension.yaml
+//     -- target
+//     --- script
+//     ---- pre
+//     ---- post
+//     --- 15
+//     ---- pgvector.orig.tar.gz
+//     ---- debian_build
+//     ----- Makefile
+//     ----- src
+//     ----- debian
+//     ----- script
+//     ------ main
+//     --- 14
+//     ---- pgvector.orig.tar.gz
+//     ---- debian_build
+//     ----- Makefile
+//     ----- src
+//     ----- debian
+//     ----- script
+//     ------ main
 func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
-	p.Logger.Debug("Init step", "opts", opts, "ext", ext)
+	p.Logger.Debug("Init step", "opts", opts, "name", ext.Name)
 
 	if err := checkRootAccess(); err != nil {
 		return err
-	}
-
-	targetDir, buildDir, err := p.mkdir(opts)
-	if err != nil {
-		return fmt.Errorf("mkdir: %w", err)
-	}
-
-	if err := p.downloadAndUnarchiveSource(ctx, ext, opts.WorkDir, targetDir, buildDir); err != nil {
-		return fmt.Errorf("download and unarchive source: %w", err)
 	}
 
 	if err := p.installBuildDependencies(ctx, ext); err != nil {
 		return fmt.Errorf("install build dependencies: %w", err)
 	}
 
-	if err := p.generateDebianTemplate(ext, buildDir); err != nil {
-		return fmt.Errorf("generate debian template: %w", err)
+	if err := p.writePrePostScripts(ext, p.targetScriptDir(opts)); err != nil {
+		return fmt.Errorf("write pre/post scripts: %w", err)
+	}
+
+	for _, pgVer := range ext.PGVersions {
+		if err := p.prepareBuildDir(ctx, opts, ext, pgVer); err != nil {
+			return fmt.Errorf("prepare build dir: %w", err)
+		}
 	}
 
 	return nil
@@ -63,12 +85,7 @@ func (p *DebianPackager) Pre(ctx context.Context, ext pgxman.Extension, opts pgx
 		return err
 	}
 
-	_, buildDir, err := p.mkdir(opts)
-	if err != nil {
-		return fmt.Errorf("mkdir: %w", err)
-	}
-
-	return p.runScript(ctx, filepath.Join(buildDir, "script", "pre"), filepath.Join(buildDir, "src"))
+	return p.runScript(ctx, filepath.Join(opts.WorkDir, "target", "script", "pre"))
 }
 
 func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
@@ -78,25 +95,9 @@ func (p *DebianPackager) Post(ctx context.Context, ext pgxman.Extension, opts pg
 		return err
 	}
 
-	_, buildDir, err := p.mkdir(opts)
-	if err != nil {
-		return fmt.Errorf("mkdir: %w", err)
-	}
-
-	return p.runScript(ctx, filepath.Join(buildDir, "script", "post"), filepath.Join(buildDir, "src"))
+	return p.runScript(ctx, filepath.Join(opts.WorkDir, "target", "script", "post"))
 }
 
-// Package generates the following folder structure:
-//
-//   - workspace
-//     -- extension.yaml
-//     -- target
-//     --- pgvector.orig.tar.gz
-//     --- debian_build
-//     ---- Makefile
-//     ---- src
-//     ---- debian
-//     ---- script
 func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pgxman.PackagerOptions) error {
 	p.Logger.Debug("Main step", "opts", opts, "ext", ext)
 
@@ -104,16 +105,101 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 		return err
 	}
 
-	_, buildDir, err := p.mkdir(opts)
-	if err != nil {
+	g, ctx := errgroup.WithContext(ctx)
+	for _, pgVer := range ext.PGVersions {
+		pgVer := pgVer
+
+		g.Go(func() error {
+			if err := p.buildDebian(ctx, ext, pgVer, p.targetDebianBuildDir(opts, pgVer)); err != nil {
+				return fmt.Errorf("debian build: %w", err)
+			}
+
+			return nil
+		})
+	}
+
+	return g.Wait()
+}
+
+func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.PackagerOptions, ext pgxman.Extension, pgVer pgxman.PGVersion) error {
+	targetPgVerDir := p.targetPgVerDir(opts, pgVer)
+	if err := os.MkdirAll(targetPgVerDir, 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	if err := p.buildDebian(ctx, ext, buildDir); err != nil {
-		return fmt.Errorf("debian build: %w", err)
+	debianBuildDir := p.targetDebianBuildDir(opts, pgVer)
+	if err := os.MkdirAll(debianBuildDir, 0755); err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	p.Logger.Debug("Preparing build", "target", targetPgVerDir, "name", ext.Name)
+
+	sourceFile, err := p.downloadSource(ext, targetPgVerDir)
+	if err != nil {
+		return fmt.Errorf("download source %s: %w", ext.Source, err)
+	}
+
+	if err := p.unarchiveSource(ctx, sourceFile, debianBuildDir); err != nil {
+		return fmt.Errorf("unarchive source: %w", err)
+	}
+
+	if err := p.generateDebianTemplate(ext, debianBuildDir, pgVer); err != nil {
+		return fmt.Errorf("generate debian template: %w", err)
 	}
 
 	return nil
+}
+
+func (p *DebianPackager) writePrePostScripts(ext pgxman.Extension, scriptDir string) error {
+	writeScript := func(scripts []pgxman.BuildScript, path string) error {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return err
+		}
+
+		content := fmt.Sprintf(`#!/usr/bin/env bash
+
+		set -eo pipefail
+
+		echo "---> Running pre-build script %s (%s)"
+
+		%s
+		`,
+			ext.Name,
+			ext.Version,
+			concatBuildScript(scripts),
+		)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := writeScript(ext.Build.Pre, filepath.Join(scriptDir, "pre")); err != nil {
+		return err
+	}
+
+	if err := writeScript(ext.Build.Post, filepath.Join(scriptDir, "post")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *DebianPackager) targetDir(opts pgxman.PackagerOptions) string {
+	return filepath.Join(opts.WorkDir, "target")
+}
+
+func (p *DebianPackager) targetScriptDir(opts pgxman.PackagerOptions) string {
+	return filepath.Join(p.targetDir(opts), "script")
+}
+
+func (p *DebianPackager) targetPgVerDir(opts pgxman.PackagerOptions, pgVer pgxman.PGVersion) string {
+	return filepath.Join(p.targetDir(opts), string(pgVer))
+}
+
+func (p *DebianPackager) targetDebianBuildDir(opts pgxman.PackagerOptions, pgVer pgxman.PGVersion) string {
+	return filepath.Join(p.targetPgVerDir(opts, pgVer), "debian_build")
 }
 
 func (p *DebianPackager) downloadSource(ext pgxman.Extension, targetDir string) (string, error) {
@@ -139,21 +225,8 @@ func (p *DebianPackager) downloadSource(ext pgxman.Extension, targetDir string) 
 	return targetFile, nil
 }
 
-func (p *DebianPackager) downloadAndUnarchiveSource(ctx context.Context, ext pgxman.Extension, workDir, targetDir, buildDir string) error {
-	sourceFile, err := p.downloadSource(ext, targetDir)
-	if err != nil {
-		return fmt.Errorf("download source %s: %w", ext.Source, err)
-	}
-
-	if err := p.unarchiveSource(ctx, sourceFile, buildDir); err != nil {
-		return fmt.Errorf("unarchive source: %w", err)
-	}
-
-	return nil
-}
-
 func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildDir string) error {
-	logger := p.Logger.With(slog.String("file", sourceFile))
+	logger := p.Logger.With(slog.String("path", sourceFile))
 	logger.Info("Unarchiving source")
 
 	sourceDir := filepath.Join(buildDir, "src")
@@ -185,11 +258,11 @@ func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildD
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, buildDir string) error {
-	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, debianBuildDir string, pgVer pgxman.PGVersion) error {
+	logger := p.Logger.With("name", ext.Name, "debian-build-dir", debianBuildDir)
 	logger.Info("Generating debian package")
 
-	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext}, buildDir)
+	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext, pgVer}, debianBuildDir)
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
@@ -243,12 +316,12 @@ func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxma
 	return apt.Install(ctx, depsToInstall, sources)
 }
 
-func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string) error {
-	logger := p.Logger.With(slog.String("script", script))
+func (p *DebianPackager) runScript(ctx context.Context, file string) error {
+	logger := p.Logger.With(slog.String("script", file))
 	logger.Info("Running script")
 
-	runScript := exec.CommandContext(ctx, "bash", script)
-	runScript.Dir = sourceDir
+	runScript := exec.CommandContext(ctx, "bash", file)
+	runScript.Dir = filepath.Dir(file)
 	runScript.Stdout = os.Stdout
 	runScript.Stderr = os.Stderr
 
@@ -259,8 +332,9 @@ func (p *DebianPackager) runScript(ctx context.Context, script, sourceDir string
 	return nil
 }
 
-func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, buildDir string) error {
-	logger := p.Logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, pgVer pgxman.PGVersion, buildDir string) error {
+	logger := p.Logger.WithGroup(string(pgVer))
+	logger = logger.With("name", ext.Name, "version", ext.Version, "build-dir", buildDir)
 	logger.Info("Building debian package")
 
 	buildext := exec.CommandContext(ctx, "pg_buildext", "updatecontrol")
@@ -296,20 +370,9 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	return nil
 }
 
-func (p *DebianPackager) mkdir(opts pgxman.PackagerOptions) (targetDir string, buildDir string, err error) {
-	targetDir = filepath.Join(opts.WorkDir, "target")
-	buildDir = filepath.Join(targetDir, "debian_build")
-
-	err = os.MkdirAll(buildDir, 0755)
-	if err != nil {
-		return "", "", err
-	}
-
-	return targetDir, buildDir, nil
-}
-
 type extensionData struct {
 	pgxman.Extension
+	pgxman.PGVersion
 }
 
 func (e extensionData) Maintainers() string {
@@ -327,8 +390,8 @@ func (e extensionData) BuildDeps() string {
 		"postgresql-server-dev-all (>= 158~)",
 	}
 
-	deps := e.BuildDependencies
-	if builders := e.Builders; builders != nil {
+	deps := e.Extension.BuildDependencies
+	if builders := e.Extension.Builders; builders != nil {
 		builder := builders.Current()
 		if len(builder.BuildDependencies) != 0 {
 			deps = builder.BuildDependencies
@@ -344,8 +407,8 @@ func (e extensionData) Deps() string {
 		"${misc:Depends}",
 	}
 
-	deps := e.RunDependencies
-	if builders := e.Builders; builders != nil {
+	deps := e.Extension.RunDependencies
+	if builders := e.Extension.Builders; builders != nil {
 		builder := builders.Current()
 		if len(builder.RunDependencies) != 0 {
 			deps = builder.RunDependencies
@@ -356,15 +419,7 @@ func (e extensionData) Deps() string {
 }
 
 func (e extensionData) MainBuildScript() string {
-	return e.concatBuildScript(e.Build.Main)
-}
-
-func (e extensionData) PreBuildScript() string {
-	return e.concatBuildScript(e.Build.Pre)
-}
-
-func (e extensionData) PostBuildScript() string {
-	return e.concatBuildScript(e.Build.Post)
+	return concatBuildScript(e.Extension.Build.Main)
 }
 
 func (e extensionData) TimeNow() string {
@@ -385,7 +440,7 @@ func (e extensionData) expandDeps(deps []string) []string {
 	return expandedDeps
 }
 
-func (e extensionData) concatBuildScript(scripts []pgxman.BuildScript) string {
+func concatBuildScript(scripts []pgxman.BuildScript) string {
 	var steps []string
 	for _, s := range scripts {
 		step := fmt.Sprintf("echo %q\n", s.Name)
@@ -398,7 +453,8 @@ func (e extensionData) concatBuildScript(scripts []pgxman.BuildScript) string {
 }
 
 type debianPackageTemplater struct {
-	ext pgxman.Extension
+	ext   pgxman.Extension
+	pgVer pgxman.PGVersion
 }
 
 func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
@@ -408,7 +464,7 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	}
 
 	d.ext.Name = debNormalizedName(d.ext.Name)
-	if err := t.Execute(out, extensionData{d.ext}); err != nil {
+	if err := t.Execute(out, extensionData{d.ext, d.pgVer}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 

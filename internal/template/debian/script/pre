@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -eo pipefail
-
-echo "---> Running pre-build script {{ .Name }} ({{ .Version }})"
-
-{{ .PreBuildScript }}

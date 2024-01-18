@@ -22,6 +22,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	golang.org/x/sync v0.3.0
 	golang.org/x/term v0.16.0
 	golang.org/x/text v0.14.0
 	sigs.k8s.io/yaml v1.4.0
@@ -69,7 +70,6 @@ require (
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
