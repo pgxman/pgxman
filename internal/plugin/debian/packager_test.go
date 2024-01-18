@@ -12,11 +12,13 @@ func Test_debianPackageTemplater(t *testing.T) {
 	assert := assert.New(t)
 
 	ext := pgxman.Extension{
-		Name:              "pgvector",
-		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
-		PGVersions:        []pgxman.PGVersion{pgxman.PGVersion14},
-		BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
-		RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
+		Name:        "pgvector",
+		Maintainers: []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
+		PGVersions:  []pgxman.PGVersion{pgxman.PGVersion14},
+		ExtensionOverridable: pgxman.ExtensionOverridable{
+			BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
+			RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
+		},
 	}
 	targetPGVEr := pgxman.PGVersion13
 
