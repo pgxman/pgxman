@@ -292,10 +292,12 @@ func (p *DebianPackager) runScript(ctx context.Context, file string) error {
 	logger := p.Logger.With(slog.String("script", file))
 	logger.Info("Running script")
 
+	lw := logger.Writer(slog.LevelDebug)
+
 	runScript := exec.CommandContext(ctx, "bash", file)
 	runScript.Dir = filepath.Dir(file)
-	runScript.Stdout = os.Stdout
-	runScript.Stderr = os.Stderr
+	runScript.Stdout = lw
+	runScript.Stderr = lw
 
 	if err := runScript.Run(); err != nil {
 		return fmt.Errorf("running script: %w", err)
@@ -309,10 +311,12 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 	logger = logger.With("name", ext.Name, "version", ext.Version, "build-dir", buildDir)
 	logger.Info("Building debian package")
 
+	lw := logger.Writer(slog.LevelDebug)
+
 	buildext := exec.CommandContext(ctx, "pg_buildext", "updatecontrol")
 	buildext.Dir = buildDir
-	buildext.Stdout = os.Stdout
-	buildext.Stderr = os.Stderr
+	buildext.Stdout = lw
+	buildext.Stderr = lw
 
 	logger.Debug("Running pg_buildext updatecontrol", "cmd", buildext.String())
 	if err := buildext.Run(); err != nil {
@@ -331,8 +335,8 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
 	)
 	debuild.Dir = buildDir
-	debuild.Stdout = os.Stdout
-	debuild.Stderr = os.Stderr
+	debuild.Stdout = lw
+	debuild.Stderr = lw
 
 	logger.Debug("Running debuild", "cmd", debuild.String())
 	if err := debuild.Run(); err != nil {
