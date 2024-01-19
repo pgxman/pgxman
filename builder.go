@@ -87,14 +87,14 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 }
 
 func (b *dockerBuilder) generateDockerFile(ext Extension, dstDir string) error {
-	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger := b.logger.With("name", ext.Name)
 	logger.Debug("Generating Dockerfile")
 
 	return tmpl.ExportFS(docker.FS, dockerFileTemplater{ext}, dstDir)
 }
 
 func (b *dockerBuilder) generateExtensionFile(ext Extension, dstDir string) error {
-	logger := b.logger.With(slog.String("name", ext.Name), slog.String("version", ext.Version))
+	logger := b.logger.With("name", ext.Name)
 	logger.Debug("Generating extension.yaml")
 
 	e, err := yaml.Marshal(ext)
@@ -272,13 +272,8 @@ func buildSHA(ext Extension) string {
 }
 
 func dockerDebugImage(p Platform, ext Extension) string {
-	var (
-		imagePath = strings.ReplaceAll(string(p), "_", "/")
-		///  Docker tags must match the regex [a-zA-Z0-9_.-], which allows alphanumeric characters, dots, underscores, and hyphens.
-		tag = strings.ReplaceAll(ext.Version, "+", "-")
-	)
-
-	return fmt.Sprintf("pgxman/%s/%s-debug:%s", imagePath, ext.Name, tag)
+	imagePath := strings.ReplaceAll(string(p), "_", "/")
+	return fmt.Sprintf("pgxman/%s/%s:debug", imagePath, ext.Name)
 }
 
 func dockerBakeTargets(ext Extension) []string {

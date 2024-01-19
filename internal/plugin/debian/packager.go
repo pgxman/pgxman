@@ -70,7 +70,7 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 		return fmt.Errorf("write pre/post scripts: %w", err)
 	}
 
-	for _, pgVer := range ext.PGVersions {
+	for pgVer, ext := range ext.Effective() {
 		if err := p.prepareBuildDir(ctx, opts, ext, pgVer); err != nil {
 			return fmt.Errorf("prepare build dir: %w", err)
 		}
@@ -107,8 +107,9 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	for _, pgVer := range ext.PGVersions {
+	for pgVer, ext := range ext.Effective() {
 		pgVer := pgVer
+		ext := ext
 
 		g.Go(func() error {
 			if err := p.buildDebian(ctx, ext, pgVer, p.targetDebianBuildDir(opts, pgVer)); err != nil {
@@ -144,7 +145,7 @@ func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.Packag
 		return fmt.Errorf("unarchive source: %w", err)
 	}
 
-	if err := p.generateDebianTemplate(ext, debianBuildDir, pgVer); err != nil {
+	if err := p.generateDebianTemplate(ext, debianBuildDir); err != nil {
 		return fmt.Errorf("generate debian template: %w", err)
 	}
 
@@ -230,11 +231,11 @@ func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildD
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, debianBuildDir string, pgVer pgxman.PGVersion) error {
+func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, debianBuildDir string) error {
 	logger := p.Logger.With("name", ext.Name, "debian-build-dir", debianBuildDir)
 	logger.Info("Generating debian template")
 
-	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext, pgVer}, debianBuildDir)
+	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext}, debianBuildDir)
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
@@ -428,8 +429,7 @@ func concatBuildScript(scripts []pgxman.BuildScript) string {
 }
 
 type debianPackageTemplater struct {
-	ext         pgxman.Extension
-	targetPGVer pgxman.PGVersion
+	ext pgxman.Extension
 }
 
 func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
@@ -439,7 +439,6 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	}
 
 	d.ext.Name = debNormalizedName(d.ext.Name)
-	d.ext.PGVersions = []pgxman.PGVersion{d.targetPGVer} // FIXME: hardcode to effective pg version for now
 	if err := t.Execute(out, extensionData{d.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
