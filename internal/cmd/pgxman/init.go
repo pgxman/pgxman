@@ -34,25 +34,29 @@ func runInit(c *cobra.Command, args []string) error {
 
 	ext := &pgxman.Extension{
 		APIVersion: pgxman.DefaultExtensionAPIVersion,
-		Name:       "my-pg-extension",
-		Build: pgxman.Build{
-			Main: []pgxman.BuildScript{
+		ExtensionCommon: pgxman.ExtensionCommon{
+			Name:    "my-pg-extension",
+			License: "PostgreSQL",
+			Maintainers: []pgxman.Maintainer{
 				{
-					Name: "my build step",
-					Run: `# Uncomment to write the build script for the extension.
-# The built extension must be installed in the $DESTDIR directory.
-# See https://docs.pgxman.com/spec/buildkit#build for details.
-`,
+					Name:  user.Name,
+					Email: user.Username + "@localhost",
 				},
 			},
 		},
-		Version: "1.0.0",
-		License: "PostgreSQL",
-		Maintainers: []pgxman.Maintainer{
-			{
-				Name:  user.Name,
-				Email: user.Username + "@localhost",
+		ExtensionOverridable: pgxman.ExtensionOverridable{
+			Build: pgxman.Build{
+				Main: []pgxman.BuildScript{
+					{
+						Name: "my build step",
+						Run: `# Uncomment to write the build script for the extension.
+# The built extension must be installed in the $DESTDIR directory.
+# See https://docs.pgxman.com/spec/buildkit#build for details.
+`,
+					},
+				},
 			},
+			Version: "1.0.0",
 		},
 		PGVersions: pgxman.SupportedPGVersions,
 	}

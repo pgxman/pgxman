@@ -23,6 +23,14 @@ func TestBuilder(t *testing.T) {
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.0.tar.gz"
 	ext.Repository = "https://github.com/pgvector/pgvector"
 	ext.Version = "0.5.0"
+	ext.PGVersions = pgxman.SupportedPGVersions
+	ext.Overrides = &pgxman.ExtensionOverrides{
+		PGVersions: map[pgxman.PGVersion]pgxman.ExtensionOverridable{
+			pgxman.PGVersion16: {
+				Version: "16.5.0",
+			},
+		},
+	}
 	ext.License = "PostgreSQL"
 	ext.RunDependencies = []string{"libcurl4-openssl-dev"}
 	ext.Builders = &pgxman.ExtensionBuilders{
@@ -80,7 +88,6 @@ echo $PGXS
 		},
 	}
 
-	ext.PGVersions = pgxman.SupportedPGVersions
 	ext.Maintainers = []pgxman.Maintainer{
 		{
 			Name:  "Owen Ou",
@@ -106,6 +113,9 @@ echo $PGXS
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
 	assert.Len(matches, 4*2) // 13, 14, 15, 16 for current arch only for debian:bookworm & ubuntu:jammy
+	// verify overriden version
+	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/debian/bookworm/postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
+	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/ubuntu/jammy//postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
 
 	for _, match := range matches {
 		var (

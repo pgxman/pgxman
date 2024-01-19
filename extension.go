@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/Masterminds/semver/v3"
 	"github.com/github/go-spdx/v2/spdxexp"
 	"github.com/mholt/archiver/v3"
@@ -22,44 +24,83 @@ func NewDefaultExtension() Extension {
 	return Extension{
 		APIVersion: DefaultExtensionAPIVersion,
 		PGVersions: SupportedPGVersions,
-		Arch:       []Arch{Arch(runtime.GOARCH)},
-		Formats:    SupportedFormats,
-		Builders: &ExtensionBuilders{
-			DebianBookworm: &AptExtensionBuilder{
-				ExtensionBuilder: ExtensionBuilder{
-					Type:  PlatformDebianBookworm,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformDebianBookworm], ImageTag()),
+		ExtensionOverridable: ExtensionOverridable{
+			Arch:    []Arch{Arch(runtime.GOARCH)},
+			Formats: SupportedFormats,
+			Builders: &ExtensionBuilders{
+				DebianBookworm: &AptExtensionBuilder{
+					ExtensionBuilder: ExtensionBuilder{
+						Type:  PlatformDebianBookworm,
+						Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformDebianBookworm], ImageTag()),
+					},
 				},
-			},
-			UbuntuJammy: &AptExtensionBuilder{
-				ExtensionBuilder: ExtensionBuilder{
-					Type:  PlatformUbuntuJammy,
-					Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformUbuntuJammy], ImageTag()),
+				UbuntuJammy: &AptExtensionBuilder{
+					ExtensionBuilder: ExtensionBuilder{
+						Type:  PlatformUbuntuJammy,
+						Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformUbuntuJammy], ImageTag()),
+					},
 				},
 			},
 		},
 	}
 }
 
-type Extension struct {
+type ExtensionCommon struct {
 	// required
-	APIVersion  string       `json:"apiVersion"`
 	Name        string       `json:"name"`
-	Source      string       `json:"source"`
 	Repository  string       `json:"repository"`
-	Version     string       `json:"version"`
-	PGVersions  []PGVersion  `json:"pgVersions"`
-	Build       Build        `json:"build"`
 	Maintainers []Maintainer `json:"maintainers"`
+
+	// optional
+	Description string   `json:"description,omitempty"`
+	License     string   `json:"license,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
+	Homepage    string   `json:"homepage,omitempty"`
+}
+
+func (ext ExtensionCommon) Validate() error {
+	var err error
+
+	if ext.Name == "" {
+		err = errors.Join(err, fmt.Errorf("name is required"))
+	}
+
+	if ext.Repository == "" {
+		err = errors.Join(err, fmt.Errorf("repository is required"))
+	}
+
+	if ext.License != "" {
+		valid, invalidLicenses := spdxexp.ValidateLicenses([]string{ext.License})
+		if !valid {
+			err = errors.Join(err, fmt.Errorf("invalid licenses: %q", strings.Join(invalidLicenses, ", ")))
+		}
+	}
+
+	if len(ext.Maintainers) == 0 {
+		err = errors.Join(err, fmt.Errorf("maintainers is required"))
+	}
+
+	return err
+}
+
+type ExtensionPackage struct {
+	ExtensionCommon
+	ExtensionOverridable
+
+	// required
+	PGVersion PGVersion
+}
+
+type ExtensionOverridable struct {
+	// required
+	Source  string `json:"source"`
+	Version string `json:"version"`
+	Build   Build  `json:"build"`
 
 	// optional
 	Builders          *ExtensionBuilders `json:"builders,omitempty"`
 	Arch              []Arch             `json:"arch,omitempty"`
 	Formats           []Format           `json:"formats,omitempty"`
-	Description       string             `json:"description,omitempty"`
-	License           string             `json:"license,omitempty"`
-	Keywords          []string           `json:"keywords,omitempty"`
-	Homepage          string             `json:"homepage,omitempty"`
 	Readme            string             `json:"readme,omitempty"`
 	BuildDependencies []string           `json:"buildDependencies,omitempty"`
 	RunDependencies   []string           `json:"runDependencies,omitempty"`
@@ -68,101 +109,60 @@ type Extension struct {
 	Path string `json:"-"`
 }
 
-func (ext Extension) String() string {
-	extb, err := yaml.Marshal(ext)
-	if err != nil {
-		return ""
-	}
+func (ext ExtensionOverridable) Validate() error {
+	var err error
 
-	return string(extb)
-}
-
-func (ext Extension) Validate() error {
-	if ext.APIVersion != DefaultExtensionAPIVersion {
-		return fmt.Errorf("invalid api version: %s", ext.APIVersion)
-	}
-
-	if ext.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	if ext.Repository == "" {
-		return fmt.Errorf("repository is required")
-	}
-
-	_, err := ext.ParseSource()
-	if err != nil {
-		return fmt.Errorf("invalid source: %w", err)
+	if _, e := ext.ParseSource(); e != nil {
+		err = errors.Join(err, fmt.Errorf("invalid source: %w", e))
 	}
 
 	if ext.Version == "" {
-		return fmt.Errorf("version is required")
-	}
-	_, err = semver.StrictNewVersion(ext.Version)
-	if err != nil {
-		return fmt.Errorf("invalid semantic version: %w", err)
-	}
-
-	if len(ext.PGVersions) == 0 {
-		return fmt.Errorf("pgVersions is required")
-	}
-
-	if err := ext.Build.Validate(); err != nil {
-		return err
-	}
-
-	if len(ext.Maintainers) == 0 {
-		return fmt.Errorf("maintainers is required")
-	}
-
-	for _, pgv := range ext.PGVersions {
-		if err := pgv.Validate(); err != nil {
-			return err
+		err = errors.Join(err, fmt.Errorf("version is required"))
+	} else {
+		if _, e := semver.StrictNewVersion(ext.Version); e != nil {
+			err = errors.Join(err, fmt.Errorf("invalid semantic version: %w", e))
 		}
 	}
 
-	if ext.License != "" {
-		valid, invalidLicenses := spdxexp.ValidateLicenses([]string{ext.License})
-		if !valid {
-			return fmt.Errorf("invalid licenses: %s", strings.Join(invalidLicenses, ", "))
-		}
+	if e := ext.Build.Validate(); e != nil {
+		err = errors.Join(err, fmt.Errorf("invalid build: %w", e))
 	}
 
 	for _, a := range ext.Arch {
-		if !slices.Contains(SupportedArchs, a) {
-			return fmt.Errorf("unsupported arch: %s", a)
+		if e := a.Validate(); e != nil {
+			err = errors.Join(err, e)
 		}
 	}
 
 	for _, f := range ext.Formats {
-		if !slices.Contains(SupportedFormats, f) {
-			return fmt.Errorf("unsupported format: %s", f)
+		if e := f.Validate(); e != nil {
+			err = errors.Join(err, e)
 		}
 	}
 
-	builders := ext.Builders.Available()
-	if len(builders) == 0 {
-		return fmt.Errorf("at least one extension builder is required")
-	}
+	if ext.Builders == nil {
+		err = errors.Join(err, fmt.Errorf("at least one extension builder is required"))
+	} else {
+		builders := ext.Builders.Available()
+		if len(builders) == 0 {
+			err = errors.Join(err, fmt.Errorf("at least one extension builder is required"))
+		}
 
-	for _, builder := range builders {
-		if err := builder.Validate(); err != nil {
-			return fmt.Errorf("builders.%s has errors: %w", builder.Type, err)
+		for _, builder := range builders {
+			if e := builder.Validate(); e != nil {
+				err = errors.Join(err, fmt.Errorf("builders.%s has errors: %w", builder.Type, e))
+			}
 		}
 	}
 
 	if ext.Path == "" {
-		return fmt.Errorf("path is required")
+		err = errors.Join(err, fmt.Errorf("path is required"))
 	}
 
-	return nil
+	return err
 }
 
-type ExtensionSource interface {
-	Archive(dst string) error
-}
-
-func (ext Extension) ParseSource() (ExtensionSource, error) {
+func (ext ExtensionOverridable) ParseSource() (ExtensionSource, error) {
 	if ext.Source == "" {
 		return nil, fmt.Errorf("source is required")
 	}
@@ -196,9 +196,117 @@ func (ext Extension) ParseSource() (ExtensionSource, error) {
 	return &fileExtensionSource{Dir: filepath.Clean(path)}, nil
 }
 
+type Extension struct {
+	ExtensionCommon
+	ExtensionOverridable
+
+	// required
+	APIVersion string      `json:"apiVersion"`
+	PGVersions []PGVersion `json:"pgVersions"`
+
+	// optional
+	Overrides *ExtensionOverrides `json:"overrides,omitempty"`
+}
+
+// Packages returns the extension packages for a given PostgreSQL version.
+func (ext Extension) Packages() []ExtensionPackage {
+	var result []ExtensionPackage
+
+	for _, pgv := range ext.PGVersions {
+		var pkg Extension
+		if err := mergo.Merge(&pkg, ext); err != nil {
+			panic(err.Error())
+		}
+
+		if o := ext.Overrides; o != nil {
+			if overridable, ok := o.PGVersions[pgv]; ok {
+				if err := mergo.MergeWithOverwrite(&(pkg.ExtensionOverridable), overridable); err != nil {
+					panic(err.Error())
+				}
+			}
+		}
+
+		result = append(result, ExtensionPackage{
+			ExtensionCommon:      pkg.ExtensionCommon,
+			ExtensionOverridable: pkg.ExtensionOverridable,
+			PGVersion:            pgv,
+		})
+	}
+
+	return result
+}
+
+func (ext Extension) String() string {
+	extb, err := yaml.Marshal(ext)
+	if err != nil {
+		return ""
+	}
+
+	return string(extb)
+}
+
+func (ext Extension) Validate() error {
+	var err error
+
+	// validate non-overridable fields
+	if ext.APIVersion != DefaultExtensionAPIVersion {
+		err = errors.Join(err, fmt.Errorf("invalid api version: %q", ext.APIVersion))
+	}
+
+	if len(ext.PGVersions) == 0 {
+		err = errors.Join(err, fmt.Errorf("pgVersions is required"))
+	} else {
+		for _, pgv := range ext.PGVersions {
+			if e := pgv.Validate(); e != nil {
+				err = errors.Join(err, e)
+			}
+		}
+	}
+
+	if e := ext.ExtensionCommon.Validate(); e != nil {
+		err = errors.Join(err, e)
+	}
+
+	// validate overridable fields
+	if ext.Overrides == nil {
+		if e := ext.ExtensionOverridable.Validate(); e != nil {
+			err = errors.Join(err, e)
+		}
+	} else {
+		for pgv := range ext.Overrides.PGVersions {
+			if !slices.Contains(ext.PGVersions, pgv) {
+				err = errors.Join(err, fmt.Errorf("overriding PostgreSQL %s config but %q is not in `pgVersions`", pgv, pgv))
+			}
+		}
+		for _, pkg := range ext.Packages() {
+			if e := pkg.ExtensionOverridable.Validate(); e != nil {
+				err = errors.Join(err, fmt.Errorf("PostgreSQL %s config has errors:\n%w", pkg.PGVersion, e))
+			}
+		}
+	}
+
+	return err
+}
+
+type ExtensionOverrides struct {
+	PGVersions map[PGVersion]ExtensionOverridable `json:"pgVersions"`
+}
+
+type ExtensionSource interface {
+	Archive(dst string) error
+}
+
 const DefaultExtensionAPIVersion = "v1"
 
 type Arch string
+
+func (a Arch) Validate() error {
+	if !slices.Contains(SupportedArchs, a) {
+		return fmt.Errorf("unsupported arch: %s", a)
+	}
+
+	return nil
+}
 
 const (
 	ArchAmd64 Arch = "amd64"
@@ -210,6 +318,14 @@ var (
 )
 
 type Format string
+
+func (f Format) Validate() error {
+	if !slices.Contains(SupportedFormats, f) {
+		return fmt.Errorf("unsupported format: %s", f)
+	}
+
+	return nil
+}
 
 const (
 	FormatDeb Format = "deb"
@@ -267,25 +383,27 @@ type Build struct {
 }
 
 func (b Build) Validate() error {
+	var err error
+
 	for _, s := range b.Pre {
-		if err := s.Validate(); err != nil {
-			return fmt.Errorf("pre-build script: %w", err)
+		if e := s.Validate(); e != nil {
+			err = errors.Join(err, fmt.Errorf("pre-build script: %w", e))
 		}
 	}
 
 	for _, s := range b.Main {
-		if err := s.Validate(); err != nil {
-			return fmt.Errorf("main build script: %w", err)
+		if e := s.Validate(); e != nil {
+			err = errors.Join(err, fmt.Errorf("main build script: %w", e))
 		}
 	}
 
 	for _, s := range b.Post {
-		if err := s.Validate(); err != nil {
-			return fmt.Errorf("post-build script: %w", err)
+		if e := s.Validate(); e != nil {
+			err = errors.Join(err, fmt.Errorf("post-build script: %w", e))
 		}
 	}
 
-	return nil
+	return err
 }
 
 type BuildScript struct {

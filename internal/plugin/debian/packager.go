@@ -70,8 +70,8 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 		return fmt.Errorf("write pre/post scripts: %w", err)
 	}
 
-	for _, pgVer := range ext.PGVersions {
-		if err := p.prepareBuildDir(ctx, opts, ext, pgVer); err != nil {
+	for _, pkg := range ext.Packages() {
+		if err := p.prepareBuildDir(ctx, opts, pkg); err != nil {
 			return fmt.Errorf("prepare build dir: %w", err)
 		}
 	}
@@ -107,11 +107,11 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	for _, pgVer := range ext.PGVersions {
-		pgVer := pgVer
+	for _, pkg := range ext.Packages() {
+		pkg := pkg
 
 		g.Go(func() error {
-			if err := p.buildDebian(ctx, ext, pgVer, p.targetDebianBuildDir(opts, pgVer)); err != nil {
+			if err := p.buildDebian(ctx, pkg, p.targetDebianBuildDir(opts, pkg.PGVersion)); err != nil {
 				return fmt.Errorf("debian build: %w", err)
 			}
 
@@ -122,29 +122,29 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	return g.Wait()
 }
 
-func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.PackagerOptions, ext pgxman.Extension, pgVer pgxman.PGVersion) error {
-	targetPgVerDir := p.targetPgVerDir(opts, pgVer)
+func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.PackagerOptions, pkg pgxman.ExtensionPackage) error {
+	targetPgVerDir := p.targetPgVerDir(opts, pkg.PGVersion)
 	if err := os.MkdirAll(targetPgVerDir, 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	debianBuildDir := p.targetDebianBuildDir(opts, pgVer)
+	debianBuildDir := p.targetDebianBuildDir(opts, pkg.PGVersion)
 	if err := os.MkdirAll(debianBuildDir, 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	p.Logger.Debug("Preparing build dir", "target", targetPgVerDir, "name", ext.Name, "pgVer", pgVer)
+	p.Logger.Debug("Preparing build dir", "target", targetPgVerDir, "name", pkg.Name, "pgVer", pkg.PGVersion)
 
-	sourceFile, err := p.downloadSource(ext, targetPgVerDir)
+	sourceFile, err := p.downloadSource(pkg, targetPgVerDir)
 	if err != nil {
-		return fmt.Errorf("download source %s: %w", ext.Source, err)
+		return fmt.Errorf("download source %s: %w", pkg.Source, err)
 	}
 
 	if err := p.unarchiveSource(ctx, sourceFile, debianBuildDir); err != nil {
 		return fmt.Errorf("unarchive source: %w", err)
 	}
 
-	if err := p.generateDebianTemplate(ext, debianBuildDir, pgVer); err != nil {
+	if err := p.generateDebianTemplate(pkg, debianBuildDir); err != nil {
 		return fmt.Errorf("generate debian template: %w", err)
 	}
 
@@ -174,7 +174,7 @@ func (p *DebianPackager) targetDebianBuildDir(opts pgxman.PackagerOptions, pgVer
 	return filepath.Join(p.targetPgVerDir(opts, pgVer), "debian_build")
 }
 
-func (p *DebianPackager) downloadSource(ext pgxman.Extension, targetDir string) (string, error) {
+func (p *DebianPackager) downloadSource(ext pgxman.ExtensionPackage, targetDir string) (string, error) {
 	logger := p.Logger.With(slog.String("source", ext.Source))
 	logger.Info("Downloading source")
 
@@ -230,11 +230,11 @@ func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildD
 	return c.Unarchive(sourceFile, sourceDir)
 }
 
-func (p *DebianPackager) generateDebianTemplate(ext pgxman.Extension, debianBuildDir string, pgVer pgxman.PGVersion) error {
+func (p *DebianPackager) generateDebianTemplate(ext pgxman.ExtensionPackage, debianBuildDir string) error {
 	logger := p.Logger.With("name", ext.Name, "debian-build-dir", debianBuildDir)
 	logger.Info("Generating debian template")
 
-	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext, pgVer}, debianBuildDir)
+	return tmpl.ExportFS(debian.FS, debianPackageTemplater{ext}, debianBuildDir)
 }
 
 func (p *DebianPackager) installBuildDependencies(ctx context.Context, ext pgxman.Extension) error {
@@ -306,9 +306,9 @@ func (p *DebianPackager) runScript(ctx context.Context, file string) error {
 	return nil
 }
 
-func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, pgVer pgxman.PGVersion, buildDir string) error {
-	logger := p.Logger.WithGroup(string(pgVer))
-	logger = logger.With("name", ext.Name, "version", ext.Version, "build-dir", buildDir)
+func (p *DebianPackager) buildDebian(ctx context.Context, pkg pgxman.ExtensionPackage, buildDir string) error {
+	logger := p.Logger.WithGroup(string(pkg.PGVersion))
+	logger = logger.With("name", pkg.Name, "version", pkg.Version, "build-dir", buildDir)
 	logger.Info("Building debian package")
 
 	lw := logger.Writer(slog.LevelDebug)
@@ -347,12 +347,12 @@ func (p *DebianPackager) buildDebian(ctx context.Context, ext pgxman.Extension, 
 }
 
 type extensionData struct {
-	pgxman.Extension
+	pgxman.ExtensionPackage
 }
 
 func (e extensionData) Maintainers() string {
 	var maintainers []string
-	for _, m := range e.Extension.Maintainers {
+	for _, m := range e.ExtensionPackage.Maintainers {
 		maintainers = append(maintainers, fmt.Sprintf("%s <%s>", m.Name, m.Email))
 	}
 
@@ -365,8 +365,8 @@ func (e extensionData) BuildDeps() string {
 		"postgresql-server-dev-all (>= 158~)",
 	}
 
-	deps := e.Extension.BuildDependencies
-	if builders := e.Extension.Builders; builders != nil {
+	deps := e.BuildDependencies
+	if builders := e.Builders; builders != nil {
 		builder := builders.Current()
 		if len(builder.BuildDependencies) != 0 {
 			deps = builder.BuildDependencies
@@ -382,8 +382,8 @@ func (e extensionData) Deps() string {
 		"${misc:Depends}",
 	}
 
-	deps := e.Extension.RunDependencies
-	if builders := e.Extension.Builders; builders != nil {
+	deps := e.RunDependencies
+	if builders := e.Builders; builders != nil {
 		builder := builders.Current()
 		if len(builder.RunDependencies) != 0 {
 			deps = builder.RunDependencies
@@ -394,7 +394,7 @@ func (e extensionData) Deps() string {
 }
 
 func (e extensionData) MainBuildScript() string {
-	return concatBuildScript(e.Extension.Build.Main)
+	return concatBuildScript(e.Build.Main)
 }
 
 func (e extensionData) TimeNow() string {
@@ -428,8 +428,7 @@ func concatBuildScript(scripts []pgxman.BuildScript) string {
 }
 
 type debianPackageTemplater struct {
-	ext         pgxman.Extension
-	targetPGVer pgxman.PGVersion
+	ext pgxman.ExtensionPackage
 }
 
 func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
@@ -439,7 +438,6 @@ func (d debianPackageTemplater) Render(content []byte, out io.Writer) error {
 	}
 
 	d.ext.Name = debNormalizedName(d.ext.Name)
-	d.ext.PGVersions = []pgxman.PGVersion{d.targetPGVer} // FIXME: hardcode to effective pg version for now
 	if err := t.Execute(out, extensionData{d.ext}); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}

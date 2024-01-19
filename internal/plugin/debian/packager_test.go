@@ -11,14 +11,17 @@ import (
 func Test_debianPackageTemplater(t *testing.T) {
 	assert := assert.New(t)
 
-	ext := pgxman.Extension{
-		Name:              "pgvector",
-		Maintainers:       []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
-		PGVersions:        []pgxman.PGVersion{pgxman.PGVersion14},
-		BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
-		RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
+	ext := pgxman.ExtensionPackage{
+		ExtensionCommon: pgxman.ExtensionCommon{
+			Name:        "pgvector",
+			Maintainers: []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
+		},
+		ExtensionOverridable: pgxman.ExtensionOverridable{
+			BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
+			RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
+		},
+		PGVersion: pgxman.PGVersion14,
 	}
-	targetPGVEr := pgxman.PGVersion13
 
 	cases := []struct {
 		Name        string
@@ -46,9 +49,9 @@ func Test_debianPackageTemplater(t *testing.T) {
 			WantContent: "Owen Ou <o@hydra.so>",
 		},
 		{
-			Name:        "target pg versions",
-			Content:     `{{ .PGVersions }}`,
-			WantContent: "[13]",
+			Name:        "pg version",
+			Content:     `{{ .PGVersion }}`,
+			WantContent: "14",
 		},
 	}
 
@@ -60,7 +63,7 @@ func Test_debianPackageTemplater(t *testing.T) {
 
 			buf := bytes.NewBuffer(nil)
 
-			err := debianPackageTemplater{ext, targetPGVEr}.Render([]byte(c.Content), buf)
+			err := debianPackageTemplater{ext}.Render([]byte(c.Content), buf)
 			assert.NoError(err)
 			assert.Equal(c.WantContent, buf.String())
 		})
