@@ -58,46 +58,54 @@ func TestExtension_ParseSource(t *testing.T) {
 	}
 }
 
-func TestExtension_Effective(t *testing.T) {
+func TestExtension_Packages(t *testing.T) {
 	cases := []struct {
-		Name      string
-		Ext       Extension
-		Effective map[PGVersion]Extension
+		Name         string
+		Ext          Extension
+		WantPackages []ExtensionPackage
 	}{
 		{
 			Name: "no overrides",
 			Ext: Extension{
-				Name:       "pg_stat_statements",
-				PGVersions: []PGVersion{PGVersion15, PGVersion16},
+				ExtensionCommon: ExtensionCommon{
+					Name: "pg_stat_statements",
+				},
 				ExtensionOverridable: ExtensionOverridable{
 					Source: "source",
 				},
+				PGVersions: []PGVersion{PGVersion15, PGVersion16},
 			},
-			Effective: map[PGVersion]Extension{
-				PGVersion15: {
-					Name:       "pg_stat_statements",
-					PGVersions: []PGVersion{PGVersion15},
+			WantPackages: []ExtensionPackage{
+				{
+					ExtensionCommon: ExtensionCommon{
+						Name: "pg_stat_statements",
+					},
 					ExtensionOverridable: ExtensionOverridable{
 						Source: "source",
 					},
+					PGVersion: PGVersion15,
 				},
-				PGVersion16: {
-					Name:       "pg_stat_statements",
-					PGVersions: []PGVersion{PGVersion16},
+				{
+					ExtensionCommon: ExtensionCommon{
+						Name: "pg_stat_statements",
+					},
 					ExtensionOverridable: ExtensionOverridable{
 						Source: "source",
 					},
+					PGVersion: PGVersion16,
 				},
 			},
 		},
 		{
 			Name: "have overrides",
 			Ext: Extension{
-				Name:       "pg_stat_statements",
-				PGVersions: []PGVersion{PGVersion15, PGVersion16},
+				ExtensionCommon: ExtensionCommon{
+					Name: "pg_stat_statements",
+				},
 				ExtensionOverridable: ExtensionOverridable{
 					Source: "source",
 				},
+				PGVersions: []PGVersion{PGVersion15, PGVersion16},
 				Overrides: &ExtensionOverrides{
 					PGVersions: map[PGVersion]ExtensionOverridable{
 						PGVersion16: {
@@ -109,21 +117,25 @@ func TestExtension_Effective(t *testing.T) {
 					},
 				},
 			},
-			Effective: map[PGVersion]Extension{
-				PGVersion15: {
-					Name:       "pg_stat_statements",
-					PGVersions: []PGVersion{PGVersion15},
+			WantPackages: []ExtensionPackage{
+				{
+					ExtensionCommon: ExtensionCommon{
+						Name: "pg_stat_statements",
+					},
 					ExtensionOverridable: ExtensionOverridable{
 						Source:  "source",
 						Version: "15.5.0",
 					},
+					PGVersion: PGVersion15,
 				},
-				PGVersion16: {
-					Name:       "pg_stat_statements",
-					PGVersions: []PGVersion{PGVersion16},
+				{
+					ExtensionCommon: ExtensionCommon{
+						Name: "pg_stat_statements",
+					},
 					ExtensionOverridable: ExtensionOverridable{
 						Source: "source16",
 					},
+					PGVersion: PGVersion16,
 				},
 			},
 		},
@@ -136,7 +148,7 @@ func TestExtension_Effective(t *testing.T) {
 			t.Parallel()
 
 			assert := assert.New(t)
-			assert.Equal(c.Effective, c.Ext.Effective())
+			assert.Equal(c.WantPackages, c.Ext.Packages())
 		})
 	}
 }

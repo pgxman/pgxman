@@ -34,7 +34,16 @@ func runInit(c *cobra.Command, args []string) error {
 
 	ext := &pgxman.Extension{
 		APIVersion: pgxman.DefaultExtensionAPIVersion,
-		Name:       "my-pg-extension",
+		ExtensionCommon: pgxman.ExtensionCommon{
+			Name:    "my-pg-extension",
+			License: "PostgreSQL",
+			Maintainers: []pgxman.Maintainer{
+				{
+					Name:  user.Name,
+					Email: user.Username + "@localhost",
+				},
+			},
+		},
 		ExtensionOverridable: pgxman.ExtensionOverridable{
 			Build: pgxman.Build{
 				Main: []pgxman.BuildScript{
@@ -48,13 +57,6 @@ func runInit(c *cobra.Command, args []string) error {
 				},
 			},
 			Version: "1.0.0",
-		},
-		License: "PostgreSQL",
-		Maintainers: []pgxman.Maintainer{
-			{
-				Name:  user.Name,
-				Email: user.Username + "@localhost",
-			},
 		},
 		PGVersions: pgxman.SupportedPGVersions,
 	}

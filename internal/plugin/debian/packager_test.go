@@ -11,14 +11,16 @@ import (
 func Test_debianPackageTemplater(t *testing.T) {
 	assert := assert.New(t)
 
-	ext := pgxman.Extension{
-		Name:        "pgvector",
-		Maintainers: []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
-		PGVersions:  []pgxman.PGVersion{pgxman.PGVersion14},
+	ext := pgxman.ExtensionPackage{
+		ExtensionCommon: pgxman.ExtensionCommon{
+			Name:        "pgvector",
+			Maintainers: []pgxman.Maintainer{{Name: "Owen Ou", Email: "o@hydra.so"}},
+		},
 		ExtensionOverridable: pgxman.ExtensionOverridable{
 			BuildDependencies: []string{"libxml2", "pgxman/multicorn"},
 			RunDependencies:   []string{"libxml2", "pgxman/multicorn"},
 		},
+		PGVersion: pgxman.PGVersion14,
 	}
 
 	cases := []struct {
@@ -47,9 +49,9 @@ func Test_debianPackageTemplater(t *testing.T) {
 			WantContent: "Owen Ou <o@hydra.so>",
 		},
 		{
-			Name:        "pg versions",
-			Content:     `{{ .PGVersions }}`,
-			WantContent: "[14]",
+			Name:        "pg version",
+			Content:     `{{ .PGVersion }}`,
+			WantContent: "14",
 		},
 	}
 

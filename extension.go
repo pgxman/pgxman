@@ -45,6 +45,52 @@ func NewDefaultExtension() Extension {
 	}
 }
 
+type ExtensionCommon struct {
+	// required
+	Name        string       `json:"name"`
+	Repository  string       `json:"repository"`
+	Maintainers []Maintainer `json:"maintainers"`
+
+	// optional
+	Description string   `json:"description,omitempty"`
+	License     string   `json:"license,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
+	Homepage    string   `json:"homepage,omitempty"`
+}
+
+func (ext ExtensionCommon) Validate() error {
+	var err error
+
+	if ext.Name == "" {
+		err = errors.Join(err, fmt.Errorf("name is required"))
+	}
+
+	if ext.Repository == "" {
+		err = errors.Join(err, fmt.Errorf("repository is required"))
+	}
+
+	if ext.License != "" {
+		valid, invalidLicenses := spdxexp.ValidateLicenses([]string{ext.License})
+		if !valid {
+			err = errors.Join(err, fmt.Errorf("invalid licenses: %q", strings.Join(invalidLicenses, ", ")))
+		}
+	}
+
+	if len(ext.Maintainers) == 0 {
+		err = errors.Join(err, fmt.Errorf("maintainers is required"))
+	}
+
+	return err
+}
+
+type ExtensionPackage struct {
+	ExtensionCommon
+	ExtensionOverridable
+
+	// required
+	PGVersion PGVersion
+}
+
 type ExtensionOverridable struct {
 	// required
 	Source  string `json:"source"`
@@ -151,44 +197,40 @@ func (ext ExtensionOverridable) ParseSource() (ExtensionSource, error) {
 }
 
 type Extension struct {
+	ExtensionCommon
 	ExtensionOverridable
 
 	// required
-	APIVersion  string       `json:"apiVersion"`
-	Name        string       `json:"name"`
-	Repository  string       `json:"repository"`
-	PGVersions  []PGVersion  `json:"pgVersions"`
-	Maintainers []Maintainer `json:"maintainers"`
+	APIVersion string      `json:"apiVersion"`
+	PGVersions []PGVersion `json:"pgVersions"`
 
 	// optional
-	Description string              `json:"description,omitempty"`
-	License     string              `json:"license,omitempty"`
-	Keywords    []string            `json:"keywords,omitempty"`
-	Homepage    string              `json:"homepage,omitempty"`
-	Overrides   *ExtensionOverrides `json:"overrides,omitempty"`
+	Overrides *ExtensionOverrides `json:"overrides,omitempty"`
 }
 
-// Effective returns the effective extension with overrides for a given PostgreSQL version.
-func (ext Extension) Effective() map[PGVersion]Extension {
-	var result = make(map[PGVersion]Extension)
+// Packages returns the extension packages for a given PostgreSQL version.
+func (ext Extension) Packages() []ExtensionPackage {
+	var result []ExtensionPackage
 
 	for _, pgv := range ext.PGVersions {
-		var effective Extension
-		if err := mergo.Merge(&effective, ext); err != nil {
+		var pkg Extension
+		if err := mergo.Merge(&pkg, ext); err != nil {
 			panic(err.Error())
 		}
 
 		if o := ext.Overrides; o != nil {
 			if overridable, ok := o.PGVersions[pgv]; ok {
-				if err := mergo.MergeWithOverwrite(&(effective.ExtensionOverridable), overridable); err != nil {
+				if err := mergo.MergeWithOverwrite(&(pkg.ExtensionOverridable), overridable); err != nil {
 					panic(err.Error())
 				}
 			}
 		}
 
-		effective.Overrides = nil
-		effective.PGVersions = []PGVersion{pgv}
-		result[pgv] = effective
+		result = append(result, ExtensionPackage{
+			ExtensionCommon:      pkg.ExtensionCommon,
+			ExtensionOverridable: pkg.ExtensionOverridable,
+			PGVersion:            pgv,
+		})
 	}
 
 	return result
@@ -211,33 +253,18 @@ func (ext Extension) Validate() error {
 		err = errors.Join(err, fmt.Errorf("invalid api version: %q", ext.APIVersion))
 	}
 
-	if ext.Name == "" {
-		err = errors.Join(err, fmt.Errorf("name is required"))
-	}
-
-	if ext.Repository == "" {
-		err = errors.Join(err, fmt.Errorf("repository is required"))
-	}
-
 	if len(ext.PGVersions) == 0 {
 		err = errors.Join(err, fmt.Errorf("pgVersions is required"))
-	}
-
-	if ext.License != "" {
-		valid, invalidLicenses := spdxexp.ValidateLicenses([]string{ext.License})
-		if !valid {
-			err = errors.Join(err, fmt.Errorf("invalid licenses: %q", strings.Join(invalidLicenses, ", ")))
+	} else {
+		for _, pgv := range ext.PGVersions {
+			if e := pgv.Validate(); e != nil {
+				err = errors.Join(err, e)
+			}
 		}
 	}
 
-	if len(ext.Maintainers) == 0 {
-		err = errors.Join(err, fmt.Errorf("maintainers is required"))
-	}
-
-	for _, pgv := range ext.PGVersions {
-		if e := pgv.Validate(); e != nil {
-			err = errors.Join(err, e)
-		}
+	if e := ext.ExtensionCommon.Validate(); e != nil {
+		err = errors.Join(err, e)
 	}
 
 	// validate overridable fields
@@ -251,9 +278,9 @@ func (ext Extension) Validate() error {
 				err = errors.Join(err, fmt.Errorf("overriding PostgreSQL %s config but %q is not in `pgVersions`", pgv, pgv))
 			}
 		}
-		for pgv, effective := range ext.Effective() {
-			if e := effective.ExtensionOverridable.Validate(); e != nil {
-				err = errors.Join(err, fmt.Errorf("PostgreSQL %s config has errors:\n%w", pgv, e))
+		for _, pkg := range ext.Packages() {
+			if e := pkg.ExtensionOverridable.Validate(); e != nil {
+				err = errors.Join(err, fmt.Errorf("PostgreSQL %s config has errors:\n%w", pkg.PGVersion, e))
 			}
 		}
 	}
