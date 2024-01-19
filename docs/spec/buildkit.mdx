@@ -120,6 +120,20 @@ builders:
         signedKey:
           - uri: http://repo1.com/key
             format: gpg
+overrides:
+  pgVersions:
+    # overrides fields for pg 13
+    "13":
+      version: "1.2.3"
+      homepage: https://github.com/org/repo2
+      repository: https://github.com/org/repo2
+      source: https://github.com/org/repo/archive/refs/tags/v1.2.3.tar.gz
+    # overrides fields for pg 14
+    "13":
+      version: "2.3.4"
+      homepage: https://github.com/org/repo3
+      repository: https://github.com/org/repo3
+      source: https://github.com/org/repo/archive/refs/tags/v2.3.4.tar.gz
 ```
 
 ## `apiVersion`
@@ -417,3 +431,43 @@ build: |
                 - **Type**: String
                 - **Required**: Yes
                 - **Supported Values**: `gpg`, `asc`
+
+## `overrides`
+
+- **Description**: This section allows for the customization of buildkit fields based on specific conditions. It's particularly useful for adapting the build process to different versions of PostgreSQL or varying build environments.
+- **Type**: Object
+- **Required**: No
+- **Fields**:
+  - `pgVersions`:
+    - **Description**: Tailors the buildkit configuration for specific PostgreSQL versions as defined in the `pgVersions` field.
+    - **Type**: Map
+    - **Required**: No
+    - **Key**: The key should match the PostgreSQL versions listed in `pgVersions` at the root.
+    - **Value**:
+      - **Type**: Object
+      - **Fields**:
+        - `source`
+        - `version`
+        - `build`
+        - `builders`
+        - `arch`
+        - `formats`
+        - `readme`
+        - `buildDependencies`
+        - `runDependencies`
+    - **Examples**:
+
+      ```yaml
+      pgVersions:
+        - "13"
+        - "14"
+        - "15"
+      overrides:
+        pgVersions:
+          "13":
+            version: "1.2.3"
+            source: https://github.com/org/repo/archive/refs/tags/v1.2.3.tar.gz
+          "14":
+            version: "2.3.4"
+            source: https://github.com/org/repo/archive/refs/tags/v2.3.4.tar.gz
+      ```
