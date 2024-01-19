@@ -166,4 +166,18 @@ func TestExtension_Validate(t *testing.T) {
 	assert.Error(err)
 	assert.Contains(err.Error(), "PostgreSQL 16 config has errors")
 	assert.NotContains(err.Error(), "version is required")
+
+	ext = Extension{
+		PGVersions: []PGVersion{PGVersion15},
+		Overrides: &ExtensionOverrides{
+			PGVersions: map[PGVersion]ExtensionOverridable{
+				PGVersion16: {
+					Version: "1.2.3",
+				},
+			},
+		},
+	}
+	err = ext.Validate()
+	assert.Error(err)
+	assert.Contains(err.Error(), "overriding PostgreSQL 16 config but \"16\" is not in `pgVersions`")
 }

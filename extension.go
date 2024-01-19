@@ -246,6 +246,11 @@ func (ext Extension) Validate() error {
 			err = errors.Join(err, e)
 		}
 	} else {
+		for pgv := range ext.Overrides.PGVersions {
+			if !slices.Contains(ext.PGVersions, pgv) {
+				err = errors.Join(err, fmt.Errorf("overriding PostgreSQL %s config but %q is not in `pgVersions`", pgv, pgv))
+			}
+		}
 		for pgv, effective := range ext.Effective() {
 			if e := effective.ExtensionOverridable.Validate(); e != nil {
 				err = errors.Join(err, fmt.Errorf("PostgreSQL %s config has errors:\n%w", pgv, e))
