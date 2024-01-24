@@ -109,28 +109,30 @@ func Test_ExtensionLocker(t *testing.T) {
 		},
 	}
 	stubbedClient := StubbedRegistryClient{
-		ExtGetExtension: &registry.Extension{
-			Extension: oapi.Extension{
-				Name:    "pgvector",
-				Version: "0.5.1",
-				Platforms: []oapi.Platform{
-					{
-						Os:              oapi.DebianBookworm,
-						AptRepositories: aptRepos,
-						PgVersions:      []oapi.PgVersion{oapi.Pg16},
+		ExtGetExtension: &oapi.Extension{
+			Name: "pgvector",
+			Packages: oapi.Packages{
+				string(pgxman.PGVersion16): {
+					Version: "0.5.1",
+					Platforms: []oapi.Platform{
+						{
+							Os:              oapi.DebianBookworm,
+							AptRepositories: aptRepos,
+						},
 					},
 				},
 			},
 		},
-		ExtGetVersion: &registry.Extension{
-			Extension: oapi.Extension{
-				Name:    "pgvector",
-				Version: "0.5.0",
-				Platforms: []oapi.Platform{
-					{
-						Os:              oapi.DebianBookworm,
-						AptRepositories: aptRepos,
-						PgVersions:      []oapi.PgVersion{oapi.Pg16},
+		ExtGetVersion: &oapi.Extension{
+			Name: "pgvector",
+			Packages: oapi.Packages{
+				string(pgxman.PGVersion16): {
+					Version: "0.5.0",
+					Platforms: []oapi.Platform{
+						{
+							Os:              oapi.DebianBookworm,
+							AptRepositories: aptRepos,
+						},
 					},
 				},
 			},
@@ -226,13 +228,12 @@ func Test_ExtensionLocker(t *testing.T) {
 			InstallExts: []pgxman.InstallExtension{
 				{
 					PackExtension: pgxman.PackExtension{
-						Name:    "pgvector",
-						Version: "0.5.1",
+						Name: "pgvector",
 					},
 					PGVersion: pgxman.PGVersion13,
 				},
 			},
-			WantErr: &ErrExtIncompatiblePG{Name: "pgvector", Version: "0.5.1", PGVersion: pgxman.PGVersion13},
+			WantErr: &ErrExtIncompatiblePG{Name: "pgvector", PGVersion: pgxman.PGVersion13},
 		},
 		{
 			Name: "extension incompatible with platform",
@@ -242,10 +243,9 @@ func Test_ExtensionLocker(t *testing.T) {
 			InstallExts: []pgxman.InstallExtension{
 				{
 					PackExtension: pgxman.PackExtension{
-						Name:    "pgvector",
-						Version: "0.5.1",
+						Name: "pgvector",
 					},
-					PGVersion: pgxman.PGVersion13,
+					PGVersion: pgxman.PGVersion16,
 				},
 			},
 			WantErr: &ErrExtIncompatiblePlatform{Name: "pgvector", Version: "0.5.1", Platform: pgxman.PlatformDarwin},
@@ -265,11 +265,11 @@ func Test_ExtensionLocker(t *testing.T) {
 }
 
 type StubbedRegistryClient struct {
-	ExtGetExtension *registry.Extension
-	ExtGetVersion   *registry.Extension
+	ExtGetExtension *oapi.Extension
+	ExtGetVersion   *oapi.Extension
 }
 
-func (s StubbedRegistryClient) GetExtension(ctx context.Context, name string) (*registry.Extension, error) {
+func (s StubbedRegistryClient) GetExtension(ctx context.Context, name string) (*oapi.Extension, error) {
 	if name == s.ExtGetExtension.Name {
 		return s.ExtGetExtension, nil
 	}
@@ -285,9 +285,15 @@ func (s StubbedRegistryClient) PublishExtension(ctx context.Context, ext oapi.Pu
 	return nil
 }
 
-func (s StubbedRegistryClient) GetVersion(ctx context.Context, name, version string) (*registry.Extension, error) {
-	if name == s.ExtGetVersion.Name && version == s.ExtGetVersion.Version {
-		return s.ExtGetVersion, nil
+func (s StubbedRegistryClient) GetVersion(ctx context.Context, name, version string) (*oapi.Extension, error) {
+	if name == s.ExtGetVersion.Name {
+		for _, pkg := range s.ExtGetVersion.Packages {
+			if pkg.Version == version {
+				return s.ExtGetVersion, nil
+			}
+		}
+
+		return nil, registry.ErrExtensionNotFound
 	}
 
 	return nil, registry.ErrExtensionNotFound

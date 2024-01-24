@@ -64,36 +64,57 @@ func convertPublishExtension(ext pgxman.Extension) oapi.PublishExtension {
 		})
 	}
 
+	pkgs := make(oapi.Packages)
+	for _, pkg := range ext.Packages() {
+		pkgs[string(pkg.PGVersion)] = oapi.Package{
+			Description: pkg.Description,
+			Homepage:    pkg.Homepage,
+			License:     pkg.License,
+			Maintainers: maintainers,
+			Platforms:   convertPlatform(pkg),
+			Readme:      pkg.Readme,
+			Repository:  pkg.Repository,
+			Source:      pkg.Source,
+			Version:     pkg.Version,
+		}
+	}
+
+	return oapi.PublishExtension{
+		Keywords:   ext.Keywords,
+		MakeLatest: flagPublishLatest,
+		Name:       ext.Name,
+		Packages:   pkgs,
+	}
+}
+
+func convertPlatform(pkg pgxman.ExtensionPackage) []oapi.Platform {
 	var platforms []oapi.Platform
 	for k, v := range map[oapi.PlatformOs]*pgxman.AptExtensionBuilder{
-		oapi.DebianBookworm: ext.Builders.DebianBookworm,
-		oapi.UbuntuJammy:    ext.Builders.UbuntuJammy,
+		oapi.DebianBookworm: pkg.Builders.DebianBookworm,
+		oapi.UbuntuJammy:    pkg.Builders.UbuntuJammy,
 	} {
 		if v == nil {
 			continue
 		}
 
 		var arches []oapi.Architecture
-		for _, a := range ext.Arch {
+		for _, a := range pkg.Arch {
 			arches = append(arches, oapi.Architecture(a))
 		}
 
-		var pgVers []oapi.PgVersion
-		for _, pgVer := range ext.PGVersions {
-			pgVers = append(pgVers, convertPgVer(pgVer))
-		}
+		pgVers := []oapi.PgVersion{oapi.PgVersion(pkg.PGVersion)}
 
 		buildDeps := []oapi.Dependency{}
-		if len(ext.BuildDependencies) > 0 {
-			buildDeps = ext.BuildDependencies
+		if len(pkg.BuildDependencies) > 0 {
+			buildDeps = pkg.BuildDependencies
 		}
 		if len(v.BuildDependencies) > 0 {
 			buildDeps = v.BuildDependencies
 		}
 
 		runDeps := []oapi.Dependency{}
-		if len(ext.RunDependencies) > 0 {
-			runDeps = ext.RunDependencies
+		if len(pkg.RunDependencies) > 0 {
+			runDeps = pkg.RunDependencies
 		}
 		if len(v.RunDependencies) > 0 {
 			runDeps = v.RunDependencies
@@ -129,22 +150,5 @@ func convertPublishExtension(ext pgxman.Extension) oapi.PublishExtension {
 		})
 	}
 
-	return oapi.PublishExtension{
-		Description: ext.Description,
-		Homepage:    ext.Homepage,
-		Readme:      ext.Readme,
-		Keywords:    ext.Keywords,
-		License:     ext.License,
-		Maintainers: maintainers,
-		Repository:  ext.Repository,
-		MakeLatest:  flagPublishLatest,
-		Source:      ext.Source,
-		Name:        ext.Name,
-		Version:     ext.Version,
-		Platforms:   platforms,
-	}
-}
-
-func convertPgVer(v pgxman.PGVersion) oapi.PgVersion {
-	return oapi.PgVersion("pg_" + string(v))
+	return platforms
 }
