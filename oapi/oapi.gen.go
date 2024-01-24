@@ -37,10 +37,10 @@ const (
 
 // Defines values for PgVersion.
 const (
-	Pg13 PgVersion = "pg_13"
-	Pg14 PgVersion = "pg_14"
-	Pg15 PgVersion = "pg_15"
-	Pg16 PgVersion = "pg_16"
+	Postgres13 PgVersion = "13"
+	Postgres14 PgVersion = "14"
+	Postgres15 PgVersion = "15"
+	Postgres16 PgVersion = "16"
 )
 
 // Defines values for PlatformOs.
@@ -90,17 +90,7 @@ type BaseExtension struct {
 
 // CommonExtension defines model for CommonExtension.
 type CommonExtension struct {
-	Description Description `json:"description,omitempty"`
-	Homepage    Homepage    `json:"homepage,omitempty"`
-
-	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
-	License     License     `json:"license,omitempty"`
-	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
-	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
-	Readme      Readme      `json:"readme,omitempty"`
-	Repository  Repository  `json:"repository" validate:"required,url"`
-	Source      Source      `json:"source" validate:"required,url,extension_source"`
-	Version     VersionCode `json:"version" validate:"semver"`
+	Packages Packages `json:"packages" validate:"required,dive,keys,required,oneof=13 14 15 16,endkeys"`
 }
 
 // Dependencies defines model for Dependencies.
@@ -133,14 +123,15 @@ type Extension struct {
 
 	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
 	License     License       `json:"license,omitempty"`
-	Maintainers Maintainers   `json:"maintainers" validate:"gt=0,dive,required"`
+	Maintainers Maintainers   `json:"maintainers,omitempty" validate:"gt=0,dive,required"`
 	Name        ExtensionName `json:"name" validate:"required,urlsafe"`
-	Platforms   Platforms     `json:"platforms" validate:"required,min=1,dive"`
+	Packages    Packages      `json:"packages" validate:"required,dive,keys,required,oneof=13 14 15 16,endkeys"`
+	Platforms   Platforms     `json:"platforms,omitempty" validate:"required,min=1,dive"`
 	Readme      Readme        `json:"readme,omitempty"`
-	Repository  Repository    `json:"repository" validate:"required,url"`
-	Source      Source        `json:"source" validate:"required,url,extension_source"`
+	Repository  *Repository   `json:"repository,omitempty" validate:"required,url"`
+	Source      *Source       `json:"source,omitempty" validate:"required,url,extension_source"`
 	UpdatedAt   Timestamp     `json:"updated_at"`
-	Version     VersionCode   `json:"version" validate:"semver"`
+	Version     *VersionCode  `json:"version,omitempty" validate:"semver"`
 }
 
 // ExtensionName defines model for ExtensionName.
@@ -167,6 +158,24 @@ type Maintainer struct {
 // Maintainers defines model for Maintainers.
 type Maintainers = []Maintainer
 
+// Package defines model for Package.
+type Package struct {
+	Description Description `json:"description,omitempty"`
+	Homepage    Homepage    `json:"homepage,omitempty"`
+
+	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
+	License     License     `json:"license,omitempty"`
+	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
+	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
+	Readme      Readme      `json:"readme,omitempty"`
+	Repository  Repository  `json:"repository" validate:"required,url"`
+	Source      Source      `json:"source" validate:"required,url,extension_source"`
+	Version     VersionCode `json:"version" validate:"semver"`
+}
+
+// Packages defines model for Packages.
+type Packages map[string]Package
+
 // PgVersion defines model for PgVersion.
 type PgVersion string
 
@@ -179,7 +188,7 @@ type Platform struct {
 	Architectures     Architectures   `json:"architectures" validate:"required,dive,oneof=amd64 arm64"`
 	BuildDependencies Dependencies    `json:"build_dependencies"`
 	Os                PlatformOs      `json:"os" validate:"required,oneof=debian_bookworm ubuntu_jammy"`
-	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=pg_13 pg_14 pg_15 pg_16"`
+	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=13 14 15 16"`
 	RunDependencies   Dependencies    `json:"run_dependencies"`
 }
 
@@ -207,24 +216,13 @@ type Providers struct {
 
 // PublishExtension defines model for PublishExtension.
 type PublishExtension struct {
-	Description Description `json:"description,omitempty"`
-	Homepage    Homepage    `json:"homepage,omitempty"`
-
 	// Keywords keywords
 	Keywords Keywords `json:"keywords,omitempty" validate:"gte=0,dive,required"`
-
-	// License License under which the extension is distributed. The license must be a valid SPDX license identifier.
-	License     License     `json:"license,omitempty"`
-	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
 
 	// MakeLatest Whether to make this version the latest version of the extension
 	MakeLatest bool          `json:"make_latest,omitempty"`
 	Name       ExtensionName `json:"name" validate:"required,urlsafe"`
-	Platforms  Platforms     `json:"platforms" validate:"required,min=1,dive"`
-	Readme     Readme        `json:"readme,omitempty"`
-	Repository Repository    `json:"repository" validate:"required,url"`
-	Source     Source        `json:"source" validate:"required,url,extension_source"`
-	Version    VersionCode   `json:"version" validate:"semver"`
+	Packages   Packages      `json:"packages" validate:"required,dive,keys,required,oneof=13 14 15 16,endkeys"`
 }
 
 // Readme defines model for Readme.

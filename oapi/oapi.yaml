@@ -231,7 +231,6 @@ components:
             make_latest:
               type: boolean
               description: Whether to make this version the latest version of the extension
-              default: true
               x-go-type-skip-optional-pointer: true
             keywords:
               $ref: "#/components/schemas/Keywords"
@@ -297,55 +296,33 @@ components:
       allOf:
         - $ref: "#/components/schemas/BaseExtension"
         - $ref: "#/components/schemas/CommonExtension"
-    ExtensionVersions:
-      allOf:
-        - $ref: "#/components/schemas/BaseExtension"
-        - type: object
-          properties:
-            versions:
-              type: array
-              description: a list of versions for the extension sorted by created_at descending
-              items:
-                $ref: "#/components/schemas/Version"
-              minItems: 0
+        # Deprecated starts, use packages instead
+        - properties:
+            version:
+              $ref: "#/components/schemas/VersionCode"
+            source:
+              $ref: "#/components/schemas/Source"
+            readme:
+              $ref: "#/components/schemas/Readme"
+            platforms:
+              $ref: "#/components/schemas/Platforms"
+            maintainers:
+              $ref: "#/components/schemas/Maintainers"
+            repository:
+              $ref: "#/components/schemas/Repository"
+            license:
+              $ref: "#/components/schemas/License"
+            homepage:
+              $ref: "#/components/schemas/Homepage"
+            description:
+              $ref: "#/components/schemas/Description"
+            # Deprecated ends, use packages instead
     CommonExtension:
       required:
-        - version
-        - source
-        - repository
-        - maintainers
-        - platforms
+        - packages
       properties:
-        version:
-          $ref: "#/components/schemas/VersionCode"
-        maintainers:
-          $ref: "#/components/schemas/Maintainers"
-        source:
-          $ref: "#/components/schemas/Source"
-        repository:
-          $ref: "#/components/schemas/Repository"
-        license:
-          $ref: "#/components/schemas/License"
-        homepage:
-          $ref: "#/components/schemas/Homepage"
-        description:
-          $ref: "#/components/schemas/Description"
-        readme:
-          $ref: "#/components/schemas/Readme"
-        platforms:
-          $ref: "#/components/schemas/Platforms"
-    Version:
-      required:
-        - id
-        - created_at
-      allOf:
-        - $ref: "#/components/schemas/CommonExtension"
-        - type: object
-          properties:
-            id:
-              $ref: "#/components/schemas/uuid"
-            created_at:
-              $ref: "#/components/schemas/Timestamp"
+        packages:
+          $ref: "#/components/schemas/Packages"
     uuid:
       x-go-type: uuid.UUID
       x-go-type-import:
@@ -403,6 +380,40 @@ components:
           example: owen@example.com
           x-oapi-codegen-extra-tags:
             validate: required,email
+    Packages:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/Package"
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: required,dive,keys,required,oneof=13 14 15 16,endkeys
+    Package:
+      type: object
+      required:
+        - version
+        - source
+        - platforms
+        - repository
+        - maintainers
+      properties:
+        version:
+          $ref: "#/components/schemas/VersionCode"
+        source:
+          $ref: "#/components/schemas/Source"
+        readme:
+          $ref: "#/components/schemas/Readme"
+        platforms:
+          $ref: "#/components/schemas/Platforms"
+        maintainers:
+          $ref: "#/components/schemas/Maintainers"
+        repository:
+          $ref: "#/components/schemas/Repository"
+        license:
+          $ref: "#/components/schemas/License"
+        homepage:
+          $ref: "#/components/schemas/Homepage"
+        description:
+          $ref: "#/components/schemas/Description"
     Homepage:
       type: string
       example: https://github.com/pgvector/pgvector
@@ -414,10 +425,15 @@ components:
         $ref: "#/components/schemas/PgVersion"
       x-go-type-skip-optional-pointer: true
       x-oapi-codegen-extra-tags:
-        validate: required,dive,oneof=pg_13 pg_14 pg_15 pg_16
+        validate: required,dive,oneof=13 14 15 16
     PgVersion:
       type: string
-      enum: ["pg_13", "pg_14", "pg_15", "pg_16"]
+      enum: ["13", "14", "15", "16"]
+      x-enum-varnames:
+        - Postgres13
+        - Postgres14
+        - Postgres15
+        - Postgres16
     License:
       type: string
       description: License under which the extension is distributed. The license must be a valid SPDX license identifier.
@@ -529,6 +545,7 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Platform"
+      x-go-type-skip-optional-pointer: true
       x-oapi-codegen-extra-tags:
         validate: required,min=1,dive
     Platform:

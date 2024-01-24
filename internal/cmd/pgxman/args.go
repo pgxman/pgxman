@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
@@ -34,12 +33,11 @@ func (e *ErrExtVerNotFound) Error() string {
 
 type ErrExtIncompatiblePG struct {
 	Name      string
-	Version   string
 	PGVersion pgxman.PGVersion
 }
 
 func (e *ErrExtIncompatiblePG) Error() string {
-	return fmt.Sprintf("extension %q version %q is incompatible with PostgreSQL %s", e.Name, e.Version, e.PGVersion)
+	return fmt.Sprintf("extension %q is incompatible with PostgreSQL %s", e.Name, e.PGVersion)
 }
 
 type ErrExtIncompatiblePlatform struct {
@@ -135,11 +133,7 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			}
 
 			// if version is not specified, use the latest version
-			if ext.Version == "" || ext.Version == "latest" {
-				ext.Version = installableExt.Version
-			}
-
-			if installableExt.Version != ext.Version {
+			if ext.Version != "" && ext.Version != "latest" {
 				installableExt, err = l.Client.GetVersion(ctx, ext.Name, ext.Version)
 				if err != nil {
 					if errors.Is(err, registry.ErrExtensionNotFound) {
@@ -150,15 +144,16 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 				}
 			}
 
-			platform, err := installableExt.GetPlatform(p)
+			installablePkg, ok := installableExt.Packages[string(ext.PGVersion)]
+			if !ok {
+				return nil, &ErrExtIncompatiblePG{Name: ext.Name, PGVersion: ext.PGVersion}
+			}
+			ext.Version = installablePkg.Version
+
+			platform, err := getPlatform(installablePkg, p)
 			if err != nil {
 				return nil, &ErrExtIncompatiblePlatform{Name: ext.Name, Version: ext.Version, Platform: p}
 			}
-
-			if !slices.Contains(platform.PgVersions, convertPGVersion(ext.PGVersion)) {
-				return nil, &ErrExtIncompatiblePG{Name: ext.Name, Version: ext.Version, PGVersion: ext.PGVersion}
-			}
-
 			ext.AptRepositories = convertAptRepos(platform.AptRepositories)
 		}
 
@@ -166,6 +161,16 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 	}
 
 	return result, nil
+}
+
+func getPlatform(pkg oapi.Package, p pgxman.Platform) (*oapi.Platform, error) {
+	for _, platform := range pkg.Platforms {
+		if string(platform.Os) == string(p) {
+			return &platform, nil
+		}
+	}
+
+	return nil, fmt.Errorf("platform %q not found", p)
 }
 
 var (
@@ -200,21 +205,6 @@ func parseInstallExtension(arg string) (*pgxman.PackExtension, error) {
 	}
 
 	return nil, errInvalidExtensionFormat{Arg: arg}
-}
-
-func convertPGVersion(pgVer pgxman.PGVersion) oapi.PgVersion {
-	switch pgVer {
-	case pgxman.PGVersion13:
-		return oapi.Pg13
-	case pgxman.PGVersion14:
-		return oapi.Pg14
-	case pgxman.PGVersion15:
-		return oapi.Pg15
-	case pgxman.PGVersion16:
-		return oapi.Pg16
-	default:
-		panic(fmt.Sprintf("invalid pg version: %s", pgVer))
-	}
 }
 
 func convertAptRepos(aptRepos []oapi.AptRepository) []pgxman.AptRepository {
