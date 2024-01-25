@@ -137,7 +137,7 @@ jobs:
           ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
           colima start
 
-          make docker_load_runner
+          RUNNER_TARGET=runner-postgres-15 make docker_load_runner
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(PWD)/dist make tools goreleaser
           cat <<EOS > /tmp/pgxman.yaml
           apiVersion: v1
