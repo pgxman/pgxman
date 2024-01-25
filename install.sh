@@ -8,10 +8,15 @@
 set -u
 set -o noglob
 
+PGXMAN_INSTALLER_HOMEBREW_TAP="${PGXMAN_INSTALLER_HOMEBREW_TAP:-pgxman/tap/pgxman}"
+PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR="${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR:-}"
+
 main() {
     need_cmd uname
     need_cmd echo
     need_cmd cat
+
+    SUDO=""
 
     install_pgxman
     say_success
@@ -39,12 +44,16 @@ install_pgxman() {
 }
 
 install_extensions() {
-    if [ "$#" -ne "0" ]; then
-        for _file in "$@"; do
-            echo "Installing extensions from ${_file}..."
-            ensure "${SUDO}" pgxman pack install --file "$_file" --yes || exit 1
-        done
-    fi
+    case "$OS_TYPE" in
+    linux)
+        if [ "$#" -ne "0" ]; then
+            for _file in "$@"; do
+                echo "Installing extensions from ${_file}..."
+                ensure "${SUDO}" pgxman pack install --file "$_file" --yes || exit 1
+            done
+        fi
+        ;;
+    esac
 }
 
 get_architecture() {
@@ -98,7 +107,6 @@ install_pgxman_linux() {
 
     local _arch="$1"
 
-    SUDO=""
     if [ "$(id -u)" != "0" ]; then
         if
             which sudo >/dev/null 2>&1
@@ -112,10 +120,14 @@ install_pgxman_linux() {
     fi
 
     echo "Installing pgxman for Linux ${_arch}..."
-    ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
-    ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
-    ensure ${SUDO} apt update
-    ensure ${SUDO} apt install -y pgxman
+    if [ -z "${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR}" ]; then
+        ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
+        ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
+        ensure ${SUDO} apt update
+        ensure ${SUDO} apt install -y pgxman
+    else
+        ensure ${SUDO} apt install -y "${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR}/pgxman_linux_${_arch}.deb"
+    fi
 }
 
 install_pgxman_darwin() {
@@ -124,10 +136,10 @@ install_pgxman_darwin() {
     if brew ls pgxman >/dev/null 2>&1; then
         echo "Upgrading pgxman for macOS..."
         ensure brew update
-        ensure brew upgrade pgxman/tap/pgxman
+        ensure brew upgrade "${PGXMAN_INSTALLER_HOMEBREW_TAP}"
     else
         echo "Installing pgxman for macOS..."
-        ensure brew install pgxman/tap/pgxman
+        ensure brew install "${PGXMAN_INSTALLER_HOMEBREW_TAP}"
     fi
 }
 

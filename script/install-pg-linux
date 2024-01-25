@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+apt update
+apt install gnupg2 postgresql-common -y
+sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+apt install "postgresql-${1}" -y

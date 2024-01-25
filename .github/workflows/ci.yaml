@@ -91,63 +91,54 @@ jobs:
       - name: Run e2etest
         run: |
           make e2etest
-  installer_test:
-    name: Installer Test
-    needs: [build, test, vet]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          check-latest: true
-      - name: Run tests
-        run: |
-          make tools installer_test
   linux_install_test:
     name: Linux Install Test
     needs: [build, test, vet]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install pg 15
+        run: |
+          sudo ./script/install-pg-linux 15
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
       - name: Run tests
         run: |
-          sudo apt update
-          sudo apt install gnupg2 postgresql-common -y
-          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          sudo apt install postgresql-15 -y
-
-          make build
-          bin/pgxman doctor
-          sudo bin/pgxman install pgvector postgis parquet_s3_fdw --yes --debug
+          make tools goreleaser
+          cat <<EOS > /tmp/pgxman.yaml
+          apiVersion: v1
+          postgres:
+            version: "15"
+          extensions:
+            - name: pgvector
+            - name: postgis
+            - name: parquet_s3_fdw
+          EOS
+          PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=$(pwd)/dist ./install.sh /tmp/pgxman.yaml
+          sudo pgxman install pg_ivm pg_bm25 --debug
   mac_install_test:
     name: Mac Install Test
     needs: [build, test, vet]
     runs-on: macos-13
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+      - name: Start Colima
+        run: |
+          ./script/start-colima-macos
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
       - name: Run tests
         run: |
-          brew install --overwrite python@3.12 docker docker-compose docker-buildx colima
-          mkdir -p ~/.docker/cli-plugins
-          ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
-          ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
-          colima start
-
-          make build docker_load_runner
-          bin/pgxman doctor
-          bin/pgxman install pgvector postgis parquet_s3_fdw --debug
+          RUNNER_TARGET=runner-postgres-15 RUNNER_POSTGRES_15_IMAGE=ghcr.io/pgxman/runner/postgres/15:dev make docker_load_runner
+          GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser
+          PGXMAN_INSTALLER_HOMEBREW_TAP=./dist/homebrew/Formula/pgxman.rb ./install.sh
+          pgxman install pgvector postgis parquet_s3_fdw --debug --runner-image ghcr.io/pgxman/runner/postgres/15:dev
   docker:
     name: Docker
-    needs: [e2etest, installer_test]
+    needs: [e2etest]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit

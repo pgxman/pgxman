@@ -60,6 +60,7 @@ brews:
     description: PostgreSQL Extensions Manager
     folder: Formula
     license: "Apache 2.0"
+    url_template: '{{ if index .Env "GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL"  }}{{ .Env.GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL }}/{{ .ArtifactName }}{{ else }}"https://github.com/pgxman/pgxman/releases/download/{{ .Tag }}/{{ .ArtifactName }}"{{ end }}'
     custom_block: |
       head "https://github.com/pgxman/pgxman.git"
     install: |
