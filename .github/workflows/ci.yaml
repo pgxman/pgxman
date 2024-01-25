@@ -123,7 +123,6 @@ jobs:
     name: Mac Install Test
     needs: [build, test, vet]
     runs-on: macos-13
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
