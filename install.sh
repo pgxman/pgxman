@@ -8,6 +8,8 @@
 set -u
 set -o noglob
 
+PGXMAN_INSTALLER_HOMEBREW_TAP="${PGXMAN_INSTALLER_HOMEBREW_TAP:-pgxman/tap/pgxman}"
+
 main() {
     need_cmd uname
     need_cmd echo
@@ -124,10 +126,10 @@ install_pgxman_darwin() {
     if brew ls pgxman >/dev/null 2>&1; then
         echo "Upgrading pgxman for macOS..."
         ensure brew update
-        ensure brew upgrade pgxman/tap/pgxman
+        ensure brew upgrade "${PGXMAN_HOMEBREW_TAP}"
     else
         echo "Installing pgxman for macOS..."
-        ensure brew install pgxman/tap/pgxman
+        ensure brew install "${PGXMAN_HOMEBREW_TAP}"
     fi
 }
 

@@ -143,9 +143,17 @@ jobs:
           ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
           colima start
 
-          make build docker_load_runner
-          bin/pgxman doctor
-          bin/pgxman install pgvector postgis parquet_s3_fdw --debug
+          GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(PWD)/dist make tools goreleaser docker_load_runner
+          cat <<EOS > /tmp/pgxman.yaml
+          apiVersion: v1
+          postgres:
+            version: "15"
+          extensions:
+            - name: pgvector
+            - name: postgis
+            - name: parquet_s3_fdw
+          EOS
+          PGXMAN_INSTALLER_HOMEBREW_TAP=$(PWD)/dist/homebrew/Formula/pgxman.rb ./install.sh /tmp/pgxman.yaml
   docker:
     name: Docker
     needs: [e2etest, installer_test]
