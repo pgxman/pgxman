@@ -133,10 +133,10 @@ jobs:
           check-latest: true
       - name: Run tests
         run: |
-          RUNNER_TARGET=runner-postgres-15 make docker_load_runner
+          RUNNER_TARGET=runner-postgres-15 RUNNER_POSTGRES_15_IMAGE=ghcr.io/pgxman/runner/postgres/15:dev make docker_load_runner
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser
           PGXMAN_INSTALLER_HOMEBREW_TAP=./dist/homebrew/Formula/pgxman.rb ./install.sh
-          pgxman install pgvector postgis parquet_s3_fdw --debug
+          pgxman install pgvector postgis parquet_s3_fdw --debug --runner-image ghcr.io/pgxman/runner/postgres/15:dev
   docker:
     name: Docker
     needs: [e2etest]
