@@ -16,6 +16,8 @@ main() {
     need_cmd echo
     need_cmd cat
 
+    SUDO=""
+
     install_pgxman
     say_success
     pgxman doctor
@@ -101,7 +103,6 @@ install_pgxman_linux() {
 
     local _arch="$1"
 
-    SUDO=""
     if [ "$(id -u)" != "0" ]; then
         if
             which sudo >/dev/null 2>&1
@@ -156,15 +157,15 @@ downloader() {
         need_cmd "$_dld"
     elif [ "$_dld" = curl ]; then
         if [ -z "$2" ]; then
-            ${SUDO} curl --silent --show-error --fail --location "$1"
+            curl --silent --show-error --fail --location "$1"
         else
-            ${SUDO} curl --silent --show-error --fail --location "$1" --output "$2"
+            curl --silent --show-error --fail --location "$1" --output "$2"
         fi
     elif [ "$_dld" = wget ]; then
         if [ -z "$2" ]; then
-            ${SUDO} wget "$1"
+            wget "$1"
         else
-            ${SUDO} wget "$1" -O "$2"
+            wget "$1" -O "$2"
         fi
     else
         err "Unknown downloader" # should not reach here
