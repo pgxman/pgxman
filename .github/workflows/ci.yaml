@@ -118,7 +118,7 @@ jobs:
             - name: postgis
             - name: parquet_s3_fdw
           EOS
-          PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=$(PWD)/dist ./install.sh /tmp/pgxman.yaml
+          PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=$(pwd)/dist ./install.sh /tmp/pgxman.yaml
           sudo pgxman install pg_ivm pg_bm25 --debug
   mac_install_test:
     name: Mac Install Test
@@ -139,8 +139,8 @@ jobs:
           colima start
 
           RUNNER_TARGET=runner-postgres-15 make docker_load_runner
-          GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(PWD)/dist make tools goreleaser
-          PGXMAN_INSTALLER_HOMEBREW_TAP=$(PWD)/dist/homebrew/Formula/pgxman.rb ./install.sh
+          GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser
+          PGXMAN_INSTALLER_HOMEBREW_TAP=./dist/homebrew/Formula/pgxman.rb ./install.sh
           pgxman install pgvector postgis parquet_s3_fdw --debug
   docker:
     name: Docker

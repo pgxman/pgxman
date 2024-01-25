@@ -29,4 +29,5 @@ extensions:
   - name: postgis
   - name: parquet_s3_fdw
 EOS
-RUN bash -c "PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=/tmp/dist /tmp/install.sh /tmp/pgxman.yaml"
+ENV PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR /tmp/dist
+RUN sh /tmp/install.sh /tmp/pgxman.yaml

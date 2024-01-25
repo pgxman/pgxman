@@ -9,7 +9,7 @@ set -u
 set -o noglob
 
 PGXMAN_INSTALLER_HOMEBREW_TAP="${PGXMAN_INSTALLER_HOMEBREW_TAP:-pgxman/tap/pgxman}"
-PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=""
+PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR="${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR:-}"
 
 main() {
     need_cmd uname
@@ -161,15 +161,15 @@ downloader() {
         need_cmd "$_dld"
     elif [ "$_dld" = curl ]; then
         if [ -z "$2" ]; then
-            curl --silent --show-error --fail --location "$1"
+            ${SUDO} curl --silent --show-error --fail --location "$1"
         else
-            curl --silent --show-error --fail --location "$1" --output "$2"
+            ${SUDO} curl --silent --show-error --fail --location "$1" --output "$2"
         fi
     elif [ "$_dld" = wget ]; then
         if [ -z "$2" ]; then
-            wget "$1"
+            ${SUDO} wget "$1"
         else
-            wget "$1" -O "$2"
+            ${SUDO} wget "$1" -O "$2"
         fi
     else
         err "Unknown downloader" # should not reach here
