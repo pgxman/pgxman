@@ -100,9 +100,10 @@ func (c *client) PublishExtension(ctx context.Context, ext oapi.PublishExtension
 	var errMsg string
 	if resp.JSON400 != nil {
 		errMsg = resp.JSON400.Message
-	}
-	if resp.JSON500 != nil {
+	} else if resp.JSON500 != nil {
 		errMsg = resp.JSON500.Message
+	} else if resp.HTTPResponse.StatusCode == http.StatusUnauthorized {
+		errMsg = strings.TrimSpace(string(resp.Body))
 	}
 	if errMsg != "" {
 		return fmt.Errorf("error publishing %s: %s", ext.Name, errMsg)
