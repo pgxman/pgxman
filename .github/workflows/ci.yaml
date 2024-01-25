@@ -119,6 +119,7 @@ jobs:
             - name: parquet_s3_fdw
           EOS
           PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=$(PWD)/dist ./install.sh /tmp/pgxman.yaml
+          sudo pgxman install pg_ivm pg_bm25 --debug
   mac_install_test:
     name: Mac Install Test
     needs: [build, test, vet]
