@@ -152,6 +152,6 @@ jobs:
           PGXMAN_INSTALLER_HOMEBREW_TAP=$(PWD)/dist/homebrew/Formula/pgxman.rb ./install.sh /tmp/pgxman.yaml
   docker:
     name: Docker
-    needs: [e2etest, installer_test]
+    needs: [e2etest]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
