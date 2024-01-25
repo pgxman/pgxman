@@ -9,6 +9,7 @@ set -u
 set -o noglob
 
 PGXMAN_INSTALLER_HOMEBREW_TAP="${PGXMAN_INSTALLER_HOMEBREW_TAP:-pgxman/tap/pgxman}"
+PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=""
 
 main() {
     need_cmd uname
@@ -114,10 +115,14 @@ install_pgxman_linux() {
     fi
 
     echo "Installing pgxman for Linux ${_arch}..."
-    ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
-    ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
-    ensure ${SUDO} apt update
-    ensure ${SUDO} apt install -y pgxman
+    if [ -z "${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR}" ]; then
+        ensure downloader https://apt.pgxman.com/pgxman-keyring.gpg /usr/share/keyrings/pgxman-cli.gpg
+        ensure echo "deb [arch=${_arch} signed-by=/usr/share/keyrings/pgxman-cli.gpg] https://apt.pgxman.com/cli stable main" | ${SUDO} tee /etc/apt/sources.list.d/pgxman-cli.list >/dev/null
+        ensure ${SUDO} apt update
+        ensure ${SUDO} apt install -y pgxman
+    else
+        ensure ${SUDO} apt install -y "${PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR}/pgxman_linux_${_arch}.deb"
+    fi
 }
 
 install_pgxman_darwin() {

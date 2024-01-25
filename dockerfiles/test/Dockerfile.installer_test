@@ -18,15 +18,15 @@ ENV HOME /home/${USER}
 WORKDIR /home/${USER}
 
 COPY install.sh /tmp/install.sh
+COPY dist /tmp/dist
 
 RUN cat <<EOS > /tmp/pgxman.yaml
 apiVersion: v1
 postgres:
   version: "15"
 extensions:
-  - name: "pgvector"
-    version: "0.5.1"
+  - name: pgvector
+  - name: postgis
+  - name: parquet_s3_fdw
 EOS
-RUN sh /tmp/install.sh /tmp/pgxman.yaml
-
-RUN pgxman --version
+RUN bash -c "PGXMAN_INSTALLER_DEBIAN_PACKAGE_DIR=/tmp/dist /tmp/install.sh /tmp/pgxman.yaml"
