@@ -97,17 +97,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install pg 15
+        run: |
+          sudo ./script/install-pg-linux 15
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
       - name: Run tests
         run: |
-          sudo apt update
-          sudo apt install gnupg2 postgresql-common -y
-          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          sudo apt install postgresql-15 -y
-
           make tools goreleaser
           cat <<EOS > /tmp/pgxman.yaml
           apiVersion: v1
@@ -126,18 +124,15 @@ jobs:
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
+      - name: Start Colima
+        run: |
+          ./script/start-colima-macos
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
       - name: Run tests
         run: |
-          brew install --overwrite python@3.12 docker docker-compose docker-buildx colima
-          mkdir -p ~/.docker/cli-plugins
-          ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
-          ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
-          colima start
-
           RUNNER_TARGET=runner-postgres-15 make docker_load_runner
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser
           PGXMAN_INSTALLER_HOMEBREW_TAP=./dist/homebrew/Formula/pgxman.rb ./install.sh

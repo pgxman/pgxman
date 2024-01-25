@@ -64,3 +64,38 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ env.build_version }}
         run: |
           gh release upload "${GORELEASER_CURRENT_TAG}" "$PWD/install.sh" -R pgxman/pgxman --clobber
+  linux_install_test:
+    name: Linux Install Test
+    needs: [docker, goreleaser]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pg 15
+        run: |
+          sudo ./script/install-pg-linux 15
+      - name: Run tests
+        run: |
+          cat <<EOS > /tmp/pgxman.yaml
+          apiVersion: v1
+          postgres:
+            version: "15"
+          extensions:
+            - name: pgvector
+            - name: postgis
+            - name: parquet_s3_fdw
+          EOS
+          ./install.sh /tmp/pgxman.yaml
+          sudo pgxman install pg_ivm pg_bm25 --debug
+  mac_install_test:
+    name: Mac Install Test
+    needs: [docker, goreleaser]
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Colima
+        run: |
+          ./script/start-colima-macos
+      - name: Run tests
+        run: |
+          ./install.sh
+          pgxman install pgvector postgis parquet_s3_fdw --debug
