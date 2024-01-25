@@ -139,16 +139,8 @@ jobs:
 
           RUNNER_TARGET=runner-postgres-15 make docker_load_runner
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(PWD)/dist make tools goreleaser
-          cat <<EOS > /tmp/pgxman.yaml
-          apiVersion: v1
-          postgres:
-            version: "15"
-          extensions:
-            - name: pgvector
-            - name: postgis
-            - name: parquet_s3_fdw
-          EOS
-          PGXMAN_INSTALLER_HOMEBREW_TAP=$(PWD)/dist/homebrew/Formula/pgxman.rb ./install.sh /tmp/pgxman.yaml
+          PGXMAN_INSTALLER_HOMEBREW_TAP=$(PWD)/dist/homebrew/Formula/pgxman.rb ./install.sh
+          pgxman install pgvector postgis parquet_s3_fdw --debug
   docker:
     name: Docker
     needs: [e2etest]

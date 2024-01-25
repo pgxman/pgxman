@@ -44,12 +44,16 @@ install_pgxman() {
 }
 
 install_extensions() {
-    if [ "$#" -ne "0" ]; then
-        for _file in "$@"; do
-            echo "Installing extensions from ${_file}..."
-            ensure "${SUDO}" pgxman pack install --file "$_file" --yes || exit 1
-        done
-    fi
+    case "$OS_TYPE" in
+    linux)
+        if [ "$#" -ne "0" ]; then
+            for _file in "$@"; do
+                echo "Installing extensions from ${_file}..."
+                ensure "${SUDO}" pgxman pack install --file "$_file" --yes || exit 1
+            done
+        fi
+        ;;
+    esac
 }
 
 get_architecture() {
