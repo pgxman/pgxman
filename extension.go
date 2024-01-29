@@ -343,19 +343,6 @@ const (
 	PGVersion16      PGVersion = "16"
 )
 
-func ParsePGVersion(ver string) PGVersion {
-	if ver == "" {
-		return PGVersionUnknown
-	}
-
-	v := PGVersion(ver)
-	if v.Validate() != nil {
-		return PGVersionUnknown
-	}
-
-	return v
-}
-
 type PGVersion string
 
 func (v PGVersion) Validate() error {
@@ -537,12 +524,12 @@ func (builder AptExtensionBuilder) Validate() error {
 
 // Ref: https://manpages.ubuntu.com/manpages/lunar/en/man5/sources.list.5.html
 type AptRepository struct {
+	SignedKey  AptRepositorySignedKey `json:"signedKey"`
 	ID         string                 `json:"id"`
 	Types      []AptRepositoryType    `json:"types"`
 	URIs       []string               `json:"uris"`
 	Suites     []string               `json:"suites"`
 	Components []string               `json:"components"`
-	SignedKey  AptRepositorySignedKey `json:"signedKey"`
 }
 
 func (repo AptRepository) Name() string {

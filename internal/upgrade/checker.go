@@ -33,17 +33,17 @@ func NewChecker(logger *log.Logger) *Checker {
 }
 
 type CheckResult struct {
-	HasUpgrade     bool
 	CurrentVersion *semver.Version
 	LatestVersion  *semver.Version
+	HasUpgrade     bool
 }
 
 type Checker struct {
 	ghClient        *github.Client
 	logger          *log.Logger
-	currentVersion  string
 	readConfigFunc  func() (*config.Config, error)
 	writeConfigFunc func(c config.Config) error
+	currentVersion  string
 }
 
 func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {

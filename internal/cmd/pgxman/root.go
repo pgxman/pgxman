@@ -2,6 +2,7 @@ package pgxman
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
+	"github.com/pgxman/pgxman/internal/pg"
+	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/pgxman/pgxman/internal/upgrade"
 	"github.com/spf13/cobra"
 )
@@ -78,4 +81,29 @@ func checkUpgrade(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+var (
+	errCanNotDetectPG = errors.New("could not detect a supported installation of PostgreSQL. For more info, run `pgxman doctor`")
+)
+
+func supportedPGVersions() []string {
+	var pgVers []string
+	for _, v := range pgxman.SupportedPGVersions {
+		pgVers = append(pgVers, string(v))
+	}
+
+	return pgVers
+}
+
+func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
+	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
+		return errCanNotDetectPG
+	}
+
+	return nil
+}
+
+func newReigstryClient() (registry.Client, error) {
+	return registry.NewClient(flagRegistryURL)
 }
