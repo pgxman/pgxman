@@ -82,19 +82,19 @@ var (
 )
 
 type initInput struct {
-	textinput.Model
-
-	Label     string
 	UpdateExt func(ext *pgxman.Extension, val string)
+
+	Label string
+	textinput.Model
 }
 
 type initModel struct {
+	err        error
 	ext        *pgxman.Extension
 	extPath    string
-	focusIndex int
 	inputs     []initInput
+	focusIndex int
 	done       bool
-	err        error
 }
 
 func initialModel(pwd string, ext *pgxman.Extension) initModel {

@@ -27,10 +27,10 @@ const (
 
 type BuilderOptions struct {
 	ExtDir    string
-	Debug     bool
-	NoCache   bool
 	CacheFrom []string
 	CacheTo   []string
+	Debug     bool
+	NoCache   bool
 }
 
 func NewBuilder(opts BuilderOptions) Builder {
@@ -45,8 +45,8 @@ type Builder interface {
 }
 
 type dockerBuilder struct {
-	BuilderOptions
 	logger *log.Logger
+	BuilderOptions
 }
 
 func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {

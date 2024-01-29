@@ -44,9 +44,9 @@ func (p Pack) InstallExtensions() []InstallExtension {
 }
 
 type InstallExtension struct {
-	PackExtension
 	PGVersion       PGVersion
 	AptRepositories []AptRepository
+	PackExtension
 }
 
 func (e InstallExtension) String() string {

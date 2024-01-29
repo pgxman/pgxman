@@ -80,11 +80,11 @@ func NewArgsParser(c registry.Client, d PlatformDetector, pgver pgxman.PGVersion
 type PlatformDetector func() (pgxman.Platform, error)
 
 type ArgsParser struct {
-	PlatformDetector PlatformDetector
 	Client           registry.Client
+	PlatformDetector PlatformDetector
+	Logger           *log.Logger
 	PGVer            pgxman.PGVersion
 	Overwrite        bool
-	Logger           *log.Logger
 }
 
 func (p *ArgsParser) Parse(ctx context.Context, args []string) ([]pgxman.InstallExtension, error) {
