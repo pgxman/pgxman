@@ -14,6 +14,14 @@ import (
 	"github.com/pgxman/pgxman/oapi"
 )
 
+type errInvalidExtensionFormat struct {
+	Arg string
+}
+
+func (e errInvalidExtensionFormat) Error() string {
+	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION...", e.Arg)
+}
+
 type ErrExtNotFound struct {
 	Name string
 }

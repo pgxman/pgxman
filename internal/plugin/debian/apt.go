@@ -81,9 +81,9 @@ func (a AptSource) String() string {
 
 type AptPackage struct {
 	Pkg       string
-	IsLocal   bool
 	Opts      []string
 	Repos     []pgxman.AptRepository
+	IsLocal   bool
 	Overwrite bool
 }
 

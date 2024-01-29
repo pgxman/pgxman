@@ -8,9 +8,9 @@ import (
 const DefaultPackAPIVersion = "v1"
 
 type Pack struct {
+	Postgres   Postgres        `json:"postgres"`
 	APIVersion string          `json:"apiVersion"`
 	Extensions []PackExtension `json:"extensions"`
-	Postgres   Postgres        `json:"postgres"`
 }
 
 func (p Pack) Validate() error {

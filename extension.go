@@ -343,19 +343,6 @@ const (
 	PGVersion16      PGVersion = "16"
 )
 
-func ParsePGVersion(ver string) PGVersion {
-	if ver == "" {
-		return PGVersionUnknown
-	}
-
-	v := PGVersion(ver)
-	if v.Validate() != nil {
-		return PGVersionUnknown
-	}
-
-	return v
-}
-
 type PGVersion string
 
 func (v PGVersion) Validate() error {

@@ -1,9 +1,10 @@
+//go:build linux
+
 package pgxman
 
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -14,11 +15,18 @@ import (
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
-	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
+
+func newInstallCmd() *cobra.Command {
+	return newInstallOrUpgradeCmd(false)
+}
+
+func newUpgradeCmd() *cobra.Command {
+	return newInstallOrUpgradeCmd(true)
+}
 
 var (
 	flagInstallOrUpgradeYes       bool
@@ -116,7 +124,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return fmt.Errorf("need at least one extension")
 		}
 
-		pgVer := pgxman.ParsePGVersion(flagInstallOrUpgradePGVersion)
+		pgVer := parsePGVersion(flagInstallOrUpgradePGVersion)
 		if err := checkPGVerExists(cmd.Context(), pgVer); err != nil {
 			return err
 		}
@@ -172,35 +180,15 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 	}
 }
 
-type errInvalidExtensionFormat struct {
-	Arg string
-}
-
-func (e errInvalidExtensionFormat) Error() string {
-	return fmt.Sprintf("invalid extension format: %q. The format is NAME=VERSION...", e.Arg)
-}
-
-var (
-	errCanNotDetectPG = errors.New("could not detect a supported installation of PostgreSQL. For more info, run `pgxman doctor`")
-)
-
-func supportedPGVersions() []string {
-	var pgVers []string
-	for _, v := range pgxman.SupportedPGVersions {
-		pgVers = append(pgVers, string(v))
+func parsePGVersion(ver string) pgxman.PGVersion {
+	if ver == "" {
+		return pgxman.PGVersionUnknown
 	}
 
-	return pgVers
-}
-
-func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
-	if pgVer == pgxman.PGVersionUnknown || !pg.VersionExists(ctx, pgVer) {
-		return errCanNotDetectPG
+	v := pgxman.PGVersion(ver)
+	if v.Validate() != nil {
+		return pgxman.PGVersionUnknown
 	}
 
-	return nil
-}
-
-func newReigstryClient() (registry.Client, error) {
-	return registry.NewClient(flagRegistryURL)
+	return v
 }

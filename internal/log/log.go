@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"log/slog"
+
+	"github.com/charmbracelet/log"
 )
 
 var (
@@ -35,7 +37,19 @@ func (l *Logger) WithGroup(name string) *Logger {
 }
 
 func NewTextLogger() *Logger {
+	var l log.Level
+	switch level.Level() {
+	case slog.LevelDebug:
+		l = log.DebugLevel
+	case slog.LevelInfo:
+		l = log.InfoLevel
+	case slog.LevelError:
+		l = log.ErrorLevel
+	case slog.LevelWarn:
+		l = log.WarnLevel
+	}
+
 	return &Logger{
-		Logger: slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})),
+		Logger: slog.New(log.NewWithOptions(os.Stderr, log.Options{Level: l})),
 	}
 }
