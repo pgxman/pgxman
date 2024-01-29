@@ -1,6 +1,7 @@
 package pgxmanpack
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -14,7 +15,8 @@ import (
 )
 
 var (
-	flagDebug bool
+	flagDebug    bool
+	flagParallel int
 
 	extension    pgxman.Extension
 	packager     pgxman.Packager
@@ -29,6 +31,10 @@ func Execute() error {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagDebug {
 				log.SetLevel(slog.LevelDebug)
+			}
+
+			if flagParallel < 1 {
+				return fmt.Errorf("invalid parallel value: %d", flagParallel)
 			}
 
 			var err error
@@ -48,8 +54,9 @@ func Execute() error {
 			}
 
 			packagerOpts = pgxman.PackagerOptions{
-				WorkDir: workDir,
-				Debug:   flagDebug,
+				WorkDir:  workDir,
+				Parallel: flagParallel,
+				Debug:    flagDebug,
 			}
 
 			return nil
@@ -76,6 +83,7 @@ func Execute() error {
 	}
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
+	root.PersistentFlags().IntVar(&flagParallel, "parallel", 2, "number of parallel builds to run")
 
 	root.AddCommand(newInitCmd())
 	root.AddCommand(newPreCmd())

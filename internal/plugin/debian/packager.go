@@ -106,17 +106,30 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 		return err
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	token := opts.Parallel
+	g, gctx := errgroup.WithContext(ctx)
 	for _, pkg := range ext.Packages() {
 		pkg := pkg
 
 		g.Go(func() error {
-			if err := p.buildDebian(ctx, pkg, p.targetDebianBuildDir(opts, pkg.PGVersion)); err != nil {
+			if err := p.buildDebian(gctx, pkg, p.targetDebianBuildDir(opts, pkg.PGVersion)); err != nil {
 				return fmt.Errorf("debian build: %w", err)
 			}
 
 			return nil
 		})
+		token--
+
+		// if token is used up, kick off builds & wait for them to finish
+		if token == 0 {
+			if err := g.Wait(); err != nil {
+				return err
+			}
+
+			// reset
+			g, gctx = errgroup.WithContext(ctx)
+			token = opts.Parallel
+		}
 	}
 
 	return g.Wait()

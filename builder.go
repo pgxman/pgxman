@@ -29,6 +29,7 @@ type BuilderOptions struct {
 	ExtDir    string
 	CacheFrom []string
 	CacheTo   []string
+	Parallel  int
 	Debug     bool
 	NoCache   bool
 }
@@ -206,6 +207,8 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 			fmt.Sprintf("%s.args.BUILD_IMAGE=%s", bakeTargetName, builder.Image),
 			"--set",
 			fmt.Sprintf("%s.args.BUILD_SHA=%s", bakeTargetName, sha),
+			"--set",
+			fmt.Sprintf("%s.args.PARALLEL=%d", bakeTargetName, b.Parallel),
 			"--set",
 			fmt.Sprintf("%s.args.WORKSPACE_DIR=%s", bakeTargetName, buildWorkspaceDir),
 		)
