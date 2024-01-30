@@ -132,6 +132,8 @@ jobs:
           go-version-file: go.mod
           check-latest: true
       - name: Run tests
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RUNNER_TARGET=runner-postgres-15 RUNNER_POSTGRES_15_IMAGE=ghcr.io/pgxman/runner/postgres/15:dev make docker_load_runner
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser

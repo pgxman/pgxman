@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -13,6 +14,7 @@ var (
 	flagBuildSet           map[string]string
 	flagBuildExtensionFile string
 	flagBuildNoCache       bool
+	flagBuildParallel      int
 	flagBuildCacheFrom     []string
 	flagBuildCacheTo       []string
 )
@@ -30,11 +32,16 @@ func newBuildCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&flagBuildNoCache, "no-cache", false, "Do not use cache when building the image. The value is passed to docker buildx build --no-cache.")
 	cmd.PersistentFlags().StringArrayVar(&flagBuildCacheFrom, "cache-from", nil, "External cache sources. The value is passed to docker buildx build --cache-from.")
 	cmd.PersistentFlags().StringArrayVar(&flagBuildCacheTo, "cache-to", nil, "Cache export destinations. The value is passed to docker buildx build --cache-to.")
+	cmd.PersistentFlags().IntVar(&flagBuildParallel, "parallel", 2, "Number of parrallel builds to run")
 
 	return cmd
 }
 
 func runBuild(c *cobra.Command, args []string) error {
+	if flagBuildParallel < 1 {
+		return fmt.Errorf("invalid parallel value: %d", flagBuildParallel)
+	}
+
 	extFile, err := filepath.Abs(flagBuildExtensionFile)
 	if err != nil {
 		return err
@@ -55,6 +62,7 @@ func runBuild(c *cobra.Command, args []string) error {
 		pgxman.BuilderOptions{
 			ExtDir:    pwd,
 			Debug:     flagDebug,
+			Parallel:  flagBuildParallel,
 			NoCache:   flagBuildNoCache,
 			CacheFrom: flagBuildCacheFrom,
 			CacheTo:   flagBuildCacheTo,

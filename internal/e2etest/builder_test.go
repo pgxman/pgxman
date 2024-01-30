@@ -98,8 +98,9 @@ echo $PGXS
 	extdir := t.TempDir()
 	builder := pgxman.NewBuilder(
 		pgxman.BuilderOptions{
-			ExtDir: extdir,
-			Debug:  true,
+			ExtDir:   extdir,
+			Parallel: 1,
+			Debug:    true,
 			// Caching for CI.
 			// They are ignored when not running in GitHub Actions.
 			CacheFrom: []string{"type=gha"},

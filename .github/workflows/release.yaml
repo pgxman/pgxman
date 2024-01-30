@@ -96,6 +96,8 @@ jobs:
         run: |
           ./script/start-colima-macos
       - name: Run tests
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./install.sh
           pgxman install pgvector postgis parquet_s3_fdw --debug
