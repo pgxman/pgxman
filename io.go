@@ -61,6 +61,41 @@ func ReadPackFile(path string) (*Pack, error) {
 	return &pack, nil
 }
 
+func overrideExtension(ext Extension, overrides map[string]any) (Extension, error) {
+	bb, err := yaml.Marshal(overrides)
+	if err != nil {
+		return ext, err
+	}
+
+	var yext Extension
+	if err := yaml.Unmarshal(bb, &yext); err != nil {
+		return ext, err
+	}
+
+	if err := mergo.MergeWithOverwrite(&ext, yext); err != nil {
+		return ext, err
+	}
+
+	// remove pg overrides that are not defined in the overrides map
+	if len(yext.PGVersions) > 0 {
+		if extOverrides := ext.Overrides; extOverrides != nil {
+			if pgVersOverrides := extOverrides.PGVersions; pgVersOverrides != nil {
+				extOverridesResult := make(map[PGVersion]ExtensionOverridable)
+				for _, v := range yext.PGVersions {
+					o, ok := pgVersOverrides[v]
+					if ok {
+						extOverridesResult[v] = o
+					}
+				}
+
+				ext.Overrides.PGVersions = extOverridesResult
+			}
+		}
+	}
+
+	return ext, nil
+}
+
 func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	var ext Extension
 
@@ -78,15 +113,15 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 		return ext, err
 	}
 
+	if err := yaml.Unmarshal(b, &ext); err != nil {
+		return ext, err
+	}
+
 	if len(overrides) > 0 {
-		b, err = overrideYamlFields(b, overrides)
+		ext, err = overrideExtension(ext, overrides)
 		if err != nil {
 			return ext, err
 		}
-	}
-
-	if err := yaml.Unmarshal(b, &ext); err != nil {
-		return ext, err
 	}
 
 	defExt := NewDefaultExtension()
@@ -116,17 +151,4 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 	}
 
 	return ext, nil
-}
-
-func overrideYamlFields(b []byte, overrides map[string]any) ([]byte, error) {
-	src := make(map[string]any)
-	if err := yaml.Unmarshal(b, &src); err != nil {
-		return nil, err
-	}
-
-	if err := mergo.Merge(&overrides, src); err != nil {
-		return nil, err
-	}
-
-	return yaml.Marshal(overrides)
 }
