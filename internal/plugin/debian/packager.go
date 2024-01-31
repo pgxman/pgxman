@@ -324,14 +324,12 @@ func (p *DebianPackager) buildDebian(ctx context.Context, pkg pgxman.ExtensionPa
 	logger = logger.With("name", pkg.Name, "version", pkg.Version, "build-dir", buildDir)
 	logger.Info("Building debian package")
 
-	lw := logger.Writer(slog.LevelDebug)
-
 	buildext := exec.CommandContext(ctx, "pg_buildext", "updatecontrol")
 	buildext.Dir = buildDir
-	buildext.Stdout = lw
-	buildext.Stderr = lw
+	buildext.Stdout = os.Stdout
+	buildext.Stderr = os.Stderr
 
-	logger.Debug("Running pg_buildext updatecontrol", "cmd", buildext.String())
+	logger.Info("Running pg_buildext updatecontrol", "cmd", buildext.String())
 	if err := buildext.Run(); err != nil {
 		return fmt.Errorf("pg_buildext updatecontrol: %w", err)
 	}
@@ -348,10 +346,10 @@ func (p *DebianPackager) buildDebian(ctx context.Context, pkg pgxman.ExtensionPa
 		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
 	)
 	debuild.Dir = buildDir
-	debuild.Stdout = lw
-	debuild.Stderr = lw
+	debuild.Stdout = os.Stdout
+	debuild.Stderr = os.Stderr
 
-	logger.Debug("Running debuild", "cmd", debuild.String())
+	logger.Info("Running debuild", "cmd", debuild.String())
 	if err := debuild.Run(); err != nil {
 		return fmt.Errorf("debuild: %w", err)
 	}
