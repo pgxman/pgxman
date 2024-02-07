@@ -9,7 +9,13 @@ import (
 )
 
 type Config struct {
-	LastUpgradeCheckTime time.Time
+	OAuth                OAuth     `json:"oauth"`
+	LastUpgradeCheckTime time.Time `json:"lastUpgradeCheckTime"`
+}
+
+type OAuth struct {
+	ClientID string `json:"clientId"`
+	Endpoint string `json:"endpoint"`
 }
 
 func Write(c Config) error {

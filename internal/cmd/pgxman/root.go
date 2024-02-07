@@ -46,6 +46,7 @@ func Command() *cobra.Command {
 	root.AddCommand(newPublishCmd())
 	root.AddCommand(newContainerCmd())
 	root.AddCommand(newDoctorCmd())
+	root.AddCommand(newAuthCmd())
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 	root.PersistentFlags().StringVar(&flagRegistryURL, "registry", "https://registry.pgxman.com/v1", "registry URL")
