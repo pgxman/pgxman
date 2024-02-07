@@ -13,8 +13,9 @@ import (
 
 func newAuthCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Authenticate with registry",
+		Use:    "auth",
+		Short:  "Authenticate with registry",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newAuthLoginCmd())
