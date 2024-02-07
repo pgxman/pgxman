@@ -173,27 +173,15 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 		}
 	}
 
-	out = append(out, "Do you want to continue? [Y/n] ")
-	fmt.Fprint(io.Stdout, strings.Join(out, "\n"))
+	out = append(out, "Do you want to continue? [Y/n]")
 
-	if err := keyboard.Open(); err != nil {
+	con, err := io.Prompt(strings.Join(out, "\n"), []rune{'y', 'Y'}, []keyboard.Key{keyboard.KeyEnter})
+	if err != nil {
 		return err
 	}
-	defer keyboard.Close()
 
-	for {
-		char, key, err := keyboard.GetKey()
-		if err != nil {
-			return err
-		}
-
-		if char == 'y' || char == 'Y' || key == keyboard.KeyEnter {
-			fmt.Println()
-			break
-		} else {
-			fmt.Println()
-			return fmt.Errorf(abortMsg)
-		}
+	if !con {
+		return fmt.Errorf(abortMsg)
 	}
 
 	return nil
