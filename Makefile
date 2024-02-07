@@ -58,7 +58,7 @@ vet:
 		--rm \
 		-v $(CURDIR):/app \
 		-w /app \
-		golangci/golangci-lint:v1.54.2 \
+		golangci/golangci-lint:v1.56.0 \
 		golangci-lint run --timeout 5m -v
 
 .PHONY: docs

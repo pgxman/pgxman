@@ -48,7 +48,9 @@ func runAuthLogin(c *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer flow.Done()
+	defer func() {
+		_ = flow.Done()
+	}()
 
 	io := pgxman.NewStdIO()
 	con, err := io.Prompt(
