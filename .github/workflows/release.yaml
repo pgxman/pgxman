@@ -92,9 +92,12 @@ jobs:
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
-      - name: Start Colima
+      - uses: douglascamata/setup-docker-macos-action@main
+      - name: Setup Docker buildx
         run: |
-          ./script/start-colima-macos
+          brew install docker-buildx
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
       - name: Run tests
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
