@@ -105,6 +105,6 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	return nil
 }
 
-func newReigstryClient() (registry.Client, error) {
-	return registry.NewClient(flagRegistryURL)
+func newReigstryClient(token string) (registry.Client, error) {
+	return registry.NewClient(flagRegistryURL, token)
 }

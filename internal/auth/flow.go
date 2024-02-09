@@ -1,4 +1,4 @@
-package oauth
+package auth
 
 import (
 	"context"
@@ -69,7 +69,12 @@ func (f *Flow) Done() error {
 }
 
 func (f *Flow) BrowserURL() string {
-	return f.conf().AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(f.verifier))
+	return f.conf().AuthCodeURL(
+		"",
+		oauth2.AccessTypeOffline,
+		oauth2.S256ChallengeOption(f.verifier),
+		oauth2.SetAuthURLParam("audience", "http://localhost:8080"),
+	)
 }
 
 func (f *Flow) WaitForToken(ctx context.Context) (string, error) {

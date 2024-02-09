@@ -19,7 +19,7 @@ var (
 	ErrExtensionNotFound = errors.New("extension not found")
 )
 
-func NewClient(baseURL string) (Client, error) {
+func NewClient(baseURL, token string) (Client, error) {
 	c, err := oapi.NewClientWithResponses(
 		baseURL,
 		oapi.WithHTTPClient(
@@ -27,6 +27,13 @@ func NewClient(baseURL string) (Client, error) {
 				Timeout: defaultHTTPTimeout,
 			},
 		),
+		oapi.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			if token != "" {
+				req.Header.Add("Authorization", fmt.Sprintf("bearer %s", token))
+			}
+
+			return nil
+		}),
 	)
 	if err != nil {
 		return nil, err
@@ -42,10 +49,30 @@ type Client interface {
 	FindExtension(ctx context.Context, args []string) ([]oapi.SimpleExtension, error)
 	PublishExtension(ctx context.Context, ext oapi.PublishExtension) error
 	GetVersion(ctx context.Context, name, version string) (*oapi.Extension, error)
+	GetUser(ctx context.Context) (*oapi.User, error)
 }
 
 type client struct {
 	oapi.ClientWithResponsesInterface
+}
+
+func (c *client) GetUser(ctx context.Context) (*oapi.User, error) {
+	resp, err := c.ClientWithResponsesInterface.GetUserWithResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var errMsg string
+	if resp.JSON401 != nil {
+		errMsg = resp.JSON401.Message
+	} else if resp.HTTPResponse.StatusCode >= 300 {
+		errMsg = strings.TrimSpace(string(resp.Body))
+	}
+	if errMsg != "" {
+		return nil, fmt.Errorf("error getting user: %s", errMsg)
+	}
+
+	return resp.JSON200, nil
 }
 
 func (c *client) GetExtension(ctx context.Context, name string) (*oapi.Extension, error) {

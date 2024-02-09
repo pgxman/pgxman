@@ -269,6 +269,10 @@ type StubbedRegistryClient struct {
 	ExtGetVersion   *oapi.Extension
 }
 
+func (s StubbedRegistryClient) GetUser(ctx context.Context) (*oapi.User, error) {
+	return nil, nil
+}
+
 func (s StubbedRegistryClient) GetExtension(ctx context.Context, name string) (*oapi.Extension, error) {
 	if name == s.ExtGetExtension.Name {
 		return s.ExtGetExtension, nil

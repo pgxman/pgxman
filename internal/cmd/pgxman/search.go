@@ -34,7 +34,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no search terms provided")
 	}
 
-	client, err := registry.NewClient(flagRegistryURL)
+	client, err := registry.NewClient(flagRegistryURL, "")
 	if err != nil {
 		return err
 	}

@@ -31,7 +31,7 @@ func newPublishCmd() *cobra.Command {
 }
 
 func runPublish(c *cobra.Command, args []string) error {
-	client, err := registry.NewClient(flagRegistryURL)
+	client, err := registry.NewClient(flagRegistryURL, "")
 	if err != nil {
 		return err
 	}
