@@ -14,19 +14,25 @@ type FlowParams struct {
 	ClientID     string
 	ClientSecret string
 	Scopes       []string
+	Audience     string
 	Endpoint     string
 }
 
 func (p FlowParams) Validate() error {
 	var result error
 
-	_, err := url.ParseRequestURI(p.Endpoint)
-	if err != nil {
-		result = errors.Join(result, fmt.Errorf("invalid endpoint: %s", p.Endpoint))
-	}
-
 	if p.ClientID == "" {
 		result = errors.Join(result, errors.New("client ID is required"))
+	}
+
+	_, err := url.ParseRequestURI(p.Endpoint)
+	if err != nil {
+		result = errors.Join(result, fmt.Errorf("invalid endpoint %s: %w", p.Endpoint, err))
+	}
+
+	_, err = url.ParseRequestURI(p.Audience)
+	if err != nil {
+		result = errors.Join(result, fmt.Errorf("invalid endpoint %s: %w", p.Audience, err))
 	}
 
 	return result
@@ -73,7 +79,7 @@ func (f *Flow) BrowserURL() string {
 		"",
 		oauth2.AccessTypeOffline,
 		oauth2.S256ChallengeOption(f.verifier),
-		oauth2.SetAuthURLParam("audience", "http://localhost:8080"),
+		oauth2.SetAuthURLParam("audience", f.params.Audience),
 	)
 }
 
@@ -81,6 +87,10 @@ func (f *Flow) WaitForToken(ctx context.Context) (string, error) {
 	code, err := f.server.WaitForCode(ctx)
 	if err != nil {
 		return "", err
+	}
+
+	if code.Code == "" {
+		return "", errors.New("no code received")
 	}
 
 	tok, err := f.conf().Exchange(ctx, code.Code, oauth2.VerifierOption(f.verifier))

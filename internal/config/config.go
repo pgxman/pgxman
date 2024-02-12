@@ -15,6 +15,7 @@ type Config struct {
 
 type OAuth struct {
 	ClientID string `json:"clientId"`
+	Audience string `json:"audience"`
 	Endpoint string `json:"endpoint"`
 }
 

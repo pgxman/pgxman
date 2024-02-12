@@ -22,7 +22,8 @@ func Login(ctx context.Context, opts LoginOptions) error {
 	flow, err := InitFlow(
 		FlowParams{
 			ClientID: opts.Config.OAuth.ClientID,
-			Scopes:   []string{"openid", "write:pubish_package"},
+			Scopes:   []string{"openid", "write:publish_extension"},
+			Audience: opts.Config.OAuth.Audience,
 			Endpoint: opts.Config.OAuth.Endpoint,
 		},
 	)
