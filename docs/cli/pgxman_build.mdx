@@ -16,13 +16,15 @@ pgxman build [flags]
   -f, --file string              Path to the extension manifest file (default "extension.yaml")
   -h, --help                     help for build
       --no-cache                 Do not use cache when building the image. The value is passed to docker buildx build --no-cache.
+      --parallel int             Number of parrallel builds to run (default 2)
   -s, --set stringToString       Override values in the extension.yaml file in the format of --set KEY=VALUE, e.g. --set version=1.0.0 --set arch=[amd64,arm64] --set pgVersions=[10,11,12] (default [])
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --debug   enable debug logging
+      --debug             enable debug logging
+      --registry string   registry URL (default "https://registry.pgxman.com/v1")
 ```
 
 ### SEE ALSO
