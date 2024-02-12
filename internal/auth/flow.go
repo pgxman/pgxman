@@ -90,7 +90,7 @@ func (f *Flow) WaitForToken(ctx context.Context) (string, error) {
 	}
 
 	if code.Code == "" {
-		return "", errors.New("no code received")
+		return "", errors.New("no oauth code received")
 	}
 
 	tok, err := f.conf().Exchange(ctx, code.Code, oauth2.VerifierOption(f.verifier))

@@ -102,7 +102,7 @@ func runAuthToken(cmd *cobra.Command, args []string) error {
 
 	token, err := auth.Token(u)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get token. Did you login?")
 	}
 
 	fmt.Println(token)
