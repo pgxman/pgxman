@@ -129,7 +129,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 			return err
 		}
 
-		client, err := newReigstryClient("")
+		client, err := newReigstryClient()
 		if err != nil {
 			return err
 		}

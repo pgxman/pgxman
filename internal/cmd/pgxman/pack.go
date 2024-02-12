@@ -91,7 +91,7 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	client, err := newReigstryClient("")
+	client, err := newReigstryClient()
 	if err != nil {
 		return err
 	}

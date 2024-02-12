@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 
 	"log/slog"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/auth"
+	"github.com/pgxman/pgxman/internal/keyring"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/registry"
@@ -105,6 +108,16 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 	return nil
 }
 
-func newReigstryClient(token string) (registry.Client, error) {
-	return registry.NewClient(flagRegistryURL, token)
+func newReigstryClient() (registry.Client, error) {
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid registry URL: %w", err)
+	}
+
+	t, err := auth.Token(u)
+	if !errors.Is(err, keyring.ErrNotFound) {
+		return nil, err
+	}
+
+	return registry.NewClient(flagRegistryURL, t)
 }

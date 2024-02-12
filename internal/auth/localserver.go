@@ -8,13 +8,11 @@ import (
 	"net/http"
 )
 
-// codeResponse represents the code received by the local server's callback handler.
 type codeResponse struct {
 	Code  string
 	State string
 }
 
-// bindLocalServer initializes a LocalServer that will listen on a randomly available TCP port.
 func bindLocalServer() (*localServer, error) {
 	listener, err := net.Listen("tcp4", "127.0.0.1:10280")
 	if err != nil {
@@ -61,7 +59,6 @@ func (s *localServer) WaitForCode(ctx context.Context) (codeResponse, error) {
 	}
 }
 
-// ServeHTTP implements http.Handler.
 func (s *localServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != s.callbackPath {
 		w.WriteHeader(404)
