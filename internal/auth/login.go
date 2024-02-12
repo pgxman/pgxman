@@ -56,11 +56,15 @@ func Login(ctx context.Context, opts LoginOptions) error {
 		return err
 	}
 
-	if err := keyring.Set(keyringServiceName(opts.RegistryURL.Host), string(user.Email), token); err != nil {
+	if err := keyring.Set(keyringServiceName(opts.RegistryURL.Host), "", token); err != nil {
 		return err
 	}
 
 	return opts.AfterLogin(string(user.Email))
+}
+
+func Token(registryURL *url.URL) (string, error) {
+	return keyring.Get(keyringServiceName(registryURL.Host), "")
 }
 
 func keyringServiceName(hostname string) string {

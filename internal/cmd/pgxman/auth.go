@@ -20,6 +20,7 @@ func newAuthCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newAuthLoginCmd())
+	cmd.AddCommand(newAuthTokenCmd())
 
 	return cmd
 }
@@ -29,6 +30,16 @@ func newAuthLoginCmd() *cobra.Command {
 		Use:   "login",
 		Short: "Log in to a registry account",
 		RunE:  runAuthLogin,
+	}
+
+	return cmd
+}
+
+func newAuthTokenCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "token",
+		Short: "Print the authentication token for the registry",
+		RunE:  runAuthToken,
 	}
 
 	return cmd
@@ -81,5 +92,19 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
 
+func runAuthToken(cmd *cobra.Command, args []string) error {
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return err
+	}
+
+	token, err := auth.Token(u)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(token)
+	return nil
 }
