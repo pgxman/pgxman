@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
@@ -21,6 +22,7 @@ import (
 
 var (
 	flagContainerInstallRunnerImage string
+	flagContainerInstallTimeout     time.Duration
 	flagContainerInstallPGVersion   string
 )
 
@@ -105,6 +107,7 @@ is NAME=VERSION.`, action),
 
 	cmd.PersistentFlags().StringVar(&flagContainerInstallPGVersion, "pg", defPGVer, fmt.Sprintf(c.String(action)+" the extension for the PostgreSQL version. Supported values are %s.", strings.Join(supportedPGVersions(), ", ")))
 	cmd.PersistentFlags().StringVar(&flagContainerInstallRunnerImage, "runner-image", "", "Override the default runner image")
+	cmd.PersistentFlags().DurationVar(&flagContainerInstallTimeout, "timeout", 60*time.Second, "Timeout for the container to start")
 
 	return cmd
 }
@@ -134,6 +137,7 @@ func runContainerInstall(upgrade bool) func(c *cobra.Command, args []string) err
 				container.WithRunnerImage(flagContainerInstallRunnerImage),
 				container.WithConfigDir(config.ConfigDir()),
 				container.WithDebug(flagDebug),
+				container.WithTimeout(flagContainerInstallTimeout),
 			)
 			info *container.ContainerInfo
 		)
