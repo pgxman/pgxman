@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"text/template"
+	"time"
 
 	cp "github.com/otiai10/copy"
 	"github.com/pgxman/pgxman"
@@ -45,6 +46,7 @@ type Container struct {
 type ContainerOpt struct {
 	runnerImage string
 	configDir   string
+	timeout     time.Duration
 	debug       bool
 }
 
@@ -65,6 +67,12 @@ func WithConfigDir(dir string) ContainerOptFunc {
 func WithDebug(debug bool) ContainerOptFunc {
 	return func(o *ContainerOpt) {
 		o.debug = debug
+	}
+}
+
+func WithTimeout(timeout time.Duration) ContainerOptFunc {
+	return func(o *ContainerOpt) {
+		o.timeout = timeout
 	}
 }
 
@@ -160,7 +168,7 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		"up",
 		"--build",
 		"--wait",
-		"--wait-timeout", "10",
+		"--wait-timeout", fmt.Sprintf("%.0f", c.Config.timeout.Seconds()),
 		"--remove-orphans",
 		"--detach",
 	)
@@ -168,7 +176,24 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 	dockerCompose.Stdout = w
 	dockerCompose.Stderr = w
 
+	c.Logger.Debug("Starting runner container", "command", dockerCompose.String(), "dir", runnerDir)
 	if err := dockerCompose.Run(); err != nil {
+		dockerComposeLogs := exec.CommandContext(
+			ctx,
+			"docker",
+			"compose",
+			"logs",
+			info.ContainerName,
+		)
+		dockerComposeLogs.Dir = runnerDir
+		dockerComposeLogs.Stdout = w
+		dockerComposeLogs.Stderr = w
+
+		c.Logger.Debug("Showing runner container logs", "command", dockerComposeLogs.String(), "dir", runnerDir)
+		if e := dockerComposeLogs.Run(); e != nil {
+			err = errors.Join(err, e)
+		}
+
 		return nil, err
 	}
 

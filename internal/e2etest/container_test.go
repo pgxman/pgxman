@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/container"
@@ -19,6 +20,7 @@ func TestContainer(t *testing.T) {
 	c := container.NewContainer(
 		container.WithRunnerImage(flagRunnerPostgres15Image),
 		container.WithConfigDir(configDir),
+		container.WithTimeout(60*time.Second),
 	)
 	wantExt := pgxman.InstallExtension{
 		PackExtension: pgxman.PackExtension{
