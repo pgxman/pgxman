@@ -160,7 +160,7 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 		"up",
 		"--build",
 		"--wait",
-		"--wait-timeout", "10",
+		"--wait-timeout", "60",
 		"--remove-orphans",
 		"--detach",
 	)
