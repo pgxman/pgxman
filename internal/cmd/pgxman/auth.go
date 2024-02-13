@@ -8,6 +8,7 @@ import (
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/auth"
 	"github.com/pgxman/pgxman/internal/config"
+	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,7 @@ func newAuthCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newAuthLoginCmd())
+	cmd.AddCommand(newAuthStatusCmd())
 	cmd.AddCommand(newAuthTokenCmd())
 
 	return cmd
@@ -35,10 +37,20 @@ func newAuthLoginCmd() *cobra.Command {
 	return cmd
 }
 
+func newAuthStatusCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "status",
+		Short: "View authentication status",
+		RunE:  runAuthStatus,
+	}
+
+	return cmd
+}
+
 func newAuthTokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token",
-		Short: "Print the authentication token for the registry",
+		Short: "Print the authentication token",
 		RunE:  runAuthToken,
 	}
 
@@ -100,11 +112,35 @@ func runAuthToken(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	logger := log.NewTextLogger()
 	token, err := auth.Token(u)
 	if err != nil {
-		return fmt.Errorf("could not get token. Did you login?")
+		logger.Debug("error getting token from keyring", "error", err)
+		return fmt.Errorf("no oauth token found for %s", u.Host)
 	}
 
 	fmt.Println(token)
+	return nil
+}
+
+func runAuthStatus(cmd *cobra.Command, args []string) error {
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return err
+	}
+
+	client, err := newReigstryClient()
+	if err != nil {
+		return err
+	}
+
+	logger := log.NewTextLogger()
+	user, err := client.GetUser(cmd.Context())
+	if err != nil {
+		logger.Debug("error getting user", "error", err)
+		return fmt.Errorf("you are not logged in to %s. To log in, run: `pgxman auth login`", u.Host)
+	}
+
+	fmt.Printf("Logged in to %s as %s\n", u.Host, user.Email)
 	return nil
 }
