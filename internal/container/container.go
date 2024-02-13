@@ -168,7 +168,24 @@ func (c *Container) Install(ctx context.Context, ext pgxman.InstallExtension) (*
 	dockerCompose.Stdout = w
 	dockerCompose.Stderr = w
 
+	c.Logger.Debug("Starting runner container", "command", dockerCompose.String(), "dir", runnerDir)
 	if err := dockerCompose.Run(); err != nil {
+		dockerComposeLogs := exec.CommandContext(
+			ctx,
+			"docker",
+			"compose",
+			"logs",
+			info.ContainerName,
+		)
+		dockerComposeLogs.Dir = runnerDir
+		dockerComposeLogs.Stdout = w
+		dockerComposeLogs.Stderr = w
+
+		c.Logger.Debug("Showing runner container logs", "command", dockerComposeLogs.String(), "dir", runnerDir)
+		if e := dockerComposeLogs.Run(); e != nil {
+			err = errors.Join(err, e)
+		}
+
 		return nil, err
 	}
 
