@@ -12,7 +12,6 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/auth"
-	"github.com/pgxman/pgxman/internal/keyring"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/registry"
@@ -115,8 +114,9 @@ func newReigstryClient() (registry.Client, error) {
 	}
 
 	t, err := auth.Token(u)
-	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		return nil, err
+	if err != nil {
+		// log error but continue
+		log.NewTextLogger().Debug("could not get token from keyring", "error", err)
 	}
 
 	return registry.NewClient(flagRegistryURL, t)
