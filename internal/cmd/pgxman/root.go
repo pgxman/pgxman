@@ -115,7 +115,7 @@ func newReigstryClient() (registry.Client, error) {
 	}
 
 	t, err := auth.Token(u)
-	if !errors.Is(err, keyring.ErrNotFound) {
+	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
 		return nil, err
 	}
 
