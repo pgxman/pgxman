@@ -2,12 +2,14 @@ package debian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/eiannone/keyboard"
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/iostreams"
 	"github.com/pgxman/pgxman/internal/log"
 )
 
@@ -23,15 +25,15 @@ func (i *DebianInstaller) Upgrade(ctx context.Context, ext pgxman.InstallExtensi
 	return i.installOrUpgrade(ctx, ext, true)
 }
 
-func (i *DebianInstaller) PreInstallCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO) error {
+func (i *DebianInstaller) PreInstallCheck(ctx context.Context, exts []pgxman.InstallExtension, io *iostreams.IOStreams) error {
 	return i.installOrUpgradeCheck(ctx, exts, io, false)
 }
 
-func (i *DebianInstaller) PreUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO) error {
+func (i *DebianInstaller) PreUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io *iostreams.IOStreams) error {
 	return i.installOrUpgradeCheck(ctx, exts, io, true)
 }
 
-func (i DebianInstaller) installOrUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io pgxman.IO, upgrade bool) error {
+func (i DebianInstaller) installOrUpgradeCheck(ctx context.Context, exts []pgxman.InstallExtension, io *iostreams.IOStreams, upgrade bool) error {
 	if err := checkRootAccess(); err != nil {
 		return err
 	}
@@ -145,7 +147,7 @@ func newAptPackage(ext pgxman.InstallExtension) (AptPackage, error) {
 	return aptPkg, nil
 }
 
-func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
+func promptInstallOrUpgrade(io *iostreams.IOStreams, debPkgs []AptPackage, sources []AptSource, upgrade bool) error {
 	if !io.IsTerminal() {
 		return nil
 	}
@@ -175,13 +177,13 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 
 	out = append(out, "Do you want to continue? [Y/n]")
 
-	con, err := io.Prompt(strings.Join(out, "\n"), []rune{'y', 'Y'}, []keyboard.Key{keyboard.KeyEnter})
+	err := io.Prompt(strings.Join(out, "\n"), []rune{'y', 'Y'}, []keyboard.Key{keyboard.KeyEnter})
 	if err != nil {
-		return err
-	}
+		if errors.Is(err, iostreams.ErrAbortPrompt) {
+			return fmt.Errorf(abortMsg)
+		}
 
-	if !con {
-		return fmt.Errorf(abortMsg)
+		return err
 	}
 
 	return nil

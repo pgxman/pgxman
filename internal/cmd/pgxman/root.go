@@ -26,10 +26,11 @@ var (
 
 func Command() *cobra.Command {
 	root := &cobra.Command{
-		Use:          "pgxman",
-		Short:        "PostgreSQL Extension Manager",
-		Version:      pgxman.Version,
-		SilenceUsage: true,
+		Use:           "pgxman",
+		Short:         "PostgreSQL Extension Manager",
+		Version:       pgxman.Version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagDebug {
 				log.SetLevel(slog.LevelDebug)
@@ -56,8 +57,8 @@ func Command() *cobra.Command {
 	return root
 }
 
-func Execute() error {
-	return Command().Execute()
+func Execute(ctx context.Context) (*cobra.Command, error) {
+	return Command().ExecuteContextC(ctx)
 }
 
 func checkUpgrade(ctx context.Context) error {

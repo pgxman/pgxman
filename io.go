@@ -5,58 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 
 	"dario.cat/mergo"
-	"github.com/eiannone/keyboard"
-	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
-
-type IO struct {
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-}
-
-func (i IO) IsTerminal() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
-}
-
-func (i IO) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key) (bool, error) {
-	if !i.IsTerminal() {
-		return false, nil
-	}
-
-	if err := keyboard.Open(); err != nil {
-		return false, err
-	}
-	defer keyboard.Close()
-
-	fmt.Fprint(i.Stdout, msg+" ")
-	for {
-		char, key, err := keyboard.GetKey()
-		if err != nil {
-			return false, err
-		}
-
-		if slices.Contains(continueChars, char) || slices.Contains(continueKeys, key) {
-			fmt.Println()
-			return true, nil
-		} else {
-			fmt.Println()
-			return false, nil
-		}
-	}
-}
-
-func NewStdIO() IO {
-	return IO{
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-}
 
 func WriteExtension(path string, ext Extension) error {
 	b, err := yaml.Marshal(ext)

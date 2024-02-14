@@ -3,6 +3,8 @@ package pgxman
 import (
 	"context"
 	"fmt"
+
+	"github.com/pgxman/pgxman/internal/iostreams"
 )
 
 const DefaultPackAPIVersion = "v1"
@@ -100,6 +102,6 @@ func (p Postgres) Validate() error {
 type Installer interface {
 	Install(ctx context.Context, ext InstallExtension) error
 	Upgrade(ctx context.Context, ext InstallExtension) error
-	PreInstallCheck(ctx context.Context, exts []InstallExtension, io IO) error
-	PreUpgradeCheck(ctx context.Context, exts []InstallExtension, io IO) error
+	PreInstallCheck(ctx context.Context, exts []InstallExtension, io *iostreams.IOStreams) error
+	PreUpgradeCheck(ctx context.Context, exts []InstallExtension, io *iostreams.IOStreams) error
 }

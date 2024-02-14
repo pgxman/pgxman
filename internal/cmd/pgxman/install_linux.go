@@ -12,6 +12,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
+	"github.com/pgxman/pgxman/internal/iostreams"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/plugin"
@@ -151,7 +152,7 @@ func runInstallOrUpgrade(upgrade bool) func(c *cobra.Command, args []string) err
 				checkFunc = i.PreUpgradeCheck
 			}
 
-			if err := checkFunc(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
+			if err := checkFunc(cmd.Context(), exts, iostreams.NewIOStreams()); err != nil {
 				return err
 			}
 		}
