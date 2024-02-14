@@ -123,7 +123,14 @@ func runAuthLogout(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return auth.Logout(u)
+	logger := log.NewTextLogger()
+	err = auth.Logout(u)
+	if err != nil {
+		logger.Debug("error logging out", "error", err)
+		return fmt.Errorf("not logged in to %s", u.Host)
+	}
+
+	return nil
 }
 
 func runAuthToken(cmd *cobra.Command, args []string) error {
