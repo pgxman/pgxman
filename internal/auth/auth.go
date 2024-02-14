@@ -14,7 +14,7 @@ type LoginOptions struct {
 	Config      *config.Config
 	RegistryURL *url.URL
 
-	BeforeLogin func(registryHostname, registryLoginURL string) (bool, error)
+	BeforeLogin func(registryHostname, registryLoginURL string) error
 	AfterLogin  func(email string) error
 }
 
@@ -34,12 +34,9 @@ func Login(ctx context.Context, opts LoginOptions) error {
 		_ = flow.Done()
 	}()
 
-	con, err := opts.BeforeLogin(opts.RegistryURL.Host, flow.BrowserURL())
+	err = opts.BeforeLogin(opts.RegistryURL.Host, flow.BrowserURL())
 	if err != nil {
 		return err
-	}
-	if !con {
-		return nil
 	}
 
 	token, err := flow.WaitForToken(ctx)

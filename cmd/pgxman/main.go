@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/pgxman/pgxman/internal/cmd/cmdutil"
 	"github.com/pgxman/pgxman/internal/cmd/pgxman"
 )
 
@@ -26,6 +28,10 @@ func mainRun() exitCode {
 
 	cmd, err := pgxman.Execute(ctx)
 	if err != nil {
+		if errors.Is(err, cmdutil.SilentError) {
+			return exitError
+		}
+
 		printError(os.Stderr, err)
 		return exitError
 	}

@@ -13,6 +13,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+var (
+	ErrAbortPrompt = fmt.Errorf("abort prompt")
+	ErrNotTerminal = fmt.Errorf("not a terminal")
+)
+
 type IO struct {
 	Stdin  io.Reader
 	Stdout io.Writer
@@ -23,13 +28,13 @@ func (i IO) IsTerminal() bool {
 	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 
-func (i IO) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key) (bool, error) {
+func (i IO) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key) error {
 	if !i.IsTerminal() {
-		return false, nil
+		return ErrNotTerminal
 	}
 
 	if err := keyboard.Open(); err != nil {
-		return false, err
+		return err
 	}
 	defer keyboard.Close()
 
@@ -37,15 +42,15 @@ func (i IO) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key
 	for {
 		char, key, err := keyboard.GetKey()
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		if slices.Contains(continueChars, char) || slices.Contains(continueKeys, key) {
 			fmt.Println()
-			return true, nil
+			return nil
 		} else {
 			fmt.Println()
-			return false, nil
+			return ErrAbortPrompt
 		}
 	}
 }

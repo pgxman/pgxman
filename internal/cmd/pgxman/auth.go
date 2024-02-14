@@ -1,12 +1,14 @@
 package pgxman
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
 	"github.com/eiannone/keyboard"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/auth"
+	"github.com/pgxman/pgxman/internal/cmd/cmdutil"
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pkg/browser"
@@ -80,30 +82,27 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	io := pgxman.NewStdIO()
+	logger := log.NewTextLogger()
 
 	if err := auth.Login(
 		cmd.Context(),
 		auth.LoginOptions{
 			Config:      cfg,
 			RegistryURL: u,
-			BeforeLogin: func(registryHostname, registryLoginURL string) (bool, error) {
-				con, err := io.Prompt(
+			BeforeLogin: func(registryHostname, registryLoginURL string) error {
+				if err := io.Prompt(
 					fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname),
 					nil,
 					[]keyboard.Key{keyboard.KeyEnter},
-				)
-				if err != nil {
-					return false, err
-				}
-				if !con {
-					return false, nil
+				); err != nil {
+					return err
 				}
 
 				if err := browser.OpenURL(registryLoginURL); err != nil {
-					return false, err
+					return err
 				}
 
-				return true, nil
+				return nil
 			},
 			AfterLogin: func(email string) error {
 				fmt.Fprintf(io.Stdout, "Logged in as %s\n", email)
@@ -111,6 +110,12 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 			},
 		},
 	); err != nil {
+		logger.Debug("error logging in", "error", err)
+
+		if errors.Is(err, pgxman.ErrAbortPrompt) {
+			return cmdutil.SilentError
+		}
+
 		return err
 	}
 

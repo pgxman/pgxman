@@ -2,6 +2,7 @@ package debian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -175,13 +176,13 @@ func promptInstallOrUpgrade(io pgxman.IO, debPkgs []AptPackage, sources []AptSou
 
 	out = append(out, "Do you want to continue? [Y/n]")
 
-	con, err := io.Prompt(strings.Join(out, "\n"), []rune{'y', 'Y'}, []keyboard.Key{keyboard.KeyEnter})
+	err := io.Prompt(strings.Join(out, "\n"), []rune{'y', 'Y'}, []keyboard.Key{keyboard.KeyEnter})
 	if err != nil {
-		return err
-	}
+		if errors.Is(err, pgxman.ErrAbortPrompt) {
+			return fmt.Errorf(abortMsg)
+		}
 
-	if !con {
-		return fmt.Errorf(abortMsg)
+		return err
 	}
 
 	return nil
