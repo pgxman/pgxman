@@ -12,6 +12,25 @@ servers:
   - url: https://api.pgxman.com/v1
     description: Production server
 paths:
+  /user:
+    get:
+      summary: Get the authenticated user
+      operationId: get_user
+      responses:
+        "200":
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - bearerAuth: []
   /extensions:
     get:
       summary: List extensions by filtering with a given query
@@ -219,6 +238,26 @@ paths:
                 $ref: "#/components/schemas/Error"
 components:
   schemas:
+    User:
+      required:
+        - id
+        - name
+        - email
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: "#/components/schemas/uuid"
+        name:
+          $ref: "#/components/schemas/UserName"
+        email:
+          $ref: "#/components/schemas/UserEmail"
+        picture:
+          $ref: "#/components/schemas/UserPicture"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
     PublishExtension:
       allOf:
         - $ref: "#/components/schemas/CommonExtension"
@@ -370,16 +409,23 @@ components:
         - email
       properties:
         name:
-          type: string
-          example: Owen
-          x-oapi-codegen-extra-tags:
-            validate: required
+          $ref: "#/components/schemas/UserName"
         email:
-          type: string
-          format: email
-          example: owen@example.com
-          x-oapi-codegen-extra-tags:
-            validate: required,email
+          $ref: "#/components/schemas/UserEmail"
+    UserName:
+      type: string
+      example: Owen
+      x-oapi-codegen-extra-tags:
+        validate: required
+    UserEmail:
+      type: string
+      format: email
+      example: owen@example.com
+      x-oapi-codegen-extra-tags:
+        validate: required,email
+    UserPicture:
+      type: string
+      example: https://mypicture.com/picture.png
     Packages:
       type: object
       additionalProperties:
@@ -628,3 +674,7 @@ components:
     basicAuth:
       type: http
       scheme: basic
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

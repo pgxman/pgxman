@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 
 	"log/slog"
 
 	"github.com/pgxman/pgxman"
+	"github.com/pgxman/pgxman/internal/auth"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/pg"
 	"github.com/pgxman/pgxman/internal/registry"
@@ -46,6 +48,7 @@ func Command() *cobra.Command {
 	root.AddCommand(newPublishCmd())
 	root.AddCommand(newContainerCmd())
 	root.AddCommand(newDoctorCmd())
+	root.AddCommand(newAuthCmd())
 
 	root.PersistentFlags().BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "enable debug logging")
 	root.PersistentFlags().StringVar(&flagRegistryURL, "registry", "https://registry.pgxman.com/v1", "registry URL")
@@ -105,5 +108,16 @@ func checkPGVerExists(ctx context.Context, pgVer pgxman.PGVersion) error {
 }
 
 func newReigstryClient() (registry.Client, error) {
-	return registry.NewClient(flagRegistryURL)
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid registry URL: %w", err)
+	}
+
+	t, err := auth.Token(u)
+	if err != nil {
+		// log error but continue
+		log.NewTextLogger().Debug("could not get token from keyring", "error", err)
+	}
+
+	return registry.NewClient(flagRegistryURL, t)
 }

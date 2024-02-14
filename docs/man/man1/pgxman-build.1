@@ -1,5 +1,5 @@
 .nh
-.TH "pgxman" "1" "Nov 2023" "pgxman" "PostgreSQL Extension Manager"
+.TH "pgxman" "1" "Feb 2024" "pgxman" "PostgreSQL Extension Manager"
 
 .SH NAME
 .PP
@@ -38,6 +38,10 @@ Build extension according to the configuration file
 	Do not use cache when building the image. The value is passed to docker buildx build --no-cache.
 
 .PP
+\fB--parallel\fP=2
+	Number of parrallel builds to run
+
+.PP
 \fB-s\fP, \fB--set\fP=[]
 	Override values in the extension.yaml file in the format of --set KEY=VALUE, e.g. --set version=1.0.0 --set arch=[amd64,arm64] --set pgVersions=[10,11,12]
 
@@ -46,6 +50,10 @@ Build extension according to the configuration file
 .PP
 \fB--debug\fP[=false]
 	enable debug logging
+
+.PP
+\fB--registry\fP="https://registry.pgxman.com/v1"
+	registry URL
 
 
 .SH SEE ALSO

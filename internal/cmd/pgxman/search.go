@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/cli/go-gh/v2/pkg/term"
-	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/pgxman/pgxman/internal/tui/tableprinter"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +33,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no search terms provided")
 	}
 
-	client, err := registry.NewClient(flagRegistryURL)
+	client, err := newReigstryClient()
 	if err != nil {
 		return err
 	}

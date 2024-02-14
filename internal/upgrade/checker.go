@@ -48,7 +48,15 @@ type Checker struct {
 
 func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 	if c.currentVersion == "dev" {
-		c.logger.Debug("disabled upgrade checking")
+		c.logger.Debug("disabled upgrade checking for dev", "current", c.currentVersion)
+		return &CheckResult{
+			HasUpgrade: false,
+		}, nil
+	}
+
+	currVer, err := parseSemVar(c.currentVersion)
+	if err != nil {
+		c.logger.Debug("disabled upgrade checking for snapshot", "current", c.currentVersion)
 		return &CheckResult{
 			HasUpgrade: false,
 		}, nil
@@ -88,11 +96,6 @@ func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 	latestVer, err := parseSemVar(*rel.TagName)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing tag name as version: %w", err)
-	}
-
-	currVer, err := parseSemVar(c.currentVersion)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing version: %w", err)
 	}
 
 	var hasUpgrade bool

@@ -58,7 +58,7 @@ vet:
 		--rm \
 		-v $(CURDIR):/app \
 		-w /app \
-		golangci/golangci-lint:v1.54.2 \
+		golangci/golangci-lint:v1.56.0 \
 		golangci-lint run --timeout 5m -v
 
 .PHONY: docs
@@ -73,6 +73,7 @@ docker_build_builder:
 		-f $(PWD)/dockerfiles/docker-bake.hcl \
 		--set builder-debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
 		--set builder-ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
+		--set *.cache-from=type=gha --set *.cache-to=type=gha,mode=max \
 		--pull \
 		$(DOCKER_ARGS)
 
@@ -97,6 +98,7 @@ docker_build_runner:
 		--set runner-postgres-15.tags=$(RUNNER_POSTGRES_15_IMAGE) \
 		--set runner-postgres-14.tags=$(RUNNER_POSTGRES_14_IMAGE) \
 		--set runner-postgres-13.tags=$(RUNNER_POSTGRES_13_IMAGE) \
+		--set *.cache-from=type=gha --set *.cache-to=type=gha,mode=max \
 		--pull \
 		$(DOCKER_ARGS)
 

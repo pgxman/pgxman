@@ -7,7 +7,6 @@ import (
 	"github.com/oapi-codegen/runtime/types"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/log"
-	"github.com/pgxman/pgxman/internal/registry"
 	"github.com/pgxman/pgxman/oapi"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ func newPublishCmd() *cobra.Command {
 }
 
 func runPublish(c *cobra.Command, args []string) error {
-	client, err := registry.NewClient(flagRegistryURL)
+	client, err := newReigstryClient()
 	if err != nil {
 		return err
 	}

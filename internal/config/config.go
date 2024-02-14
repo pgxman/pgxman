@@ -5,11 +5,19 @@ import (
 	"path/filepath"
 	"time"
 
+	"dario.cat/mergo"
 	"sigs.k8s.io/yaml"
 )
 
 type Config struct {
-	LastUpgradeCheckTime time.Time
+	OAuth                OAuth     `json:"oauth"`
+	LastUpgradeCheckTime time.Time `json:"lastUpgradeCheckTime"`
+}
+
+type OAuth struct {
+	ClientID string `json:"clientId"`
+	Audience string `json:"audience"`
+	Endpoint string `json:"endpoint"`
 }
 
 func Write(c Config) error {
@@ -37,11 +45,11 @@ func Read() (*Config, error) {
 		return nil, err
 	}
 
-	return &c, nil
-}
+	if err := mergo.Merge(&c, newDefaultConfig()); err != nil {
+		return nil, err
+	}
 
-func configFile() string {
-	return filepath.Join(ConfigDir(), "config.yml")
+	return &c, nil
 }
 
 func ConfigDir() string {
@@ -51,4 +59,18 @@ func ConfigDir() string {
 	}
 
 	return filepath.Join(userConfigDir, "pgxman")
+}
+
+func newDefaultConfig() Config {
+	return Config{
+		OAuth: OAuth{
+			ClientID: "Zf43BaHXF0LVcnm9ZKvCwMVqyPkddlp6",
+			Endpoint: "https://auth.hydra.so",
+			Audience: "https://login.pgxman.com",
+		},
+	}
+}
+
+func configFile() string {
+	return filepath.Join(ConfigDir(), "config.yml")
 }
