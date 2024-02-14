@@ -135,6 +135,8 @@ func runAuthLogout(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not logged in to %s", u.Host)
 	}
 
+	fmt.Printf("Logged out of %s\n", u.Host)
+
 	return nil
 }
 
