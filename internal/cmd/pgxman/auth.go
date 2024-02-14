@@ -23,6 +23,7 @@ func newAuthCmd() *cobra.Command {
 	cmd.AddCommand(newAuthLoginCmd())
 	cmd.AddCommand(newAuthStatusCmd())
 	cmd.AddCommand(newAuthTokenCmd())
+	cmd.AddCommand(newAuthLogoutCmd())
 
 	return cmd
 }
@@ -32,6 +33,16 @@ func newAuthLoginCmd() *cobra.Command {
 		Use:   "login",
 		Short: "Log in to a registry account",
 		RunE:  runAuthLogin,
+	}
+
+	return cmd
+}
+
+func newAuthLogoutCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "logout",
+		Short: "Log out of a registry account",
+		RunE:  runAuthLogout,
 	}
 
 	return cmd
@@ -104,6 +115,15 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func runAuthLogout(cmd *cobra.Command, args []string) error {
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return err
+	}
+
+	return auth.Logout(u)
 }
 
 func runAuthToken(cmd *cobra.Command, args []string) error {

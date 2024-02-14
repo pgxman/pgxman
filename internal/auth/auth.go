@@ -64,6 +64,10 @@ func Login(ctx context.Context, opts LoginOptions) error {
 	return opts.AfterLogin(string(user.Email))
 }
 
+func Logout(registryURL *url.URL) error {
+	return keyring.Delete(keyringServiceName(registryURL.Host), "")
+}
+
 func Token(registryURL *url.URL) (string, error) {
 	return keyring.Get(keyringServiceName(registryURL.Host), "")
 }
