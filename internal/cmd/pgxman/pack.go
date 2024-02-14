@@ -10,6 +10,7 @@ import (
 
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/errorsx"
+	"github.com/pgxman/pgxman/internal/iostreams"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pgxman/pgxman/internal/plugin"
 	"github.com/pgxman/pgxman/internal/tui/spinner"
@@ -103,7 +104,7 @@ func runPackInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	if !flagPackInstallYes {
-		if err := i.PreInstallCheck(cmd.Context(), exts, pgxman.NewStdIO()); err != nil {
+		if err := i.PreInstallCheck(cmd.Context(), exts, iostreams.NewIOStreams()); err != nil {
 			return err
 		}
 	}

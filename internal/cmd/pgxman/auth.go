@@ -6,10 +6,10 @@ import (
 	"net/url"
 
 	"github.com/eiannone/keyboard"
-	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/auth"
 	"github.com/pgxman/pgxman/internal/cmd/cmdutil"
 	"github.com/pgxman/pgxman/internal/config"
+	"github.com/pgxman/pgxman/internal/iostreams"
 	"github.com/pgxman/pgxman/internal/log"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
@@ -81,7 +81,7 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	io := pgxman.NewStdIO()
+	io := iostreams.NewIOStreams()
 	logger := log.NewTextLogger()
 
 	if err := auth.Login(
@@ -112,7 +112,7 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 	); err != nil {
 		logger.Debug("error logging in", "error", err)
 
-		if errors.Is(err, pgxman.ErrAbortPrompt) {
+		if errors.Is(err, iostreams.ErrAbortPrompt) {
 			return cmdutil.SilentError
 		}
 

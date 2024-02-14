@@ -5,63 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 
 	"dario.cat/mergo"
-	"github.com/eiannone/keyboard"
-	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
-
-var (
-	ErrAbortPrompt = fmt.Errorf("abort prompt")
-	ErrNotTerminal = fmt.Errorf("not a terminal")
-)
-
-type IO struct {
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-}
-
-func (i IO) IsTerminal() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
-}
-
-func (i IO) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key) error {
-	if !i.IsTerminal() {
-		return ErrNotTerminal
-	}
-
-	if err := keyboard.Open(); err != nil {
-		return err
-	}
-	defer keyboard.Close()
-
-	fmt.Fprint(i.Stdout, msg+" ")
-	for {
-		char, key, err := keyboard.GetKey()
-		if err != nil {
-			return err
-		}
-
-		if slices.Contains(continueChars, char) || slices.Contains(continueKeys, key) {
-			fmt.Println()
-			return nil
-		} else {
-			fmt.Println()
-			return ErrAbortPrompt
-		}
-	}
-}
-
-func NewStdIO() IO {
-	return IO{
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-}
 
 func WriteExtension(path string, ext Extension) error {
 	b, err := yaml.Marshal(ext)
