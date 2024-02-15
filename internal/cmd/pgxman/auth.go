@@ -1,6 +1,7 @@
 package pgxman
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -23,6 +24,7 @@ func newAuthCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newAuthLoginCmd())
+	cmd.AddCommand(newAuthSignupCmd())
 	cmd.AddCommand(newAuthStatusCmd())
 	cmd.AddCommand(newAuthTokenCmd())
 	cmd.AddCommand(newAuthLogoutCmd())
@@ -35,6 +37,16 @@ func newAuthLoginCmd() *cobra.Command {
 		Use:   "login",
 		Short: "Log in to a registry account",
 		RunE:  runAuthLogin,
+	}
+
+	return cmd
+}
+
+func newAuthSignupCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "signup",
+		Short: "Sign up a registry account",
+		RunE:  runAuthSignup,
 	}
 
 	return cmd
@@ -70,56 +82,12 @@ func newAuthTokenCmd() *cobra.Command {
 	return cmd
 }
 
+func runAuthSignup(cmd *cobra.Command, args []string) error {
+	return loginOrSignup(cmd.Context(), auth.SignupScreen)
+}
+
 func runAuthLogin(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Read()
-	if err != nil {
-		return err
-	}
-
-	u, err := url.ParseRequestURI(flagRegistryURL)
-	if err != nil {
-		return err
-	}
-
-	io := iostreams.NewIOStreams()
-	logger := log.NewTextLogger()
-
-	if err := auth.Login(
-		cmd.Context(),
-		auth.LoginOptions{
-			Config:      cfg,
-			RegistryURL: u,
-			BeforeLogin: func(registryHostname, registryLoginURL string) error {
-				if err := io.Prompt(
-					fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname),
-					nil,
-					[]keyboard.Key{keyboard.KeyEnter},
-				); err != nil {
-					return err
-				}
-
-				if err := browser.OpenURL(registryLoginURL); err != nil {
-					return err
-				}
-
-				return nil
-			},
-			AfterLogin: func(email string) error {
-				fmt.Fprintf(io.Stdout, "Logged in as %s\n", email)
-				return nil
-			},
-		},
-	); err != nil {
-		logger.Debug("error logging in", "error", err)
-
-		if errors.Is(err, iostreams.ErrAbortPrompt) {
-			return cmdutil.SilentError
-		}
-
-		return err
-	}
-
-	return nil
+	return loginOrSignup(cmd.Context(), auth.LoginScreen)
 }
 
 func runAuthLogout(cmd *cobra.Command, args []string) error {
@@ -176,5 +144,67 @@ func runAuthStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Logged in to %s as %s\n", u.Host, user.Email)
+	return nil
+}
+
+func loginOrSignup(ctx context.Context, screen auth.Screen) error {
+	cfg, err := config.Read()
+	if err != nil {
+		return err
+	}
+
+	u, err := url.ParseRequestURI(flagRegistryURL)
+	if err != nil {
+		return err
+	}
+
+	var (
+		io     = iostreams.NewIOStreams()
+		logger = log.NewTextLogger()
+	)
+
+	if err := auth.Login(
+		ctx,
+		auth.LoginOptions{
+			Config:      cfg,
+			RegistryURL: u,
+			Screen:      screen,
+			BeforeLogin: func(registryHostname, registryLoginURL string) error {
+				var promptMsg string
+				switch screen {
+				case auth.SignupScreen:
+					promptMsg = fmt.Sprintf("Press Enter to sign up at %s in your browser...", registryHostname)
+				default:
+					promptMsg = fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname)
+				}
+
+				if err := io.Prompt(
+					promptMsg,
+					nil,
+					[]keyboard.Key{keyboard.KeyEnter},
+				); err != nil {
+					return err
+				}
+
+				if err := browser.OpenURL(registryLoginURL); err != nil {
+					return err
+				}
+
+				return nil
+			},
+			AfterLogin: func(email string) error {
+				fmt.Fprintf(io.Stdout, "Logged in as %s\n", email)
+				return nil
+			},
+		},
+	); err != nil {
+		logger.Debug("error logging in", "error", err)
+		if errors.Is(err, iostreams.ErrAbortPrompt) {
+			return cmdutil.SilentError
+		}
+
+		return err
+	}
+
 	return nil
 }
