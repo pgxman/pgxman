@@ -89,6 +89,7 @@ func runAuthLogin(cmd *cobra.Command, args []string) error {
 		auth.LoginOptions{
 			Config:      cfg,
 			RegistryURL: u,
+			Screen:      auth.LoginScreen,
 			BeforeLogin: func(registryHostname, registryLoginURL string) error {
 				if err := io.Prompt(
 					fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname),

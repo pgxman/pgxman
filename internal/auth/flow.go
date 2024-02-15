@@ -10,12 +10,20 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type Screen int
+
+const (
+	LoginScreen Screen = iota
+	SignupScreen
+)
+
 type FlowParams struct {
 	ClientID     string
 	ClientSecret string
 	Scopes       []string
 	Audience     string
 	Endpoint     string
+	Screen       Screen
 }
 
 func (p FlowParams) Validate() error {
@@ -75,11 +83,20 @@ func (f *Flow) Done() error {
 }
 
 func (f *Flow) BrowserURL() string {
+	var screenHint oauth2.AuthCodeOption
+	switch f.params.Screen {
+	case SignupScreen:
+		screenHint = oauth2.SetAuthURLParam("screen_hint", "signup")
+	default:
+		screenHint = oauth2.SetAuthURLParam("prompt", "login")
+	}
+
 	return f.conf().AuthCodeURL(
 		"",
 		oauth2.AccessTypeOffline,
 		oauth2.S256ChallengeOption(f.verifier),
 		oauth2.SetAuthURLParam("audience", f.params.Audience),
+		screenHint,
 	)
 }
 

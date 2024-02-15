@@ -13,6 +13,7 @@ import (
 type LoginOptions struct {
 	Config      *config.Config
 	RegistryURL *url.URL
+	Screen      Screen
 
 	BeforeLogin func(registryHostname, registryLoginURL string) error
 	AfterLogin  func(email string) error
@@ -25,6 +26,7 @@ func Login(ctx context.Context, opts LoginOptions) error {
 			Scopes:   []string{"openid", "write:publish_extension"},
 			Audience: opts.Config.OAuth.Audience,
 			Endpoint: opts.Config.OAuth.Endpoint,
+			Screen:   opts.Screen,
 		},
 	)
 	if err != nil {
