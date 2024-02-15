@@ -158,8 +158,10 @@ func loginOrSignup(ctx context.Context, screen auth.Screen) error {
 		return err
 	}
 
-	io := iostreams.NewIOStreams()
-	logger := log.NewTextLogger()
+	var (
+		io     = iostreams.NewIOStreams()
+		logger = log.NewTextLogger()
+	)
 
 	if err := auth.Login(
 		ctx,
@@ -168,8 +170,16 @@ func loginOrSignup(ctx context.Context, screen auth.Screen) error {
 			RegistryURL: u,
 			Screen:      screen,
 			BeforeLogin: func(registryHostname, registryLoginURL string) error {
+				var promptMsg string
+				switch screen {
+				case auth.SignupScreen:
+					promptMsg = fmt.Sprintf("Press Enter to sign up at %s in your browser...", registryHostname)
+				default:
+					promptMsg = fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname)
+				}
+
 				if err := io.Prompt(
-					fmt.Sprintf("Press Enter to log in to %s in your browser...", registryHostname),
+					promptMsg,
 					nil,
 					[]keyboard.Key{keyboard.KeyEnter},
 				); err != nil {
