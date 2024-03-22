@@ -168,6 +168,7 @@ type Package struct {
 	License     License     `json:"license,omitempty"`
 	Maintainers Maintainers `json:"maintainers" validate:"gt=0,dive,required"`
 	Platforms   Platforms   `json:"platforms" validate:"required,min=1,dive"`
+	PublishedAt Timestamp   `json:"published_at"`
 	Readme      Readme      `json:"readme,omitempty"`
 	Repository  Repository  `json:"repository" validate:"required,url"`
 	Source      Source      `json:"source" validate:"required,url,extension_source"`
@@ -285,6 +286,9 @@ type UserPicture = string
 // VersionCode defines model for VersionCode.
 type VersionCode = string
 
+// Versions defines model for Versions.
+type Versions map[string][]Package
+
 // Uuid defines model for uuid.
 type Uuid = uuid.UUID
 
@@ -387,6 +391,9 @@ type ClientInterface interface {
 	// FindExtension request
 	FindExtension(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListVersions request
+	ListVersions(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// FindVersion request
 	FindVersion(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -438,6 +445,18 @@ func (c *Client) PublishExtension(ctx context.Context, body PublishExtensionJSON
 
 func (c *Client) FindExtension(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFindExtensionRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListVersions(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListVersionsRequest(c.Server, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -651,6 +670,40 @@ func NewFindExtensionRequest(server string, slug ExtensionName) (*http.Request, 
 	return req, nil
 }
 
+// NewListVersionsRequest generates requests for ListVersions
+func NewListVersionsRequest(server string, slug ExtensionName) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/extensions/%s/versions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewFindVersionRequest generates requests for FindVersion
 func NewFindVersionRequest(server string, slug ExtensionName, version VersionCode) (*http.Request, error) {
 	var err error
@@ -834,6 +887,9 @@ type ClientWithResponsesInterface interface {
 	// FindExtensionWithResponse request
 	FindExtensionWithResponse(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*FindExtensionResponse, error)
 
+	// ListVersionsWithResponse request
+	ListVersionsWithResponse(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*ListVersionsResponse, error)
+
 	// FindVersionWithResponse request
 	FindVersionWithResponse(ctx context.Context, slug ExtensionName, version VersionCode, reqEditors ...RequestEditorFn) (*FindVersionResponse, error)
 
@@ -913,6 +969,30 @@ func (r FindExtensionResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r FindExtensionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Versions
+	JSON404      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListVersionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1048,6 +1128,15 @@ func (c *ClientWithResponses) FindExtensionWithResponse(ctx context.Context, slu
 		return nil, err
 	}
 	return ParseFindExtensionResponse(rsp)
+}
+
+// ListVersionsWithResponse request returning *ListVersionsResponse
+func (c *ClientWithResponses) ListVersionsWithResponse(ctx context.Context, slug ExtensionName, reqEditors ...RequestEditorFn) (*ListVersionsResponse, error) {
+	rsp, err := c.ListVersions(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListVersionsResponse(rsp)
 }
 
 // FindVersionWithResponse request returning *FindVersionResponse
@@ -1186,6 +1275,46 @@ func ParseFindExtensionResponse(rsp *http.Response) (*FindExtensionResponse, err
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListVersionsResponse parses an HTTP response from a ListVersionsWithResponse call
+func ParseListVersionsResponse(rsp *http.Response) (*ListVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Versions
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest Error

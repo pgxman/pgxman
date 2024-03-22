@@ -139,6 +139,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /extensions/{slug}/versions:
+    get:
+      summary: List versions for an extension
+      operationId: list_versions
+      parameters:
+        - name: slug
+          in: path
+          description: Slug of the extension. This can be the extension name or the extension uuid
+          required: true
+          schema:
+            $ref: "#/components/schemas/ExtensionName"
+      responses:
+        "200":
+          description: Extension versions response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Versions"
+        "404":
+          description: Extension not found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /extensions/{slug}/versions/{version}:
     get:
       summary: Find extension by slug and version
@@ -362,6 +392,18 @@ components:
       properties:
         packages:
           $ref: "#/components/schemas/Packages"
+    Versions:
+      type: object
+      additionalProperties:
+        type: array
+        description: a list of verion packages
+        items:
+          $ref: "#/components/schemas/Package"
+        minItems: 0
+        x-go-type-skip-optional-pointer: true
+      x-go-type-skip-optional-pointer: true
+      x-oapi-codegen-extra-tags:
+        validate: required,dive,keys,required,oneof=13 14 15 16,endkeys
     uuid:
       x-go-type: uuid.UUID
       x-go-type-import:
@@ -441,6 +483,7 @@ components:
         - platforms
         - repository
         - maintainers
+        - published_at
       properties:
         version:
           $ref: "#/components/schemas/VersionCode"
@@ -460,6 +503,8 @@ components:
           $ref: "#/components/schemas/Homepage"
         description:
           $ref: "#/components/schemas/Description"
+        published_at:
+          $ref: "#/components/schemas/Timestamp"
     Homepage:
       type: string
       example: https://github.com/pgvector/pgvector
