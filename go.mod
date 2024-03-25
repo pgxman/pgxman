@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.10.0
-	github.com/charmbracelet/log v0.3.1
+	github.com/charmbracelet/log v0.4.0
 	github.com/cli/go-gh/v2 v2.6.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
