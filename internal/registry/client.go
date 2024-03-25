@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,6 +21,12 @@ var (
 )
 
 func NewClient(baseURL, token string) (Client, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	user := u.User
 	c, err := oapi.NewClientWithResponses(
 		baseURL,
 		oapi.WithHTTPClient(
@@ -28,7 +35,8 @@ func NewClient(baseURL, token string) (Client, error) {
 			},
 		),
 		oapi.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			if token != "" {
+			// use jwt auth when basic auth creds are not in the base URL
+			if user == nil && token != "" {
 				req.Header.Add("Authorization", fmt.Sprintf("bearer %s", token))
 			}
 
