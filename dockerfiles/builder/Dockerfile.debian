@@ -61,8 +61,4 @@ RUN set -eux; \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
 ENV PATH=/root/.cargo/bin:$PATH
 
-# patch pg_buildext to use multiple processors
-COPY patch/make_pg_buildext_parallel.patch /tmp
-RUN patch `which pg_buildext` < /tmp/make_pg_buildext_parallel.patch
-
 COPY --from=pgxman /go/bin/* /usr/local/bin/
