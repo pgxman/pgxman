@@ -151,6 +151,7 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
           HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ github.token }}
           HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.actor }}
+          HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
           GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL=file://$(pwd)/dist make tools goreleaser
           PGXMAN_INSTALLER_HOMEBREW_TAP=./dist/homebrew/Formula/pgxman.rb ./install.sh
