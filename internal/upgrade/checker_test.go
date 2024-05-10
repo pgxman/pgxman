@@ -92,6 +92,7 @@ func Test_Checker(t *testing.T) {
 					assert.WithinDuration(c.LastUpgradeCheckTime, time.Now(), 2*time.Second)
 					return nil
 				},
+				enabled: true,
 			}
 
 			result, err := checker.Check(context.TODO())

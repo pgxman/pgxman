@@ -30,6 +30,7 @@ func NewChecker(logger *log.Logger) *Checker {
 		currentVersion:  pgxman.Version,
 		readConfigFunc:  config.Read,
 		writeConfigFunc: config.Write,
+		enabled:         shouldEnable(pgxman.Version),
 	}
 }
 
@@ -45,12 +46,13 @@ type Checker struct {
 	readConfigFunc  func() (*config.Config, error)
 	writeConfigFunc func(c config.Config) error
 	currentVersion  string
+	enabled         bool
 }
 
 func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 	logger := c.logger.With("current", c.currentVersion)
 
-	if !c.shouldCheck() {
+	if !c.enabled {
 		logger.Debug("disabled upgrade checking")
 		return &CheckResult{
 			HasUpgrade: false,
@@ -114,20 +116,20 @@ func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 	}, nil
 }
 
-func (c *Checker) shouldCheck() bool {
+func parseSemVar(v string) (*semver.Version, error) {
+	return semver.StrictNewVersion(strings.TrimPrefix(v, "v"))
+}
+
+func shouldEnable(currentVersion string) bool {
 	if os.Getenv("PGXMAN_NO_UPGRADE_NOTIFIER") != "" {
 		return false
 	}
 
-	if c.currentVersion == "dev" {
+	if currentVersion == "dev" {
 		return false
 	}
 
 	return pgxman.UpdaterEnabled == "true" && !isCI() && isTerminal(os.Stdout) && isTerminal(os.Stderr)
-}
-
-func parseSemVar(v string) (*semver.Version, error) {
-	return semver.StrictNewVersion(strings.TrimPrefix(v, "v"))
 }
 
 func isTerminal(f *os.File) bool {
