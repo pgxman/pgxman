@@ -62,7 +62,7 @@ func Execute(ctx context.Context) (*cobra.Command, error) {
 }
 
 func checkUpgrade(ctx context.Context) error {
-	c := upgrade.NewChecker(log.NewTextLogger())
+	c := upgrade.NewChecker(log.NewTextLogger().WithGroup("updater"))
 	result, err := c.Check(ctx)
 	if err != nil {
 		return err
