@@ -96,9 +96,10 @@ func (c *client) GetExtension(ctx context.Context, name string) (*oapi.Extension
 	var errMsg string
 	if resp.JSON400 != nil {
 		errMsg = resp.JSON400.Message
-	}
-	if resp.JSON500 != nil {
+	} else if resp.JSON500 != nil {
 		errMsg = resp.JSON500.Message
+	} else if resp.HTTPResponse.StatusCode >= 300 {
+		errMsg = strings.TrimSpace(string(resp.Body))
 	}
 	if errMsg != "" {
 		return nil, fmt.Errorf("error getting %s: %s", name, errMsg)
@@ -116,8 +117,15 @@ func (c *client) FindExtension(ctx context.Context, args []string) ([]oapi.Simpl
 		return nil, err
 	}
 
+	var errMsg string
 	if resp.JSON500 != nil {
-		return nil, fmt.Errorf("error finding extension: %s", resp.JSON500.Message)
+		errMsg = resp.JSON500.Message
+	} else if resp.HTTPResponse.StatusCode >= 300 {
+		errMsg = strings.TrimSpace(string(resp.Body))
+	}
+
+	if errMsg != "" {
+		return nil, fmt.Errorf("error finding extension: %s", errMsg)
 	}
 
 	return resp.JSON200.Extensions, nil
@@ -137,9 +145,10 @@ func (c *client) PublishExtension(ctx context.Context, ext oapi.PublishExtension
 		errMsg = resp.JSON400.Message
 	} else if resp.JSON500 != nil {
 		errMsg = resp.JSON500.Message
-	} else if resp.HTTPResponse.StatusCode == http.StatusUnauthorized {
+	} else if resp.HTTPResponse.StatusCode >= 300 {
 		errMsg = strings.TrimSpace(string(resp.Body))
 	}
+
 	if errMsg != "" {
 		return fmt.Errorf("error publishing %s: %s", ext.Name, errMsg)
 	}
@@ -160,10 +169,12 @@ func (c *client) GetVersion(ctx context.Context, name, version string) (*oapi.Ex
 	var errMsg string
 	if resp.JSON400 != nil {
 		errMsg = resp.JSON400.Message
-	}
-	if resp.JSON500 != nil {
+	} else if resp.JSON500 != nil {
 		errMsg = resp.JSON500.Message
+	} else if resp.HTTPResponse.StatusCode >= 300 {
+		errMsg = strings.TrimSpace(string(resp.Body))
 	}
+
 	if errMsg != "" {
 		return nil, fmt.Errorf("error getting extension version %s: %s", name, errMsg)
 	}

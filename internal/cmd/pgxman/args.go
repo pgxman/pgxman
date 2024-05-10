@@ -136,8 +136,10 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 			installableExt, err := l.Client.GetExtension(ctx, ext.Name)
 			if err != nil {
 				if errors.Is(err, registry.ErrExtensionNotFound) {
-					return nil, &ErrExtNotFound{Name: ext.Name}
+					err = &ErrExtNotFound{Name: ext.Name}
 				}
+
+				return nil, err
 			}
 
 			// if version is not specified, use the latest version
@@ -145,7 +147,7 @@ func (l *ExtensionLocker) Lock(ctx context.Context, exts []pgxman.InstallExtensi
 				installableExt, err = l.Client.GetVersion(ctx, ext.Name, ext.Version)
 				if err != nil {
 					if errors.Is(err, registry.ErrExtensionNotFound) {
-						return nil, &ErrExtVerNotFound{Name: ext.Name, Version: ext.Version}
+						err = &ErrExtVerNotFound{Name: ext.Name, Version: ext.Version}
 					}
 
 					return nil, err
