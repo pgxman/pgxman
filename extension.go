@@ -50,12 +50,12 @@ type ExtensionCommon struct {
 	Name        string       `json:"name"`
 	Repository  string       `json:"repository"`
 	Maintainers []Maintainer `json:"maintainers"`
+	Description string       `json:"description"`
 
 	// optional
-	Description string   `json:"description,omitempty"`
-	License     string   `json:"license,omitempty"`
-	Keywords    []string `json:"keywords,omitempty"`
-	Homepage    string   `json:"homepage,omitempty"`
+	License  string   `json:"license,omitempty"`
+	Keywords []string `json:"keywords,omitempty"`
+	Homepage string   `json:"homepage,omitempty"`
 }
 
 func (ext ExtensionCommon) Validate() error {
@@ -67,6 +67,10 @@ func (ext ExtensionCommon) Validate() error {
 
 	if ext.Repository == "" {
 		err = errors.Join(err, fmt.Errorf("repository is required"))
+	}
+
+	if ext.Description == "" {
+		err = errors.Join(err, fmt.Errorf("description is required"))
 	}
 
 	if ext.License != "" {

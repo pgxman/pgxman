@@ -35,8 +35,9 @@ func runInit(c *cobra.Command, args []string) error {
 	ext := &pgxman.Extension{
 		APIVersion: pgxman.DefaultExtensionAPIVersion,
 		ExtensionCommon: pgxman.ExtensionCommon{
-			Name:    "my-pg-extension",
-			License: "PostgreSQL",
+			Name:        "my-pg-extension",
+			Description: "My PostgreSQL extension",
+			License:     "PostgreSQL",
 			Maintainers: []pgxman.Maintainer{
 				{
 					Name:  user.Name,
@@ -102,7 +103,7 @@ func initialModel(pwd string, ext *pgxman.Extension) initModel {
 		ext:        ext,
 		extPath:    filepath.Join(pwd, "extension.yaml"),
 		focusIndex: 0,
-		inputs:     make([]initInput, 5),
+		inputs:     make([]initInput, 6),
 	}
 
 	for i := range m.inputs {
@@ -112,7 +113,7 @@ func initialModel(pwd string, ext *pgxman.Extension) initModel {
 
 		switch i {
 		case 0:
-			t.Label = "Extension name"
+			t.Label = "Name"
 			t.Placeholder = ext.Name
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Name = val
@@ -122,30 +123,36 @@ func initialModel(pwd string, ext *pgxman.Extension) initModel {
 			t.PromptStyle = focusedStyle
 			t.Focus()
 		case 1:
+			t.Label = "Description"
+			t.Placeholder = ext.Description
+			t.UpdateExt = func(ext *pgxman.Extension, val string) {
+				ext.Description = val
+			}
+		case 2:
 			t.Label = "Version"
 			t.Placeholder = ext.Version
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Version = val
 			}
-		case 2:
+		case 3:
 			t.Label = "License"
 			t.Placeholder = ext.License
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.License = val
 			}
-		case 3:
+		case 4:
 			t.Label = "Keywords (comma-separated)"
 			t.Placeholder = strings.Join(ext.Keywords, ",")
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Keywords = splitString(val)
 			}
-		case 4:
+		case 5:
 			t.Label = "Source URL"
 			t.Placeholder = ext.Source
 			t.UpdateExt = func(ext *pgxman.Extension, val string) {
 				ext.Source = val
 			}
-		case 5:
+		case 6:
 			t.Label = "PG versions (comma-separated)"
 
 			var pgvs []string
