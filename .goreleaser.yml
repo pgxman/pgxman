@@ -58,7 +58,7 @@ brews:
       email: o@hydra.so
     homepage: https://github.com/pgxman/pgxman
     description: PostgreSQL Extensions Manager
-    folder: Formula
+    directory: Formula
     license: "Apache 2.0"
     url_template: '{{ if index .Env "GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL"  }}{{ .Env.GORELEASER_GITHUB_RELEASE_DOWNLOAD_URL }}/{{ .ArtifactName }}{{ else }}https://github.com/pgxman/pgxman/releases/download/{{ .Tag }}/{{ .ArtifactName }}{{ end }}'
     custom_block: |
