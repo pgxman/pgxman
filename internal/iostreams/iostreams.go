@@ -7,13 +7,17 @@ import (
 	"slices"
 
 	"github.com/eiannone/keyboard"
-	"golang.org/x/term"
+	"github.com/mattn/go-isatty"
 )
 
 var (
 	ErrAbortPrompt = fmt.Errorf("abort prompt")
 	ErrNotTerminal = fmt.Errorf("not a terminal")
 )
+
+func IsTerminal(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+}
 
 type IOStreams struct {
 	Stdin  io.Reader
@@ -22,7 +26,7 @@ type IOStreams struct {
 }
 
 func (i *IOStreams) IsTerminal() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	return IsTerminal(os.Stdout)
 }
 
 func (i *IOStreams) Prompt(msg string, continueChars []rune, continueKeys []keyboard.Key) error {

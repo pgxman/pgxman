@@ -10,9 +10,9 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v57/github"
-	"github.com/mattn/go-isatty"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
+	"github.com/pgxman/pgxman/internal/iostreams"
 	"github.com/pgxman/pgxman/internal/log"
 )
 
@@ -129,11 +129,10 @@ func shouldEnable(currentVersion string) bool {
 		return false
 	}
 
-	return pgxman.UpdaterEnabled == "true" && !isCI() && isTerminal(os.Stdout) && isTerminal(os.Stderr)
-}
-
-func isTerminal(f *os.File) bool {
-	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+	return pgxman.UpdaterEnabled == "true" &&
+		!isCI() &&
+		iostreams.IsTerminal(os.Stdout) &&
+		iostreams.IsTerminal(os.Stderr)
 }
 
 // based on https://github.com/watson/ci-info/blob/HEAD/index.js
