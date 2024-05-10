@@ -1,7 +1,7 @@
 project_name: pgxman
 builds:
   - ldflags:
-      - -s -w -X github.com/pgxman/pgxman.Version={{.Version}}
+      - -s -w -X github.com/pgxman/pgxman.Version={{.Version}} -X github.com/pgxman/pgxman.UpdaterEnabled=true
     goos: [darwin, linux]
     goarch: ["386", "amd64", "arm", "arm64"]
     env:

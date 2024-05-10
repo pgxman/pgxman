@@ -3,13 +3,14 @@ package upgrade
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v57/github"
+	"github.com/mattn/go-isatty"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/config"
 	"github.com/pgxman/pgxman/internal/log"
@@ -47,16 +48,10 @@ type Checker struct {
 }
 
 func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
-	if c.currentVersion == "dev" {
-		c.logger.Debug("disabled upgrade checking for dev", "current", c.currentVersion)
-		return &CheckResult{
-			HasUpgrade: false,
-		}, nil
-	}
+	logger := c.logger.With("current", c.currentVersion)
 
-	currVer, err := parseSemVar(c.currentVersion)
-	if err != nil {
-		c.logger.Debug("disabled upgrade checking for snapshot", "current", c.currentVersion)
+	if !c.shouldCheck() {
+		logger.Debug("disabled upgrade checking")
 		return &CheckResult{
 			HasUpgrade: false,
 		}, nil
@@ -82,7 +77,7 @@ func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 
 	nextCheckTime := lastCheckTime.Add(checkInterval)
 	if now.Before(nextCheckTime) {
-		c.logger.Debug("skip checking upgrade", "latst", lastCheckTime, "next", nextCheckTime)
+		logger.Debug("skip checking upgrade", "latst", lastCheckTime, "next", nextCheckTime)
 		return &CheckResult{
 			HasUpgrade: false,
 		}, nil
@@ -90,26 +85,58 @@ func (c *Checker) Check(ctx context.Context) (result *CheckResult, err error) {
 
 	rel, _, err := c.ghClient.Repositories.GetLatestRelease(ctx, "pgxman", "pgxman")
 	if err != nil {
-		return nil, err
+		logger.Debug("error getting latest release", "error", err)
+		return &CheckResult{
+			HasUpgrade: false,
+		}, nil
+	}
+
+	currVer, err := parseSemVar(c.currentVersion)
+	if err != nil {
+		logger.Debug("error parsing current version")
+		return &CheckResult{
+			HasUpgrade: false,
+		}, nil
 	}
 
 	latestVer, err := parseSemVar(*rel.TagName)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing tag name as version: %w", err)
-	}
-
-	var hasUpgrade bool
-	if currVer.LessThan(latestVer) {
-		hasUpgrade = true
+		logger.Debug("error parsing tag name as version", "error", err)
+		return &CheckResult{
+			HasUpgrade: false,
+		}, nil
 	}
 
 	return &CheckResult{
-		HasUpgrade:     hasUpgrade,
+		HasUpgrade:     currVer.LessThan(latestVer),
 		CurrentVersion: currVer,
 		LatestVersion:  latestVer,
 	}, nil
 }
 
+func (c *Checker) shouldCheck() bool {
+	if os.Getenv("PGXMAN_NO_UPGRADE_NOTIFIER") != "" {
+		return false
+	}
+
+	if c.currentVersion == "dev" {
+		return false
+	}
+
+	return pgxman.UpdaterEnabled == "true" && !isCI() && isTerminal(os.Stdout) && isTerminal(os.Stderr)
+}
+
 func parseSemVar(v string) (*semver.Version, error) {
 	return semver.StrictNewVersion(strings.TrimPrefix(v, "v"))
+}
+
+func isTerminal(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+}
+
+// based on https://github.com/watson/ci-info/blob/HEAD/index.js
+func isCI() bool {
+	return os.Getenv("CI") != "" || // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+		os.Getenv("BUILD_NUMBER") != "" || // Jenkins, TeamCity
+		os.Getenv("RUN_ID") != "" // TaskCluster, dsari
 }

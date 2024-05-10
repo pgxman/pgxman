@@ -10,6 +10,7 @@ import (
 
 	"log/slog"
 
+	"github.com/mattn/go-isatty"
 	"github.com/pgxman/pgxman"
 	"github.com/pgxman/pgxman/internal/auth"
 	"github.com/pgxman/pgxman/internal/log"
@@ -62,7 +63,7 @@ func Execute(ctx context.Context) (*cobra.Command, error) {
 }
 
 func checkUpgrade(ctx context.Context) error {
-	c := upgrade.NewChecker(log.NewTextLogger())
+	c := upgrade.NewChecker(log.NewTextLogger().WithGroup("updater"))
 	result, err := c.Check(ctx)
 	if err != nil {
 		return err
@@ -121,4 +122,23 @@ func newReigstryClient() (registry.Client, error) {
 	}
 
 	return registry.NewClient(flagRegistryURL, t)
+}
+
+func shouldCheckForUpgrade() bool {
+	if os.Getenv("PGXMAN_NO_UPGRADE_NOTIFIER") != "" {
+		return false
+	}
+
+	return pgxman.UpdaterEnabled == "true" && !isCI() && isTerminal(os.Stdout) && isTerminal(os.Stderr)
+}
+
+func isTerminal(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+}
+
+// based on https://github.com/watson/ci-info/blob/HEAD/index.js
+func isCI() bool {
+	return os.Getenv("CI") != "" || // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+		os.Getenv("BUILD_NUMBER") != "" || // Jenkins, TeamCity
+		os.Getenv("RUN_ID") != "" // TaskCluster, dsari
 }
