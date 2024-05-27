@@ -8,7 +8,7 @@ require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.3
-	github.com/charmbracelet/lipgloss v0.10.1-0.20240413172830-d0be07ea6b9c
+	github.com/charmbracelet/lipgloss v0.11.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/cli/go-gh/v2 v2.9.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
@@ -39,7 +39,6 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/x/ansi v0.1.1 // indirect
-	github.com/charmbracelet/x/exp/term v0.0.0-20240425164147-ba2a9512b05f // indirect
 	github.com/charmbracelet/x/input v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.1.0 // indirect
