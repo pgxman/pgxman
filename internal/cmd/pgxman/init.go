@@ -76,10 +76,10 @@ func runInit(c *cobra.Command, args []string) error {
 var (
 	focusedStyle = lipgloss.NewStyle()
 	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	helpStyle    = blurredStyle.Copy()
+	helpStyle    = blurredStyle
 
-	focusedButton = focusedStyle.Copy().Render("> [ Done ]")
-	blurredButton = blurredStyle.Copy().Render("[ Done ]")
+	focusedButton = focusedStyle.Render("> [ Done ]")
+	blurredButton = blurredStyle.Render("[ Done ]")
 )
 
 type initInput struct {

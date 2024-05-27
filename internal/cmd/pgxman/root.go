@@ -81,7 +81,7 @@ func checkUpgrade(ctx context.Context) error {
 		}
 
 		msg := fmt.Sprintf("pgxman %s available (%s installed), run `%s` to upgrade", result.LatestVersion, result.CurrentVersion, upgradeCmd)
-		fmt.Println(infoColor.Copy().SetString(msg))
+		fmt.Println(infoColor.SetString(msg))
 	}
 
 	return nil
