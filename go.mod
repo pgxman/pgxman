@@ -26,7 +26,7 @@ require (
 	github.com/zalando/go-keyring v0.2.4
 	github.com/zcalusic/sysinfo v1.1.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.21.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/text v0.15.0
 	sigs.k8s.io/yaml v1.4.0
