@@ -27,9 +27,10 @@ jobs:
           # tag > commit
           echo "build_version=$(git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          distribution: goreleaser
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
