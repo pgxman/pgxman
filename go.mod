@@ -21,7 +21,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/otiai10/copy v1.14.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/zalando/go-keyring v0.2.5
 	github.com/zcalusic/sysinfo v1.1.0
@@ -42,7 +42,7 @@ require (
 	github.com/charmbracelet/x/input v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.1.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
