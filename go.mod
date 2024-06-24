@@ -13,7 +13,7 @@ require (
 	github.com/cli/go-gh/v2 v2.9.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
-	github.com/github/go-spdx/v2 v2.2.0
+	github.com/github/go-spdx/v2 v2.3.1
 	github.com/google/go-github/v57 v57.0.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
