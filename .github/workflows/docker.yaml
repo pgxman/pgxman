@@ -51,7 +51,7 @@ jobs:
           images: |
             ghcr.io/pgxman/${{ env.image_name }}
       - name: Docker build and push
-        uses: docker/bake-action@v4
+        uses: docker/bake-action@v5
         with:
           push: ${{ github.event_name != 'pull_request' }}
           pull: true
