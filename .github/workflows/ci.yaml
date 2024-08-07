@@ -54,6 +54,7 @@ jobs:
     env:
       DEBIAN_BOOKWORM_IMAGE: localhost:5000/pgxman/builder/debian/bookworm:dev
       UBUNTU_JAMMY_IMAGE: localhost:5000/pgxman/builder/ubuntu/jammy:dev
+      UBUNTU_NOBLE_IMAGE: localhost:5000/pgxman/builder/ubuntu/noble:dev
       RUNNER_POSTGRES_15_IMAGE: localhost:5000/pgxman/runner/postgres/15:dev
     services:
       registry:
@@ -90,6 +91,7 @@ jobs:
           targets: |
             builder-debian-bookworm
             builder-ubuntu-jammy
+            builder-ubuntu-noble
             runner-postgres-15
           set: |
             *.platform=linux/amd64
@@ -97,6 +99,7 @@ jobs:
             *.cache-to=type=gha,mode=max
             builder-debian-bookworm.tags=${{ env.DEBIAN_BOOKWORM_IMAGE }}
             builder-ubuntu-jammy.tags=${{ env.UBUNTU_JAMMY_IMAGE }}
+            builder-ubuntu-noble.tags=${{ env.UBUNTU_NOBLE_IMAGE }}
             runner-postgres-15.tags=${{ env.RUNNER_POSTGRES_15_IMAGE }}
       - name: Run e2etest
         run: |
