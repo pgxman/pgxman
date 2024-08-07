@@ -15,8 +15,10 @@ import (
 var (
 	flagDebianBookwormImage   string
 	flagUbuntuJammyImage      string
+	flagUbuntuNobleImage      string
 	flagRunnerPostgres15Image string
 	flagPGXManBin             string
+	flagDebug                 bool
 )
 
 var cf struct {
@@ -58,8 +60,10 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&e2etest, "e2e", false, "Run e2e tests")
 	flag.StringVar(&flagDebianBookwormImage, "debian-bookworm-image", "", "Debian Bookworm Build image")
 	flag.StringVar(&flagUbuntuJammyImage, "ubuntu-jammy-image", "", "Ubuntu Jammy Build image")
+	flag.StringVar(&flagUbuntuNobleImage, "ubuntu-noble-image", "", "Ubuntu Noble Build image")
 	flag.StringVar(&flagRunnerPostgres15Image, "runner-postgres-15-image", "", "Runner Postgres 15 image")
 	flag.StringVar(&flagPGXManBin, "pgxman-bin", "", "The Linux binary of pgxman")
+	flag.BoolVar(&flagDebug, "debug", os.Getenv("DEBUG") != "", "Debug")
 	flag.Parse()
 
 	log.SetLevel(slog.LevelDebug)
@@ -77,6 +81,11 @@ func TestMain(m *testing.M) {
 
 	if flagUbuntuJammyImage == "" {
 		logger.Info("-ubuntu-jammy-image is required")
+		os.Exit(1)
+	}
+
+	if flagUbuntuNobleImage == "" {
+		logger.Info("-ubuntu-noble-image is required")
 		os.Exit(1)
 	}
 
