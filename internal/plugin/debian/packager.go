@@ -71,7 +71,7 @@ func (p *DebianPackager) Init(ctx context.Context, ext pgxman.Extension, opts pg
 	}
 
 	for _, pkg := range ext.Packages() {
-		if err := p.prepareBuildDir(ctx, opts, pkg); err != nil {
+		if err := p.prepareBuildDir(opts, pkg); err != nil {
 			return fmt.Errorf("prepare build dir: %w", err)
 		}
 	}
@@ -135,7 +135,7 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 	return g.Wait()
 }
 
-func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.PackagerOptions, pkg pgxman.ExtensionPackage) error {
+func (p *DebianPackager) prepareBuildDir(opts pgxman.PackagerOptions, pkg pgxman.ExtensionPackage) error {
 	targetPgVerDir := p.targetPgVerDir(opts, pkg.PGVersion)
 	if err := os.MkdirAll(targetPgVerDir, 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
@@ -153,7 +153,7 @@ func (p *DebianPackager) prepareBuildDir(ctx context.Context, opts pgxman.Packag
 		return fmt.Errorf("download source %s: %w", pkg.Source, err)
 	}
 
-	if err := p.unarchiveSource(ctx, sourceFile, debianBuildDir); err != nil {
+	if err := p.unarchiveSource(sourceFile, debianBuildDir); err != nil {
 		return fmt.Errorf("unarchive source: %w", err)
 	}
 
@@ -210,7 +210,7 @@ func (p *DebianPackager) downloadSource(ext pgxman.ExtensionPackage, targetDir s
 	return targetFile, nil
 }
 
-func (p *DebianPackager) unarchiveSource(ctx context.Context, sourceFile, buildDir string) error {
+func (p *DebianPackager) unarchiveSource(sourceFile, buildDir string) error {
 	logger := p.Logger.With(slog.String("path", sourceFile))
 	logger.Info("Unarchiving source")
 

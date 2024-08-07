@@ -40,6 +40,12 @@ func NewDefaultExtension() Extension {
 						Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformUbuntuJammy], ImageTag()),
 					},
 				},
+				UbuntuNoble: &AptExtensionBuilder{
+					ExtensionBuilder: ExtensionBuilder{
+						Type:  PlatformUbuntuNoble,
+						Image: fmt.Sprintf("%s:%s", extensionBuilderImages[PlatformUbuntuNoble], ImageTag()),
+					},
+				},
 			},
 		},
 	}
@@ -418,6 +424,7 @@ var (
 	extensionBuilderImages = map[Platform]string{
 		PlatformDebianBookworm: "ghcr.io/pgxman/builder/debian/bookworm",
 		PlatformUbuntuJammy:    "ghcr.io/pgxman/builder/ubuntu/jammy",
+		PlatformUbuntuNoble:    "ghcr.io/pgxman/builder/ubuntu/noble",
 	}
 )
 
@@ -438,6 +445,7 @@ func (e *ErrUnsupportedPlatform) Error() string {
 type ExtensionBuilders struct {
 	DebianBookworm *AptExtensionBuilder `json:"debian:bookworm,omitempty"`
 	UbuntuJammy    *AptExtensionBuilder `json:"ubuntu:jammy,omitempty"`
+	UbuntuNoble    *AptExtensionBuilder `json:"ubuntu:noble,omitempty"`
 }
 
 func (ebs ExtensionBuilders) HasBuilder(p Platform) bool {
@@ -446,6 +454,8 @@ func (ebs ExtensionBuilders) HasBuilder(p Platform) bool {
 		return ebs.DebianBookworm != nil
 	case PlatformUbuntuJammy:
 		return ebs.UbuntuJammy != nil
+	case PlatformUbuntuNoble:
+		return ebs.UbuntuNoble != nil
 	}
 
 	return false
@@ -460,6 +470,9 @@ func (ebs ExtensionBuilders) Available() []AptExtensionBuilder {
 	}
 	if builder := ebs.UbuntuJammy; builder != nil {
 		result = append(result, ebs.newBuilder(PlatformUbuntuJammy, builder))
+	}
+	if builder := ebs.UbuntuNoble; builder != nil {
+		result = append(result, ebs.newBuilder(PlatformUbuntuNoble, builder))
 	}
 
 	return result
@@ -479,6 +492,8 @@ func (ebs ExtensionBuilders) Current() AptExtensionBuilder {
 		builder = ebs.DebianBookworm
 	case PlatformUbuntuJammy:
 		builder = ebs.UbuntuJammy
+	case PlatformUbuntuNoble:
+		builder = ebs.UbuntuNoble
 	default:
 		panic("unsupported platform: " + p)
 	}
@@ -647,6 +662,7 @@ const (
 	PlatformUnsupported    Platform = "unsupported"
 	PlatformDebianBookworm Platform = "debian_bookworm"
 	PlatformUbuntuJammy    Platform = "ubuntu_jammy"
+	PlatformUbuntuNoble    Platform = "ubuntu_noble"
 	PlatformDarwin         Platform = "darwin"
 )
 
@@ -668,6 +684,10 @@ func DetectPlatform() (Platform, error) {
 
 	if vendor == "ubuntu" && version == "22.04" {
 		return PlatformUbuntuJammy, nil
+	}
+
+	if vendor == "ubuntu" && version == "24.04" {
+		return PlatformUbuntuNoble, nil
 	}
 
 	if vendor == "darwin" {

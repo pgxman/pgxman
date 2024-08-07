@@ -8,7 +8,7 @@ group "default" {
 }
 
 group "builder" {
-    targets = ["builder-debian-bookworm", "builder-ubuntu-jammy"]
+    targets = ["builder-debian-bookworm", "builder-ubuntu-jammy", "builder-ubuntu-noble"]
 }
 
 group "runner" {
@@ -28,6 +28,14 @@ target "builder-ubuntu-jammy" {
 
     contexts = {
         debian_base = "docker-image://ubuntu:jammy"
+    }
+}
+
+target "builder-ubuntu-noble" {
+    inherits = ["docker-metadata-action", "base-builder-debian"]
+
+    contexts = {
+        debian_base = "docker-image://ubuntu:noble"
     }
 }
 
