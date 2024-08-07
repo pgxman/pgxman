@@ -29,6 +29,7 @@ type BuilderOptions struct {
 	ExtDir    string
 	CacheFrom []string
 	CacheTo   []string
+	Pull      bool
 	Parallel  int
 	Debug     bool
 	NoCache   bool
@@ -74,7 +75,7 @@ func (b *dockerBuilder) Build(ctx context.Context, ext Extension) error {
 		return fmt.Errorf("docker build: %w", err)
 	}
 
-	if err := b.copyBuild(ctx, workDir, b.ExtDir); err != nil {
+	if err := b.copyBuild(workDir, b.ExtDir); err != nil {
 		return fmt.Errorf("copy build: %w", err)
 	}
 
@@ -157,7 +158,7 @@ func (b *dockerBuilder) runDockerCmd(ctx context.Context, dstDir string, args ..
 	return dockerBuild.Run()
 }
 
-func (b *dockerBuilder) copyBuild(ctx context.Context, workDir, dstDir string) error {
+func (b *dockerBuilder) copyBuild(workDir, dstDir string) error {
 	logger := b.logger.With(slog.String("src", workDir), slog.String("dst", dstDir))
 	logger.Debug("Copying build")
 
@@ -243,6 +244,10 @@ func (b *dockerBuilder) dockerBakeArgs(ext Extension, targets []string, extraArg
 		}
 	}
 
+	if b.Pull {
+		args = append(args, "--pull")
+	}
+
 	if b.Debug {
 		args = append(args, "--progress=plain")
 	}
@@ -307,6 +312,14 @@ func (e dockerFileExtension) ExportDebianBookwormArtifacts() bool {
 func (e dockerFileExtension) ExportUbuntuJammyArtifacts() bool {
 	if builders := e.Builders; builders != nil {
 		return builders.HasBuilder(PlatformUbuntuJammy)
+	}
+
+	return false
+}
+
+func (e dockerFileExtension) ExportUbuntuNobleArtifacts() bool {
+	if builders := e.Builders; builders != nil {
+		return builders.HasBuilder(PlatformUbuntuNoble)
 	}
 
 	return false

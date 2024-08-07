@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG BUILD_IMAGE
-FROM $BUILD_IMAGE as build
+FROM $BUILD_IMAGE AS build
 
 ARG BUILD_SHA
 ARG PARALLEL=""

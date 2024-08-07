@@ -649,9 +649,9 @@ components:
       properties:
         os:
           type: string
-          enum: ["debian_bookworm", "ubuntu_jammy"]
+          enum: ["debian_bookworm", "ubuntu_jammy", "ubuntu_noble"]
           x-oapi-codegen-extra-tags:
-            validate: required,oneof=debian_bookworm ubuntu_jammy
+            validate: required,oneof=debian_bookworm ubuntu_jammy ubuntu_noble
         run_dependencies:
           $ref: "#/components/schemas/Dependencies"
         build_dependencies:

@@ -17,6 +17,7 @@ var (
 	flagBuildParallel      int
 	flagBuildCacheFrom     []string
 	flagBuildCacheTo       []string
+	flagBuildPull          bool
 )
 
 func newBuildCmd() *cobra.Command {
@@ -33,6 +34,7 @@ func newBuildCmd() *cobra.Command {
 	cmd.PersistentFlags().StringArrayVar(&flagBuildCacheFrom, "cache-from", nil, "External cache sources. The value is passed to docker buildx build --cache-from.")
 	cmd.PersistentFlags().StringArrayVar(&flagBuildCacheTo, "cache-to", nil, "Cache export destinations. The value is passed to docker buildx build --cache-to.")
 	cmd.PersistentFlags().IntVar(&flagBuildParallel, "parallel", 2, "Number of parrallel builds to run")
+	cmd.PersistentFlags().BoolVar(&flagBuildPull, "pull", false, "Always attempt to pull all referenced images")
 
 	return cmd
 }
@@ -66,6 +68,7 @@ func runBuild(c *cobra.Command, args []string) error {
 			NoCache:   flagBuildNoCache,
 			CacheFrom: flagBuildCacheFrom,
 			CacheTo:   flagBuildCacheTo,
+			Pull:      flagBuildPull,
 		},
 	)
 	return builder.Build(c.Context(), ext)

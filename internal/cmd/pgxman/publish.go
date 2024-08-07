@@ -91,6 +91,7 @@ func convertPlatform(pkg pgxman.ExtensionPackage) []oapi.Platform {
 	for k, v := range map[oapi.PlatformOs]*pgxman.AptExtensionBuilder{
 		oapi.DebianBookworm: pkg.Builders.DebianBookworm,
 		oapi.UbuntuJammy:    pkg.Builders.UbuntuJammy,
+		oapi.UbuntuNoble:    pkg.Builders.UbuntuNoble,
 	} {
 		if v == nil {
 			continue

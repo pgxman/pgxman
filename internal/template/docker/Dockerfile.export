@@ -16,6 +16,12 @@ COPY --from=ubuntu-jammy ${WORKSPACE_DIR}/target/{{ . }}/*.deb  /out/ubuntu/jamm
 {{- end }}
 {{- end }}
 
+{{- if .ExportUbuntuNobleArtifacts }}
+{{- range .PGVersions }}
+COPY --from=ubuntu-noble ${WORKSPACE_DIR}/target/{{ . }}/*.deb  /out/ubuntu/noble/
+{{- end }}
+{{- end }}
+
 FROM ubuntu AS export
 
 COPY --from=merge /out/ .

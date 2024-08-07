@@ -23,7 +23,7 @@ func TestBuilder(t *testing.T) {
 	ext.Source = "https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.0.tar.gz"
 	ext.Repository = "https://github.com/pgvector/pgvector"
 	ext.Version = "0.5.0"
-	ext.PGVersions = pgxman.SupportedPGVersions
+	ext.PGVersions = []pgxman.PGVersion{pgxman.PGVersion15, pgxman.PGVersion16}
 	ext.Overrides = &pgxman.ExtensionOverrides{
 		PGVersions: map[pgxman.PGVersion]pgxman.ExtensionOverridable{
 			pgxman.PGVersion16: {
@@ -72,6 +72,25 @@ func TestBuilder(t *testing.T) {
 				},
 			},
 		},
+		UbuntuNoble: &pgxman.AptExtensionBuilder{
+			ExtensionBuilder: pgxman.ExtensionBuilder{
+				BuildDependencies: []string{"libarrow-dev"},
+				Image:             flagUbuntuNobleImage,
+			},
+			AptRepositories: []pgxman.AptRepository{
+				{
+					ID:         "apache-arrow-ubuntu-noble",
+					Types:      pgxman.SupportedAptRepositoryTypes,
+					URIs:       []string{"https://apache.jfrog.io/artifactory/arrow/ubuntu"},
+					Components: []string{"main"},
+					Suites:     []string{"noble"},
+					SignedKey: pgxman.AptRepositorySignedKey{
+						URL:    "https://downloads.apache.org/arrow/KEYS",
+						Format: pgxman.AptRepositorySignedKeyFormatAsc,
+					},
+				},
+			},
+		},
 	}
 	ext.Arch = []pgxman.Arch{pgxman.Arch(runtime.GOARCH)} // only build for current arch
 	ext.Formats = pgxman.SupportedFormats
@@ -96,11 +115,13 @@ echo $PGXS
 	}
 
 	extdir := t.TempDir()
+	t.Logf("Building extensions to dir %s", extdir)
+
 	builder := pgxman.NewBuilder(
 		pgxman.BuilderOptions{
 			ExtDir:   extdir,
 			Parallel: 1,
-			Debug:    true,
+			Debug:    flagDebug,
 			// Caching for CI.
 			// They are ignored when not running in GitHub Actions.
 			CacheFrom: []string{"type=gha"},
@@ -113,10 +134,11 @@ echo $PGXS
 
 	matches, err := filepathx.WalkMatch(extdir, "*.deb")
 	assert.NoError(err)
-	assert.Len(matches, 4*2) // 13, 14, 15, 16 for current arch only for debian:bookworm & ubuntu:jammy
+	assert.Len(matches, 2*3) // 15, 16 for current arch only for debian:bookworm, ubuntu:jammy & ubuntu:noble
 	// verify overriden version
 	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/debian/bookworm/postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
-	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/ubuntu/jammy//postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
+	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/ubuntu/jammy/postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
+	assert.Contains(matches, filepath.Join(extdir, fmt.Sprintf("out/ubuntu/noble/postgresql-16-pgxman-pgvector_16.5.0_%s.deb", runtime.GOARCH)))
 
 	for _, match := range matches {
 		var (
@@ -132,11 +154,14 @@ echo $PGXS
 			image      string
 			pathPrefix string
 		)
-		if strings.Contains(match, "ubuntu") {
+		if strings.Contains(match, "jammy") {
 			image = "ubuntu:jammy"
 			pathPrefix = "ubuntu/jammy"
+		} else if strings.Contains(match, "noble") {
+			image = "ubuntu:noble"
+			pathPrefix = "ubuntu/noble"
 		} else if strings.Contains(match, "debian") {
-			image = "postgres:15-bookworm"
+			image = "postgres:16-bookworm"
 			pathPrefix = "debian/bookworm"
 		} else {
 			assert.Failf("unexpected debian package os: %s", match)
@@ -181,15 +206,13 @@ apt-get install ca-certificates gnupg2 postgresql-common git -y
 # make sure all pg versions are available
 sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 apt-get update
-apt-get install postgresql-15 -y
+apt-get install postgresql-16 -y
 cat <<EOS | pgxman pack install -f -
 apiVersion: v1
 extensions:
-- name: "pg_ivm"
-  version: "1.7.0"
 - path: "/out/%s"
 postgres:
-  version: "15"
+  version: "16"
 EOS
 `, filepath.Join(pathPrefix, debFile)),
 			)

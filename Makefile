@@ -38,6 +38,7 @@ cp_registry_spec:
 
 DEBIAN_BOOKWORM_IMAGE ?= ghcr.io/pgxman/builder/debian/bookworm:main
 UBUNTU_JAMMY_IMAGE ?= ghcr.io/pgxman/builder/ubuntu/jammy:main
+UBUNTU_NOBLE_IMAGE ?= ghcr.io/pgxman/builder/ubuntu/noble:main
 .PHONY: e2etest
 e2etest:
 	GOOS=linux GOARCH=$$(go env GOARCH) go build -o $(BIN_DIR)/pgxman_linux_$$(go env GOARCH) ./cmd/pgxman
@@ -48,6 +49,7 @@ e2etest:
 		-e2e \
 		-debian-bookworm-image $(DEBIAN_BOOKWORM_IMAGE) \
 		-ubuntu-jammy-image $(UBUNTU_JAMMY_IMAGE) \
+		-ubuntu-noble-image $(UBUNTU_NOBLE_IMAGE) \
 		-runner-postgres-15-image $(RUNNER_POSTGRES_15_IMAGE) \
 		-pgxman-bin $(BIN_DIR)/pgxman_linux_$$(go env GOARCH)
 
@@ -73,6 +75,7 @@ docker_build_builder:
 		-f $(PWD)/dockerfiles/docker-bake.hcl \
 		--set builder-debian-bookworm.tags=$(DEBIAN_BOOKWORM_IMAGE) \
 		--set builder-ubuntu-jammy.tags=$(UBUNTU_JAMMY_IMAGE) \
+		--set builder-ubuntu-noble.tags=$(UBUNTU_NOBLE_IMAGE) \
 		--set *.cache-from=type=gha --set *.cache-to=type=gha,mode=max \
 		--pull \
 		$(DOCKER_ARGS)

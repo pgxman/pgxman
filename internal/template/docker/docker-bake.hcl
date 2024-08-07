@@ -14,6 +14,9 @@ target "export" {
         {{- if .ExportUbuntuJammyArtifacts }}
         ubuntu-jammy = "target:ubuntu-jammy"
         {{- end }}
+        {{- if .ExportUbuntuNobleArtifacts }}
+        ubuntu-noble = "target:ubuntu-noble"
+        {{- end }}
     }
 
     dockerfile = "Dockerfile.export"
@@ -32,6 +35,15 @@ target "debian-bookworm" {
 target "ubuntu-jammy" {
     args = {
         BUILD_IMAGE = "${REPO}/ubuntu/jammy:${TAG}"
+    }
+
+    dockerfile = "Dockerfile"
+    target = "build"
+}
+
+target "ubuntu-noble" {
+    args = {
+        BUILD_IMAGE = "${REPO}/ubuntu/noble:${TAG}"
     }
 
     dockerfile = "Dockerfile"

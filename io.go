@@ -116,6 +116,10 @@ func ReadExtension(path string, overrides map[string]any) (Extension, error) {
 		if !builders.HasBuilder(PlatformUbuntuJammy) {
 			defExt.Builders.UbuntuJammy = nil
 		}
+
+		if !builders.HasBuilder(PlatformUbuntuNoble) {
+			defExt.Builders.UbuntuNoble = nil
+		}
 	}
 
 	if err := mergo.Merge(

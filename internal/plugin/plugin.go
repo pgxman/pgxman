@@ -15,12 +15,14 @@ func init() {
 	}
 	RegisterPackager(pgxman.PlatformDebianBookworm, debPkg)
 	RegisterPackager(pgxman.PlatformUbuntuJammy, debPkg)
+	RegisterPackager(pgxman.PlatformUbuntuNoble, debPkg)
 
 	debInstaller := &debian.DebianInstaller{
 		Logger: log.NewTextLogger(),
 	}
 	RegisterInstaller(pgxman.PlatformDebianBookworm, debInstaller)
 	RegisterInstaller(pgxman.PlatformUbuntuJammy, debInstaller)
+	RegisterInstaller(pgxman.PlatformUbuntuNoble, debInstaller)
 }
 
 var (

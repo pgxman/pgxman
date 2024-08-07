@@ -97,7 +97,7 @@ func (a *Apt) ConvertSources(ctx context.Context, repos []pgxman.AptRepository) 
 		}
 		repo.URIs = uris
 
-		file, err := a.newSourceFile(ctx, repo)
+		file, err := a.newSourceFile(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +125,7 @@ func (a *Apt) GetChangedSources(ctx context.Context, repos []pgxman.AptRepositor
 			continue
 		}
 
-		file, err := a.newSourceFile(ctx, repo)
+		file, err := a.newSourceFile(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +308,7 @@ func (a *Apt) runAptCmd(ctx context.Context, command string, args ...string) (st
 	return bw.String(), err
 }
 
-func (a *Apt) newSourceFile(ctx context.Context, repo pgxman.AptRepository) (*AptSource, error) {
+func (a *Apt) newSourceFile(repo pgxman.AptRepository) (*AptSource, error) {
 	logger := a.Logger.WithGroup(repo.Name())
 
 	keyPath := filepath.Join(aptKeyRingsDir, repo.Name()+"."+string(repo.SignedKey.Format))
@@ -396,6 +396,9 @@ func coreAptRepos() ([]pgxman.AptRepository, error) {
 	case pgxman.PlatformUbuntuJammy:
 		prefix = "ubuntu"
 		codename = "jammy"
+	case pgxman.PlatformUbuntuNoble:
+		prefix = "ubuntu"
+		codename = "noble"
 	default:
 		return nil, fmt.Errorf("unsupported platform")
 	}
