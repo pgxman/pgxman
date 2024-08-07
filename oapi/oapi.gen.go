@@ -48,6 +48,7 @@ const (
 const (
 	DebianBookworm PlatformOs = "debian_bookworm"
 	UbuntuJammy    PlatformOs = "ubuntu_jammy"
+	UbuntuNoble    PlatformOs = "ubuntu_noble"
 )
 
 // Defines values for SignedKeyFormat.
@@ -189,7 +190,7 @@ type Platform struct {
 	AptRepositories   AptRepositories `json:"apt_repositories,omitempty" validate:"gte=0,dive"`
 	Architectures     Architectures   `json:"architectures" validate:"required,dive,oneof=amd64 arm64"`
 	BuildDependencies Dependencies    `json:"build_dependencies"`
-	Os                PlatformOs      `json:"os" validate:"required,oneof=debian_bookworm ubuntu_jammy"`
+	Os                PlatformOs      `json:"os" validate:"required,oneof=debian_bookworm ubuntu_jammy ubuntu_noble"`
 	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=13 14 15 16"`
 	RunDependencies   Dependencies    `json:"run_dependencies"`
 }
