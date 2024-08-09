@@ -372,8 +372,8 @@ func (e extensionData) Maintainers() string {
 
 func (e extensionData) BuildDeps() string {
 	required := []string{
-		"debhelper (>= 9)",
-		"postgresql-server-dev-all (>= 158~)",
+		"debhelper",
+		fmt.Sprintf("postgresql-server-dev-%s", e.PGVersion),
 	}
 
 	deps := e.BuildDependencies
