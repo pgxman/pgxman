@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BUILD_IMAGE
+ARG BUILD_IMAGE=notexist
 FROM $BUILD_IMAGE AS build
 
 ARG BUILD_SHA

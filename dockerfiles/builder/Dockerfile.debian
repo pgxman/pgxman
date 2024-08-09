@@ -3,6 +3,7 @@
 FROM debian_base
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG CLANG_VERSION
 
 RUN set -eux; \
     apt-get update; \
@@ -19,10 +20,11 @@ RUN set -eux; \
     echo "----- Install system dependencies -----"; \
     apt-get install -y \
     build-essential \
-    llvm-15-dev libclang-15-dev clang-15 \
+    dpkg-dev \
     gcc \
     libssl-dev \
     libz-dev \
+    llvm-${CLANG_VERSION}-dev libclang-${CLANG_VERSION}-dev clang-${CLANG_VERSION} \
     make \
     pkg-config \
     strace \
@@ -41,17 +43,30 @@ RUN set -eux; \
     locales \
     lsb-release \
     ninja-build \
-    postgresql-all \
-    postgresql-server-dev-all \
     python3 \
     python3-dev \
     python3-venv \
     sudo \
     wget \
     ; \
-    apt-get clean
-
-RUN set -eux; \
+    echo "----- Install specific PostgreSQL development packages -----"; \
+    apt-get install -y \
+    postgresql-13 \
+    postgresql-14 \
+    postgresql-15 \
+    postgresql-16 \
+    postgresql-server-dev-13 \
+    postgresql-server-dev-14 \
+    postgresql-server-dev-15 \
+    postgresql-server-dev-16 \
+    ; \
+    echo "----- Manually handle postgresql-server-dev-all to avoid unwanted dependencies -----"; \
+    apt download postgresql-server-dev-all; \
+    dpkg-deb -x postgresql-server-dev-all_*.deb /tmp/deb; \
+    cp -r /tmp/deb/* /; \
+    rm -rf /tmp/deb postgresql-server-dev-all_*.deb; \
+    apt-get clean; \
+    echo "----- Locale setup -----"; \
     locale-gen en_US.UTF-8; \
     echo "LC_ALL=en_US.UTF-8" >> /etc/environment; \
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen; \

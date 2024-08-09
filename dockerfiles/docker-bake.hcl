@@ -21,6 +21,10 @@ target "builder-debian-bookworm" {
     contexts = {
         debian_base = "docker-image://postgres:16-bookworm"
     }
+
+    args = {
+        CLANG_VERSION = "15"
+    }
 }
 
 target "builder-ubuntu-jammy" {
@@ -29,6 +33,10 @@ target "builder-ubuntu-jammy" {
     contexts = {
         debian_base = "docker-image://ubuntu:jammy"
     }
+
+    args = {
+        CLANG_VERSION = "15"
+    }
 }
 
 target "builder-ubuntu-noble" {
@@ -36,6 +44,10 @@ target "builder-ubuntu-noble" {
 
     contexts = {
         debian_base = "docker-image://ubuntu:noble"
+    }
+
+    args = {
+        CLANG_VERSION = "17"
     }
 }
 

@@ -36,7 +36,7 @@ func Test_debianPackageTemplater(t *testing.T) {
 		{
 			Name:        "build deps",
 			Content:     `{{ .BuildDeps }}`,
-			WantContent: "debhelper (>= 9), postgresql-server-dev-all (>= 158~), libxml2, postgresql-PGVERSION-pgxman-multicorn",
+			WantContent: "debhelper, postgresql-server-dev-14, libxml2, postgresql-PGVERSION-pgxman-multicorn",
 		},
 		{
 			Name:        "deps",
