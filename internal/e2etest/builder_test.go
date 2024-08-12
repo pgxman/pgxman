@@ -120,7 +120,7 @@ echo $PGXS
 	builder := pgxman.NewBuilder(
 		pgxman.BuilderOptions{
 			ExtDir:   extdir,
-			Parallel: 1,
+			Parallel: 2,
 			Debug:    flagDebug,
 			// Caching for CI.
 			// They are ignored when not running in GitHub Actions.

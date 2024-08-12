@@ -344,6 +344,7 @@ func (p *DebianPackager) buildDebian(ctx context.Context, pkg pgxman.ExtensionPa
 	debuild.Env = append(
 		os.Environ(),
 		fmt.Sprintf("DEB_BUILD_OPTIONS=noautodbgsym parallel=%d", runtime.NumCPU()),
+		fmt.Sprintf("PGRX_HOME=%s", buildDir),
 	)
 	debuild.Dir = buildDir
 	debuild.Stdout = os.Stdout
