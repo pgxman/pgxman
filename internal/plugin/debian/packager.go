@@ -20,7 +20,6 @@ import (
 	tmpl "github.com/pgxman/pgxman/internal/template"
 	"github.com/pgxman/pgxman/internal/template/debian"
 	"github.com/pgxman/pgxman/internal/template/script"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -106,33 +105,15 @@ func (p *DebianPackager) Main(ctx context.Context, ext pgxman.Extension, opts pg
 		return err
 	}
 
-	token := opts.Parallel
-	g, gctx := errgroup.WithContext(ctx)
 	for _, pkg := range ext.Packages() {
 		pkg := pkg
 
-		g.Go(func() error {
-			if err := p.buildDebian(gctx, pkg, p.targetDebianBuildDir(opts, pkg.PGVersion)); err != nil {
-				return fmt.Errorf("debian build: %w", err)
-			}
-
-			return nil
-		})
-		token--
-
-		// if token is used up, kick off builds & wait for them to finish
-		if token == 0 {
-			if err := g.Wait(); err != nil {
-				return err
-			}
-
-			// reset
-			g, gctx = errgroup.WithContext(ctx)
-			token = opts.Parallel
+		if err := p.buildDebian(ctx, pkg, p.targetDebianBuildDir(opts, pkg.PGVersion)); err != nil {
+			return fmt.Errorf("debian build: %w", err)
 		}
 	}
 
-	return g.Wait()
+	return nil
 }
 
 func (p *DebianPackager) prepareBuildDir(opts pgxman.PackagerOptions, pkg pgxman.ExtensionPackage) error {

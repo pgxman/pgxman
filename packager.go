@@ -5,9 +5,8 @@ import (
 )
 
 type PackagerOptions struct {
-	WorkDir  string
-	Parallel int
-	Debug    bool
+	WorkDir string
+	Debug   bool
 }
 
 type Packager interface {
