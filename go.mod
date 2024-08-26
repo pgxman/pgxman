@@ -7,8 +7,8 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.1
 	github.com/charmbracelet/bubbles v0.18.0
-	github.com/charmbracelet/bubbletea v0.27.0
-	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/charmbracelet/bubbletea v0.27.1
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/cli/go-gh/v2 v2.9.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
