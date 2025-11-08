@@ -516,15 +516,16 @@ components:
         $ref: "#/components/schemas/PgVersion"
       x-go-type-skip-optional-pointer: true
       x-oapi-codegen-extra-tags:
-        validate: required,dive,oneof=13 14 15 16
+        validate: required,dive,oneof=13 14 15 16 17
     PgVersion:
       type: string
-      enum: ["13", "14", "15", "16"]
+      enum: ["13", "14", "15", "16", "17"]
       x-enum-varnames:
         - Postgres13
         - Postgres14
         - Postgres15
         - Postgres16
+        - Postgres17
     License:
       type: string
       description: License under which the extension is distributed. The license must be a valid SPDX license identifier.
