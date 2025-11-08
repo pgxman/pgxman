@@ -12,7 +12,7 @@ group "builder" {
 }
 
 group "runner" {
-    targets = ["runner-postgres-16", "runner-postgres-15", "runner-postgres-14", "runner-postgres-13"]
+    targets = ["runner-postgres-17", "runner-postgres-16", "runner-postgres-15", "runner-postgres-14", "runner-postgres-13"]
 }
 
 target "builder-debian-bookworm" {
@@ -48,6 +48,14 @@ target "builder-ubuntu-noble" {
 
     args = {
         CLANG_VERSION = "17"
+    }
+}
+
+target "runner-postgres-17" {
+    inherits = ["docker-metadata-action", "base-runner"]
+
+    contexts = {
+        postgres_base = "docker-image://postgres:17-bookworm"
     }
 }
 

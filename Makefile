@@ -89,6 +89,7 @@ docker_push_builder: DOCKER_ARGS=--push
 docker_push_builder: docker_build_builder
 
 RUNNER_TARGET ?= runner
+RUNNER_POSTGRES_17_IMAGE ?= ghcr.io/pgxman/runner/postgres/17:main
 RUNNER_POSTGRES_16_IMAGE ?= ghcr.io/pgxman/runner/postgres/16:main
 RUNNER_POSTGRES_15_IMAGE ?= ghcr.io/pgxman/runner/postgres/15:main
 RUNNER_POSTGRES_14_IMAGE ?= ghcr.io/pgxman/runner/postgres/14:main
@@ -97,6 +98,7 @@ RUNNER_POSTGRES_13_IMAGE ?= ghcr.io/pgxman/runner/postgres/13:main
 docker_build_runner:
 	docker buildx bake $(RUNNER_TARGET) \
 		-f $(PWD)/dockerfiles/docker-bake.hcl \
+		--set runner-postgres-17.tags=$(RUNNER_POSTGRES_17_IMAGE) \
 		--set runner-postgres-16.tags=$(RUNNER_POSTGRES_16_IMAGE) \
 		--set runner-postgres-15.tags=$(RUNNER_POSTGRES_15_IMAGE) \
 		--set runner-postgres-14.tags=$(RUNNER_POSTGRES_14_IMAGE) \

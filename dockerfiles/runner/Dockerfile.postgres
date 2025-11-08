@@ -3,14 +3,25 @@
 FROM postgres_base
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG ALLOW_INSECURE_APT=0
 
 RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
+    if [ "$ALLOW_INSECURE_APT" = "1" ]; then \
+        printf '%s\n' \
+            'Acquire::AllowInsecureRepositories "true";' \
+            'Acquire::AllowDowngradeToInsecureRepositories "true";' \
+            'APT::Get::AllowUnauthenticated "true";' \
+            > /etc/apt/apt.conf.d/99pgxman-allow-insecure; \
+    fi; \
+    APT_CACHE_DIR=$(mktemp -d); \
+    apt-get -o Dir::Cache::archives="${APT_CACHE_DIR}" update; \
+    apt-get -o Dir::Cache::archives="${APT_CACHE_DIR}" install -y --no-install-recommends \
     ca-certificates \
     git \
     ; \
-    apt-get clean
+    rm -rf "${APT_CACHE_DIR}"; \
+    apt-get clean; \
+    if [ "$ALLOW_INSECURE_APT" = "1" ]; then rm -f /etc/apt/apt.conf.d/99pgxman-allow-insecure; fi
 
 RUN set -eux; \
     locale-gen en_US.UTF-8; \

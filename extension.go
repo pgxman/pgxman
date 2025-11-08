@@ -351,6 +351,7 @@ const (
 	PGVersion14      PGVersion = "14"
 	PGVersion15      PGVersion = "15"
 	PGVersion16      PGVersion = "16"
+	PGVersion17      PGVersion = "17"
 )
 
 type PGVersion string
@@ -364,7 +365,7 @@ func (v PGVersion) Validate() error {
 }
 
 var (
-	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16}
+	SupportedPGVersions = []PGVersion{PGVersion13, PGVersion14, PGVersion15, PGVersion16, PGVersion17}
 	DefaultPGVersion    = PGVersion15
 )
 

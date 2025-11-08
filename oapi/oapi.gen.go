@@ -42,6 +42,7 @@ const (
 	Postgres14 PgVersion = "14"
 	Postgres15 PgVersion = "15"
 	Postgres16 PgVersion = "16"
+	Postgres17 PgVersion = "17"
 )
 
 // Defines values for PlatformOs.
@@ -191,7 +192,7 @@ type Platform struct {
 	Architectures     Architectures   `json:"architectures" validate:"required,dive,oneof=amd64 arm64"`
 	BuildDependencies Dependencies    `json:"build_dependencies"`
 	Os                PlatformOs      `json:"os" validate:"required,oneof=debian_bookworm ubuntu_jammy ubuntu_noble"`
-	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=13 14 15 16"`
+	PgVersions        PgVersions      `json:"pg_versions" validate:"required,dive,oneof=13 14 15 16 17"`
 	RunDependencies   Dependencies    `json:"run_dependencies"`
 }
 
